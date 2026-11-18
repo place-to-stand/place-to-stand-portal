@@ -16,7 +16,7 @@ test('sales sees the CRM and member projects only', async ({ page }) => {
     'Time logs',
     'Monthly close',
     'Design system',
-    'Integrations',
+    'Settings',
   ]) {
     await expect(nav.filter({ hasText: hidden })).toHaveCount(0)
   }

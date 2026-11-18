@@ -2,10 +2,15 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { billingSettingsSchema } from './billing-settings-form.ts'
+import {
+  billingSettingsSchema,
+  productKey,
+  profitShareKey,
+  taxRateKey,
+} from './billing-settings-form.ts'
 
 const product = {
-  id: 'new-1',
+  id: 'new-00000000-0000-4000-8000-000000000001',
   name: 'Development Hours',
   description: null,
   unit_price: '200.00',
@@ -16,7 +21,7 @@ const product = {
   sort_order: 0,
 }
 const taxRate = {
-  id: 'new-2',
+  id: 'new-00000000-0000-4000-8000-000000000002',
   state: 'TX',
   rate: '0.0825',
   label: 'TX Sales Tax',
@@ -78,5 +83,62 @@ test('rows need a name or label', () => {
       taxRates: [{ ...taxRate, label: '' }],
     }),
     ['products.0.name', 'taxRates.0.label']
+  )
+})
+
+test('rejects ids that are neither a uuid nor a new row', () => {
+  assert.deepEqual(errorsFor({ products: [{ ...product, id: 'abc' }] }), [
+    'products.0.id',
+  ])
+  assert.deepEqual(
+    errorsFor({
+      products: [{ ...product, id: '6f1c3a1e-2b7d-4c8e-9f00-1a2b3c4d5e6f' }],
+    }),
+    []
+  )
+})
+
+test('a state is two capital letters, one rate per state', () => {
+  assert.deepEqual(errorsFor({ taxRates: [{ ...taxRate, state: 'Texas' }] }), [
+    'taxRates.0.state',
+  ])
+  assert.deepEqual(
+    errorsFor({
+      taxRates: [
+        taxRate,
+        {
+          ...taxRate,
+          id: 'new-00000000-0000-4000-8000-000000000003',
+          label: 'Other',
+        },
+      ],
+    }),
+    ['taxRates.1.state']
+  )
+})
+
+test('integers stay within a database integer', () => {
+  assert.deepEqual(
+    errorsFor({ products: [{ ...product, sort_order: 2 ** 31 }] }),
+    ['products.0.sort_order']
+  )
+})
+
+test('the same values compare equal however they are written', () => {
+  assert.equal(
+    productKey({ ...product, unit_price: '200' }),
+    productKey({ ...product, unit_price: '200.00' })
+  )
+  assert.notEqual(
+    productKey({ ...product, unit_price: '201' }),
+    productKey(product)
+  )
+  assert.equal(
+    taxRateKey({ ...taxRate, rate: '0.082500' }),
+    taxRateKey(taxRate)
+  )
+  assert.equal(
+    profitShareKey({ ...valid, profitShareMinimumBalance: '10000.00' }),
+    profitShareKey(valid)
   )
 })

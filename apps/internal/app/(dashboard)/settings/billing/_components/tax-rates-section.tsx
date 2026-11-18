@@ -229,6 +229,15 @@ export function TaxRatesSection({
 
   const onSubmit = useCallback(
     (values: TaxRateFormValues) => {
+      // The database allows one rate per state.
+      if (
+        rates.some(r => r.id !== editingRate?.id && r.state === values.state)
+      ) {
+        form.setError('state', {
+          message: 'This state already has a tax rate. Edit that one instead.',
+        })
+        return
+      }
       const rateDecimal = (Number(values.rate) / 100).toString()
       const fields = {
         state: values.state,

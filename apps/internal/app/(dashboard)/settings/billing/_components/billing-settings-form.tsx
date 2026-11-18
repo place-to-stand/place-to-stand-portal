@@ -13,6 +13,7 @@ import {
   type BillingSettingsInput,
   type BillingSettingsValues,
 } from '@/lib/billing/billing-settings-form'
+import type { ProfitShareSettingsInput } from '@/lib/billing/profit-share-form'
 import type { ProfitShareFormData } from '@/lib/billing/profit-share-query'
 import type { ProductCatalogItemRow } from '@/lib/queries/product-catalog'
 import type { TaxRateRow } from '@/lib/queries/tax-rates'
@@ -42,6 +43,27 @@ function defaultsFrom({
   }
 }
 
+/** The page as last saved: the rows' marks and Save's comparison start here. */
+function savedFrom({
+  products,
+  taxRates,
+  profitShare,
+}: BillingSettingsFormProps): {
+  products: ProductCatalogItemRow[]
+  taxRates: TaxRateRow[]
+  profitShare: ProfitShareSettingsInput
+} {
+  return {
+    products,
+    taxRates,
+    profitShare: {
+      profitShareStartMonth: profitShare.profitShareStartMonth,
+      profitShareMinimumBalance: profitShare.profitShareMinimumBalance,
+      profitSharePartnerIds: profitShare.profitSharePartnerIds,
+    },
+  }
+}
+
 /**
  * Settings → Billing as one page form: products, tax rates and the profit
  * share all change the form, and the save bar's Save writes them together
@@ -63,10 +85,7 @@ export function BillingSettingsForm(props: BillingSettingsFormProps) {
   // The rows as last saved: the "New" / "Edited" marks compare against them.
   // A save sets them from its result; fresh server data sets them only while
   // there are no unsaved edits, so a refresh never wipes work in progress.
-  const [saved, setSaved] = useState(() => ({
-    products: props.products,
-    taxRates: props.taxRates,
-  }))
+  const [saved, setSaved] = useState(() => savedFrom(props))
   const { profitShare } = props
   const serverKey = JSON.stringify([
     props.products,
@@ -78,9 +97,7 @@ export function BillingSettingsForm(props: BillingSettingsFormProps) {
   const [seenKey, setSeenKey] = useState(serverKey)
   if (seenKey !== serverKey) {
     setSeenKey(serverKey)
-    if (!form.formState.isDirty) {
-      setSaved({ products: props.products, taxRates: props.taxRates })
-    }
+    if (!form.formState.isDirty) setSaved(savedFrom(props))
   }
   const resetKey = useRef(serverKey)
   useEffect(() => {
@@ -91,7 +108,14 @@ export function BillingSettingsForm(props: BillingSettingsFormProps) {
   }, [form, props, serverKey])
 
   const onSave = async (values: BillingSettingsValues) => {
-    const result = await saveBillingSettings(values)
+    // What the page started from, so the server writes only what changed here
+    // and refuses a row someone else saved in the meantime.
+    const result = await saveBillingSettings({
+      ...values,
+      productBases: Object.fromEntries(saved.products.map(p => [p.id, p])),
+      taxRateBases: Object.fromEntries(saved.taxRates.map(r => [r.id, r])),
+      profitShareBase: saved.profitShare,
+    })
     if (!result.ok) {
       for (const [name, message] of Object.entries(result.fieldErrors ?? {})) {
         form.setError(name as keyof BillingSettingsInput, { message })
@@ -103,7 +127,15 @@ export function BillingSettingsForm(props: BillingSettingsFormProps) {
       })
       return false
     }
-    setSaved({ products: result.products, taxRates: result.taxRates })
+    setSaved({
+      products: result.products,
+      taxRates: result.taxRates,
+      profitShare: {
+        profitShareStartMonth: values.profitShareStartMonth,
+        profitShareMinimumBalance: values.profitShareMinimumBalance,
+        profitSharePartnerIds: values.profitSharePartnerIds,
+      },
+    })
     form.reset({
       ...form.getValues(),
       products: result.products,

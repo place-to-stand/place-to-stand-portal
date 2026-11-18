@@ -322,7 +322,20 @@ export function ProductCatalogSection({
       }
       onItemsChange(
         editingItem
-          ? items.map(p => (p.id === editingItem.id ? { ...p, ...fields } : p))
+          ? items.map(p =>
+              p.id === editingItem.id
+                ? {
+                    ...p,
+                    ...fields,
+                    // The same amount keeps the saved string ("200.00" vs
+                    // "200"), so an untouched price isn't "Edited".
+                    unit_price:
+                      Number(p.unit_price) === Number(fields.unit_price)
+                        ? p.unit_price
+                        : fields.unit_price,
+                  }
+                : p
+            )
           : [
               ...items,
               // A new row's id is local until Save creates it.

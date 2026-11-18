@@ -11,9 +11,11 @@ import {
 import type { ActivityEvent } from '@/lib/activity/types'
 import { requirePage, type AppUser } from '@/lib/auth/session'
 import {
-  billingSettingsSchema,
-  type BillingSettingsInput,
-  type BillingSettingsValues,
+  billingSavePayloadSchema,
+  productKey,
+  taxRateKey,
+  type BillingSavePayload,
+  type BillingSavePayloadInput,
 } from '@/lib/billing/billing-settings-form'
 import { db } from '@/lib/db'
 import {
@@ -34,8 +36,11 @@ import {
 import {
   describeIssues,
   diffRows,
+  isUniqueViolation,
   partnersAreStaff,
   PRODUCT_FIELDS,
+  RowChangedError,
+  RowNotFoundError,
   saveProfitShare,
   TAX_RATE_FIELDS,
   type ProfitShareFieldErrors,
@@ -80,19 +85,17 @@ export type SaveBillingSettingsResult =
 
 const NEW_ROW = /^new-/
 
-class RowNotFoundError extends Error {}
-
 /**
  * Saves Settings → Billing in one transaction: products and tax rates
  * created or changed, then the profit share. Nothing on the page writes
  * before this; closed months keep the profit share frozen in their snapshot.
  */
 export async function saveBillingSettings(
-  input: BillingSettingsInput
+  input: BillingSavePayloadInput
 ): Promise<SaveBillingSettingsResult> {
   const user = await requirePage('billing.manage')
 
-  const parsed = billingSettingsSchema.safeParse(input)
+  const parsed = billingSavePayloadSchema.safeParse(input)
   if (!parsed.success) {
     return { ok: false, ...describeIssues(parsed.error.issues, input) }
   }
@@ -134,11 +137,25 @@ export async function saveBillingSettings(
           })
           continue
         }
+        const base = values.productBases[row.id]
+        // Untouched on this page: leave it as it is now, even if stale here.
+        if (base && productKey(base) === productKey(row)) continue
         const existing = await getProductCatalogItemById(row.id, tx)
         if (!existing) throw new RowNotFoundError(`Product “${row.name}”`)
+        if (!base || productKey(base) !== productKey(existing)) {
+          throw new RowChangedError(`Product “${existing.name}”`)
+        }
         const diff = diffRows(
           existing,
-          { ...existing, ...toProductRow(row) },
+          {
+            ...existing,
+            ...toProductRow(row),
+            // The same amount is no change ("200" vs "200.00").
+            unit_price:
+              Number(existing.unit_price) === Number(row.unit_price)
+                ? existing.unit_price
+                : row.unit_price,
+          },
           PRODUCT_FIELDS
         )
         if (diff.changedFields.length === 0) continue
@@ -174,8 +191,13 @@ export async function saveBillingSettings(
           })
           continue
         }
+        const base = values.taxRateBases[row.id]
+        if (base && taxRateKey(base) === taxRateKey(row)) continue
         const existing = await getTaxRateById(row.id, tx)
         if (!existing) throw new RowNotFoundError(`Tax rate “${row.label}”`)
+        if (!base || taxRateKey(base) !== taxRateKey(existing)) {
+          throw new RowChangedError(`Tax rate “${existing.label}”`)
+        }
         const next = {
           ...existing,
           state: row.state,
@@ -209,16 +231,34 @@ export async function saveBillingSettings(
         error: `${error.message} no longer exists. Reload the page and try again.`,
       }
     }
+    if (error instanceof RowChangedError) {
+      return {
+        ok: false,
+        error: `${error.message} was changed by someone else after this page loaded. Reload the page to see it, then make your changes again.`,
+      }
+    }
+    if (isUniqueViolation(error)) {
+      return {
+        ok: false,
+        error:
+          'Each state can have only one tax rate. To swap states between two rates, save one change at a time.',
+      }
+    }
     console.error('Failed to save billing settings:', error)
     return { ok: false, error: 'Something went wrong. Please try again.' }
   }
 
-  for (const { targetId, event } of events) {
-    await logSettingsEvent(user, targetId, event)
+  // Committed: nothing below may turn this into a failure, or the page would
+  // keep its local `new-…` rows and a second Save would create them again.
+  try {
+    for (const { targetId, event } of events) {
+      await logSettingsEvent(user, targetId, event)
+    }
+    revalidatePath('/settings/billing')
+    revalidatePath('/reports/monthly-close')
+  } catch (error) {
+    console.error('Billing settings saved; follow-up failed:', error)
   }
-
-  revalidatePath('/settings/billing')
-  revalidatePath('/reports/monthly-close')
   const [products, taxRates] = await Promise.all([
     listAllProductCatalogItems(),
     listTaxRates(),
@@ -227,7 +267,7 @@ export async function saveBillingSettings(
 }
 
 function toProductRow(
-  row: BillingSettingsValues['products'][number]
+  row: BillingSavePayload['products'][number]
 ): Partial<ProductCatalogItemRow> {
   return {
     name: row.name,

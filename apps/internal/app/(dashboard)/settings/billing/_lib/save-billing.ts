@@ -7,9 +7,10 @@ import { businessSettings, users } from '@pts/db/schema'
 import { businessSettingsUpdatedEvent } from '@/lib/activity/events'
 import type { ActivityEvent } from '@/lib/activity/types'
 import type { AppUser } from '@/lib/auth/session'
-import type {
-  BillingSettingsInput,
-  BillingSettingsValues,
+import {
+  profitShareKey,
+  type BillingSavePayload,
+  type BillingSavePayloadInput,
 } from '@/lib/billing/billing-settings-form'
 import { db } from '@/lib/db'
 import type { ProductCatalogItemRow } from '@/lib/queries/product-catalog'
@@ -17,6 +18,24 @@ import { eligiblePartner } from '@/lib/queries/reports/profit-share-partners'
 import type { TaxRateRow } from '@/lib/queries/tax-rates'
 
 /** The parts of saveBillingSettings (../actions.ts) that aren't the save itself. */
+
+/** A row the save expected is gone (or archived). */
+export class RowNotFoundError extends Error {}
+
+/** Someone else saved this row after the page loaded it. */
+export class RowChangedError extends Error {}
+
+/** Postgres unique violation (drizzle puts the driver error on `cause`). */
+export function isUniqueViolation(error: unknown): boolean {
+  const code = (value: unknown) =>
+    typeof value === 'object' && value !== null
+      ? (value as { code?: string }).code
+      : undefined
+  return (
+    code(error) === '23505' ||
+    code((error as { cause?: unknown } | null)?.cause) === '23505'
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Diff helpers
@@ -93,8 +112,12 @@ export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 export async function saveProfitShare(
   tx: Tx,
   user: AppUser,
-  values: BillingSettingsValues
+  values: BillingSavePayload
 ): Promise<ActivityEvent | null> {
+  // Untouched on this page: leave it as it is now.
+  if (profitShareKey(values) === profitShareKey(values.profitShareBase)) {
+    return null
+  }
   const [current] = await tx
     .select({
       startsOn: businessSettings.profitShareStartsOn,
@@ -107,6 +130,14 @@ export async function saveProfitShare(
     startsOn: current?.startsOn ?? null,
     minimumBalance: Number(current?.minimumBalance ?? 0),
     partnerIds: current?.partnerIds ?? [],
+  }
+  const asLoaded = {
+    profitShareStartMonth: before.startsOn ? before.startsOn.slice(0, 7) : '',
+    profitShareMinimumBalance: String(before.minimumBalance),
+    profitSharePartnerIds: before.partnerIds,
+  }
+  if (profitShareKey(asLoaded) !== profitShareKey(values.profitShareBase)) {
+    throw new RowChangedError('The profit share')
   }
   const after = {
     startsOn: values.profitShareStartMonth
@@ -163,7 +194,7 @@ export async function partnersAreStaff(ids: string[]): Promise<boolean> {
 /** A validation failure as one toast line plus the profit share's field errors. */
 export function describeIssues(
   issues: { path: PropertyKey[]; message: string }[],
-  input: BillingSettingsInput
+  input: BillingSavePayloadInput
 ): { error: string; fieldErrors?: ProfitShareFieldErrors } {
   const fieldErrors: ProfitShareFieldErrors = {}
   for (const issue of issues) {
