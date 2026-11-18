@@ -15,6 +15,11 @@ type Props = {
   isVoid: boolean
   /** Legal name and website, as the PDF footer prints them. */
   issuerLine: string
+  /**
+   * The From block (legal name, address, phone), as the PDF prints it; null
+   * when the business has no address or phone (`issuerFromLines`).
+   */
+  fromLines: string[] | null
 }
 
 /**
@@ -27,6 +32,7 @@ export function InvoiceDocument({
   isPaid,
   isVoid,
   issuerLine,
+  fromLines,
 }: Props) {
   const lineItems = invoice.line_items.filter(item => !item.deleted_at)
   const hasTax = Boolean(invoice.tax_rate && Number(invoice.tax_rate) > 0)
@@ -65,7 +71,13 @@ export function InvoiceDocument({
         ) : null}
       </div>
 
-      <dl className='mt-6 grid grid-cols-1 sm:mt-9 sm:grid-cols-2 sm:gap-6'>
+      <dl
+        className={cn(
+          'mt-6 grid grid-cols-1 sm:mt-9 sm:gap-6',
+          fromLines ? 'sm:grid-cols-3' : 'sm:grid-cols-2'
+        )}
+      >
+        {fromLines ? <MetaField label='From' value={fromLines} /> : null}
         {invoice.client?.name ? (
           <MetaField label='Billed to' value={invoice.client.name} />
         ) : null}
@@ -123,11 +135,23 @@ export function InvoiceDocument({
  * Label above value in columns from `sm` up; label left, value right on
  * phones. The first row always carries the heavy ink rule.
  */
-function MetaField({ label, value }: { label: string; value: string }) {
+function MetaField({
+  label,
+  value,
+}: {
+  label: string
+  /** One line, or several (the From block's address). */
+  value: string | string[]
+}) {
+  const lines = typeof value === 'string' ? [value] : value
   return (
     <div className='border-email-rule first:border-email-ink sm:border-email-ink flex items-baseline justify-between border-t py-2.5 first:border-t-[1.5px] sm:flex-col sm:items-start sm:justify-start sm:gap-1.5 sm:border-t-[1.5px] sm:pt-3 sm:pb-0'>
       <dt className={PAPER_LABEL}>{label}</dt>
-      <dd className='text-sm font-medium sm:text-[15px]'>{value}</dd>
+      <dd className='flex flex-col text-right text-sm font-medium sm:text-left sm:text-[15px]'>
+        {lines.map(line => (
+          <span key={line}>{line}</span>
+        ))}
+      </dd>
     </div>
   )
 }

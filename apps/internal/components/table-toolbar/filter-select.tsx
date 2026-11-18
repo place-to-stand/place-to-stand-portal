@@ -6,6 +6,14 @@ import { Button } from '@pts/ui/button'
 import { Badge } from '@pts/ui/badge'
 import { Checkbox } from '@pts/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
 import { FieldClearButton } from '@/components/ui/field-clear-button'
 import {
   FieldTrigger,
@@ -67,11 +75,18 @@ type MultiProps = {
 export type FilterSelectProps = SingleProps | MultiProps
 
 /**
+ * A multi filter with more options than this gets a search field (tags);
+ * a short list (statuses) stays a plain checklist.
+ */
+export const MULTI_FILTER_SEARCH_AFTER = 7
+
+/**
  * The one filter control (PRD 004 §03). Both modes share the field trigger
  * (`FieldTrigger`: one width, the label, a clear × away from the default,
  * the up-down chevron). `single` = the clearable searchable combobox
- * ("All …" when empty); `multi` = the same trigger over a checkbox popover
- * with Clear/Select all. Values the list shows as badges show as the same
+ * ("All …" when empty); `multi` = the same trigger over a checkbox list
+ * with Clear/Select all, searchable once it is longer than
+ * `MULTI_FILTER_SEARCH_AFTER` options. Arrow keys move and Enter toggles. Values the list shows as badges show as the same
  * badges here.
  */
 export function FilterSelect(props: FilterSelectProps) {
@@ -207,22 +222,41 @@ function MultiFilterSelect({
             label={label}
           />
         </PopoverTrigger>
-        <PopoverContent className='w-64 p-2' sideOffset={8}>
-          <div className='flex flex-col gap-0.5'>
-            {options.map(option => (
-              <label
-                key={option.value}
-                className='hover:bg-accent hover:text-accent-foreground flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm'
-              >
-                <Checkbox
-                  checked={values.includes(option.value)}
-                  onCheckedChange={() => toggle(option.value)}
-                />
-                {optionBadge(option) ?? <span>{option.label}</span>}
-              </label>
-            ))}
-          </div>
-          <div className='mt-2 flex items-center justify-between border-t pt-2'>
+        <PopoverContent className='w-64 p-0' sideOffset={8}>
+          {/* The single filter's list (cmdk): same search, keys and rows. */}
+          <Command>
+            {options.length > MULTI_FILTER_SEARCH_AFTER ? (
+              <CommandInput placeholder='Search…' className='h-9' />
+            ) : null}
+            <CommandList className='max-h-[min(60vh,288px)] overflow-y-auto overscroll-contain p-1'>
+              <CommandEmpty>No matches.</CommandEmpty>
+              <CommandGroup className='p-0'>
+                {options.map(option => {
+                  const checked = values.includes(option.value)
+                  return (
+                    <CommandItem
+                      key={option.value}
+                      // What search matches; the value keeps it unique.
+                      value={`${option.label} ${option.value}`}
+                      onSelect={() => toggle(option.value)}
+                      aria-checked={checked}
+                      className='gap-2'
+                    >
+                      {/* Shows the state; the row is the control. */}
+                      <Checkbox
+                        checked={checked}
+                        tabIndex={-1}
+                        aria-hidden
+                        className='pointer-events-none'
+                      />
+                      {optionBadge(option) ?? <span>{option.label}</span>}
+                    </CommandItem>
+                  )
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+          <div className='flex items-center justify-between border-t p-2'>
             <Button
               type='button'
               variant='ghost'

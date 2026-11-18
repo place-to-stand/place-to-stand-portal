@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useRouter } from 'next/navigation'
-import { Keyboard, Plug, CircleUserRound } from 'lucide-react'
+import { Keyboard, Plug } from 'lucide-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 import {
@@ -36,7 +36,11 @@ import {
 } from '@/lib/sheets/discard-guards'
 import { parseSheetStack } from '@/lib/sheets/stack'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { openAccountSheet } from '@/lib/account/use-account-sheet'
+
+// Account is your sign-in: the registry's user icon.
+const UserIcon = ENTITY_ICONS.user
 
 const MIN_QUERY_LENGTH = 2
 const DEBOUNCE_MS = 200
@@ -242,7 +246,7 @@ function CommandPalette() {
               openAccountSheet('profile')
             }}
           >
-            <CircleUserRound className='size-4' />
+            <UserIcon className='size-4' />
             <span>Account</span>
           </CommandItem>
           <CommandItem

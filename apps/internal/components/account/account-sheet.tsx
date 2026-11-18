@@ -10,8 +10,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetSection } from '@/components/sheets/sheet-section'
-import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
-import { cn } from '@/lib/utils'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { useAccountSheet } from '@/lib/account/use-account-sheet'
 import type { AppUser } from '@/lib/auth/session'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
@@ -96,15 +95,8 @@ export function AccountSheet({ user }: { user: AppUser }) {
           aboveStack
           className='flex w-full flex-col gap-0 overflow-hidden p-0'
         >
-          <SheetFormHeader
-            title='Account'
-            leading={
-              <UserIcon
-                aria-hidden
-                className={cn('size-4 shrink-0', ENTITY_ACCENTS.user.icon)}
-              />
-            }
-          />
+          {/* Your sign-in: its registry icon and the sign-in rule. */}
+          <SheetFormHeader entity='user' title='Account' />
           <Form {...form}>
             <div className='flex flex-1 flex-col gap-6 overflow-y-auto px-6 pt-6 pb-8'>
               <SheetSection title='Profile' icon={UserIcon}>
