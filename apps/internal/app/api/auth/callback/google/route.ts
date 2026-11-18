@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { eq, and } from 'drizzle-orm'
 
-import { roleCan } from '@/lib/auth/capabilities'
 import { requirePage } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
@@ -22,13 +21,10 @@ export async function GET(request: NextRequest) {
   // Set when the flow started outside Settings (the lead sheet): land back
   // there, where the Emails section shows the result for itself.
   const returnTo = await consumeOAuthReturnTo()
-  // Without a start page (its cookie expired), only admins have Settings.
-  const fallback = (settingsPath: string) =>
-    roleCan(user.role, 'integrations.manage') ? settingsPath : '/leads'
-  const landing = (settingsPath: string) =>
-    NextResponse.redirect(
-      new URL(returnTo ?? fallback(settingsPath), request.url)
-    )
+  // Without a start page, land on the Account sheet, which every staff
+  // member can open and which shows the result.
+  const landing = (accountPath: string) =>
+    NextResponse.redirect(new URL(returnTo ?? accountPath, request.url))
 
   const code = searchParams.get('code')
   const state = searchParams.get('state')
