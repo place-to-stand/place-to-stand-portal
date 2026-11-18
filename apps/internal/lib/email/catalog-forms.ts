@@ -1,5 +1,6 @@
 import 'server-only'
 
+import type { EmailBrand } from '@pts/email'
 import {
   auditDetailsEmail,
   auditNotificationEmail,
@@ -58,9 +59,11 @@ const SAMPLE_AUDIT_RESULT = {
  * Samples call the real templates with obviously fake data, as everywhere else.
  */
 export function buildFormEmailEntries(
-  internalOrigin: string
+  internalOrigin: string,
+  business: { name: string; inboxEmail: string | null },
+  brand: EmailBrand
 ): EmailTemplateEntry[] {
-  const formAddresses = resolveFormEmailAddresses()
+  const formAddresses = resolveFormEmailAddresses(business)
 
   return [
     {
@@ -84,6 +87,7 @@ export function buildFormEmailEntries(
         {
           audience: 'team',
           sample: contactNotificationEmail({
+            brand,
             submissionUrl: `${internalOrigin}${submissionHref(SAMPLE_SUBMISSION_ID)}`,
             contact: SAMPLE_CONTACT,
             subject: 'Website redesign',
@@ -117,6 +121,7 @@ export function buildFormEmailEntries(
         {
           audience: 'visitor',
           sample: contactConfirmationEmail({
+            brand,
             contact: SAMPLE_CONTACT,
             subject: 'Website redesign',
             message:
@@ -148,6 +153,7 @@ export function buildFormEmailEntries(
         {
           audience: 'team',
           sample: auditNotificationEmail({
+            brand,
             submissionUrl: `${internalOrigin}${submissionHref(SAMPLE_SUBMISSION_ID)}`,
             contact: { ...SAMPLE_CONTACT, website: null },
             message: 'Sample note: we would like to start in Q1.',
@@ -191,6 +197,7 @@ export function buildFormEmailEntries(
         {
           audience: 'team',
           sample: auditDetailsEmail({
+            brand,
             submissionUrl: `${internalOrigin}${submissionHref(SAMPLE_SUBMISSION_ID)}`,
             contact: { ...SAMPLE_CONTACT, website: null },
             message:
@@ -218,6 +225,7 @@ export function buildFormEmailEntries(
         {
           audience: 'visitor',
           sample: auditResultsEmail({
+            brand,
             name: SAMPLE_CONTACT.name,
             result: SAMPLE_AUDIT_RESULT,
             replyTo: formAddresses.teamInbox,

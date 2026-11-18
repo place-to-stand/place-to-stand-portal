@@ -10,10 +10,9 @@ const schema = z.object({
   NEXT_PUBLIC_POSTHOG_HOST: z.url(),
   RESEND_API_KEY: z.string().min(1),
   RESEND_FROM_EMAIL: z.email(),
-  RESEND_REPLY_TO_EMAIL: z.email(),
   // Marketing form email (PRD 008). All optional with fallbacks: the sender
-  // falls back to RESEND_FROM_EMAIL and the team inbox to
-  // RESEND_REPLY_TO_EMAIL, and no audience id means the opt-in add is skipped.
+  // falls back to RESEND_FROM_EMAIL and the team inbox to the inbox email on
+  // Settings → Business, and no audience id means the opt-in add is skipped.
   RESEND_FORMS_FROM_EMAIL: z.email().optional(),
   FORMS_NOTIFY_EMAIL: z.email().optional(),
   RESEND_AUDIENCE_ID: z.string().min(1).optional(),
@@ -63,7 +62,6 @@ export const serverEnv = schema.parse({
   NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
-  RESEND_REPLY_TO_EMAIL: process.env.RESEND_REPLY_TO_EMAIL,
   RESEND_FORMS_FROM_EMAIL: emptyToUndefined(
     process.env.RESEND_FORMS_FROM_EMAIL
   ),

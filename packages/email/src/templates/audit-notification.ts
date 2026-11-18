@@ -1,5 +1,10 @@
 import { renderBlocks, type EmailBlock } from '../blocks'
-import { renderRichEmail, type RenderedEmail } from '../layout'
+import {
+  DEFAULT_EMAIL_BRAND,
+  renderRichEmail,
+  type EmailBrand,
+  type RenderedEmail,
+} from '../layout'
 import { resultBlocks, type AuditEmailResult } from './audit-shared'
 import {
   contactRows,
@@ -22,6 +27,8 @@ export type AuditNotificationEmailArgs = {
   transcript: Array<{ prompt: string; answer: string }>
   source: SubmissionSource
   repeat: SubmissionRepeat | null
+  /** The business sending it (Settings → Business). */
+  brand?: EmailBrand
 }
 
 /**
@@ -37,6 +44,7 @@ export function auditNotificationEmail({
   transcript,
   source,
   repeat,
+  brand = DEFAULT_EMAIL_BRAND,
 }: AuditNotificationEmailArgs): RenderedEmail {
   const blocks: EmailBlock[] = [
     { type: 'heading', text: `New Opportunity Audit from ${contact.name}` },
@@ -65,6 +73,7 @@ export function auditNotificationEmail({
   return renderRichEmail(
     `[Audit] ${identityLine(contact)} — ${subjectSafe(result.phaseName)} phase`,
     {
+      brand,
       preheader: `${contact.name} is in the ${result.phaseName} phase.`,
       label: 'New audit',
       bodyHtml: body.html,

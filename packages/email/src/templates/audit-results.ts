@@ -1,5 +1,10 @@
 import { renderBlocks, type EmailBlock } from '../blocks'
-import { renderRichEmail, type RenderedEmail } from '../layout'
+import {
+  DEFAULT_EMAIL_BRAND,
+  renderRichEmail,
+  type EmailBrand,
+  type RenderedEmail,
+} from '../layout'
 import { resultBlocks, type AuditEmailResult } from './audit-shared'
 import { greetingName } from './contact-confirmation'
 
@@ -7,6 +12,8 @@ export type AuditResultsEmailArgs = {
   name: string
   result: AuditEmailResult
   replyTo: string
+  /** The business sending it (Settings → Business). */
+  brand?: EmailBrand
 }
 
 /** The visitor's copy of their Opportunity Audit result. */
@@ -14,6 +21,7 @@ export function auditResultsEmail({
   name,
   result,
   replyTo,
+  brand = DEFAULT_EMAIL_BRAND,
 }: AuditResultsEmailArgs): RenderedEmail {
   const blocks: EmailBlock[] = [
     {
@@ -29,7 +37,8 @@ export function auditResultsEmail({
 
   const body = renderBlocks(blocks)
 
-  return renderRichEmail('Your Place To Stand Opportunity Audit', {
+  return renderRichEmail(`Your ${brand.name} Opportunity Audit`, {
+    brand,
     preheader: `Your audit points to the ${result.phaseName} phase.`,
     label: 'Opportunity Audit',
     bodyHtml: body.html,

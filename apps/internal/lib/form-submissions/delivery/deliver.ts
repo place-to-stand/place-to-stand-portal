@@ -16,6 +16,8 @@ import {
   type SubmissionEmailKind,
 } from '@/lib/queries/form-submission-delivery'
 
+import { emailBrandFor, getBusinessIdentity } from '@/lib/business/identity'
+
 import { addToMarketingAudience } from './audience'
 import { resolveFormEmailAddresses, resolvePortalOrigin } from './addresses'
 import { renderAuditDetailsEmail, renderSubmissionEmails } from './render'
@@ -127,9 +129,11 @@ export async function deliverSubmissionEmails(
     return { team: 'sent', confirmation: 'sent' }
   }
 
-  const { from, teamInbox } = resolveFormEmailAddresses()
+  const business = await getBusinessIdentity()
+  const { from, teamInbox } = resolveFormEmailAddresses(business)
 
   const emails = renderSubmissionEmails(row, {
+    brand: emailBrandFor(business),
     portalOrigin: resolvePortalOrigin(),
     teamInbox,
     repeat: await resolveRepeat(row.contactEmail),
@@ -240,7 +244,9 @@ export async function deliverAddedDetails(
       return 'skipped'
     }
 
+    const business = await getBusinessIdentity()
     const email = renderAuditDetailsEmail(row, {
+      brand: emailBrandFor(business),
       portalOrigin: resolvePortalOrigin(),
     })
     if (!email) return 'skipped'
@@ -252,7 +258,7 @@ export async function deliverAddedDetails(
       .digest('hex')
       .slice(0, 32)
 
-    const { from, teamInbox } = resolveFormEmailAddresses()
+    const { from, teamInbox } = resolveFormEmailAddresses(business)
 
     await sendEmail({
       from,

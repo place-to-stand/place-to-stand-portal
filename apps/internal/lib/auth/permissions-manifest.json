@@ -316,34 +316,6 @@
   },
   {
     "type": "action",
-    "name": "saveProductCatalogItem",
-    "file": "apps/internal/app/(dashboard)/invoices/settings/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "saveTaxRate",
-    "file": "apps/internal/app/(dashboard)/invoices/settings/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "toggleTaxRateActiveAction",
-    "file": "apps/internal/app/(dashboard)/invoices/settings/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "page",
-    "name": "/invoices/settings",
-    "file": "apps/internal/app/(dashboard)/invoices/settings/page.tsx",
-    "kind": "capability",
-    "capability": "billing.manage"
-  },
-  {
-    "type": "action",
     "name": "archiveLead",
     "file": "apps/internal/app/(dashboard)/leads/_actions/archive-lead.ts",
     "kind": "capability",
@@ -707,6 +679,34 @@
     "capability": "reports.view"
   },
   {
+    "type": "action",
+    "name": "saveBillingSettings",
+    "file": "apps/internal/app/(dashboard)/settings/billing/actions.ts",
+    "kind": "capability",
+    "capability": "billing.manage"
+  },
+  {
+    "type": "page",
+    "name": "/settings/billing",
+    "file": "apps/internal/app/(dashboard)/settings/billing/page.tsx",
+    "kind": "capability",
+    "capability": "billing.manage"
+  },
+  {
+    "type": "action",
+    "name": "saveBusinessSettings",
+    "file": "apps/internal/app/(dashboard)/settings/business/actions.ts",
+    "kind": "capability",
+    "capability": "settings.business"
+  },
+  {
+    "type": "page",
+    "name": "/settings/business",
+    "file": "apps/internal/app/(dashboard)/settings/business/page.tsx",
+    "kind": "capability",
+    "capability": "settings.business"
+  },
+  {
     "type": "page",
     "name": "/settings/integrations",
     "file": "apps/internal/app/(dashboard)/settings/integrations/page.tsx",
@@ -857,8 +857,8 @@
     "type": "route",
     "name": "GET /api/auth/callback/github",
     "file": "apps/internal/app/api/auth/callback/github/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.personal"
   },
   {
     "type": "route",
@@ -871,8 +871,8 @@
     "type": "route",
     "name": "GET /api/auth/github",
     "file": "apps/internal/app/api/auth/github/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.personal"
   },
   {
     "type": "route",
@@ -1166,14 +1166,14 @@
     "name": "POST /api/integrations/[provider]/connect",
     "file": "apps/internal/app/api/integrations/[provider]/connect/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.personal"
   },
   {
     "type": "route",
     "name": "POST /api/integrations/[provider]/disconnect",
     "file": "apps/internal/app/api/integrations/[provider]/disconnect/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.personal"
   },
   {
     "type": "route",
@@ -1187,7 +1187,7 @@
     "name": "GET /api/integrations/[provider]/status",
     "file": "apps/internal/app/api/integrations/[provider]/status/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.personal"
   },
   {
     "type": "route",
@@ -1201,14 +1201,14 @@
     "name": "POST /api/integrations/connected-apps/revoke",
     "file": "apps/internal/app/api/integrations/connected-apps/revoke/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.personal"
   },
   {
     "type": "route",
     "name": "GET /api/integrations/connected-apps",
     "file": "apps/internal/app/api/integrations/connected-apps/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.personal"
   },
   {
     "type": "route",
@@ -1222,7 +1222,7 @@
     "name": "POST /api/integrations/github/disconnect",
     "file": "apps/internal/app/api/integrations/github/disconnect/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.personal"
   },
   {
     "type": "route",
@@ -1236,7 +1236,7 @@
     "name": "GET /api/integrations/github/status",
     "file": "apps/internal/app/api/integrations/github/status/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.personal"
   },
   {
     "type": "route",
@@ -1495,6 +1495,13 @@
     "name": "POST /api/projects/[projectId]/time-logs",
     "file": "apps/internal/app/api/projects/[projectId]/time-logs/route.ts",
     "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/public/business/[kind]",
+    "file": "apps/internal/app/api/public/business/[kind]/route.ts",
+    "kind": "delegated",
     "capability": null
   },
   {

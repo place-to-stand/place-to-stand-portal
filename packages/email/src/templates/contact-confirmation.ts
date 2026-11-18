@@ -1,5 +1,10 @@
 import { renderBlocks, type EmailBlock } from '../blocks'
-import { renderRichEmail, type RenderedEmail } from '../layout'
+import {
+  DEFAULT_EMAIL_BRAND,
+  renderRichEmail,
+  type EmailBrand,
+  type RenderedEmail,
+} from '../layout'
 import { contactRows, type SubmissionContact } from './submission-shared'
 
 export type ContactConfirmationEmailArgs = {
@@ -7,6 +12,8 @@ export type ContactConfirmationEmailArgs = {
   subject: string | null
   message: string
   replyTo: string
+  /** The business sending it (Settings → Business). */
+  brand?: EmailBrand
 }
 
 /** First word of the name, for the greeting; "there" when it is blank. */
@@ -23,6 +30,7 @@ export function contactConfirmationEmail({
   subject,
   message,
   replyTo,
+  brand = DEFAULT_EMAIL_BRAND,
 }: ContactConfirmationEmailArgs): RenderedEmail {
   const blocks: EmailBlock[] = [
     { type: 'heading', text: 'Thanks for reaching out' },
@@ -43,7 +51,8 @@ export function contactConfirmationEmail({
 
   const body = renderBlocks(blocks)
 
-  return renderRichEmail('Thanks for contacting Place To Stand', {
+  return renderRichEmail(`Thanks for contacting ${brand.name}`, {
+    brand,
     preheader: "We've got your message and will reply within one business day.",
     label: 'Message received',
     bodyHtml: body.html,

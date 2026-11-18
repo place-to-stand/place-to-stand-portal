@@ -11,19 +11,20 @@ import {
   EMPTY_INVOICE_SUMMARY,
   fetchClientInvoiceSummaries,
 } from '@/lib/data/invoices'
+import { getBusiness } from '@/lib/business'
 import { AccountCard } from '@/components/account-card'
 import { ProjectsCard } from '@/components/projects-card'
 
 export default async function DashboardPage() {
   const user = await requireClientUser()
-  const [projects, hoursSummaries, invoiceSummaries, scope] = await Promise.all(
-    [
+  const [projects, hoursSummaries, invoiceSummaries, scope, business] =
+    await Promise.all([
       fetchClientProjects(user),
       fetchClientHoursSummaries(user),
       fetchClientInvoiceSummaries(user),
       resolvePortalScope(user),
-    ]
-  )
+      getBusiness(),
+    ])
 
   const needsClientSelection = isAdmin(user) && scope.companyIds.length === 0
   const clients = [...scope.scopedClients].sort((a, b) =>
@@ -46,7 +47,7 @@ export default async function DashboardPage() {
             of a single block, and hard-splitting the sentences left a ragged
             first line beside a short second one at most widths. */}
         <p className='text-muted-foreground mt-1 text-sm text-balance'>
-          This is a snapshot of your current engagement with Place To Stand —
+          This is a snapshot of your current engagement with {business.name} —
           your hours, invoices, and project progress.
         </p>
       </div>
@@ -57,8 +58,8 @@ export default async function DashboardPage() {
             needsClientSelection
               ? 'Choose a person above to see the portal as they do.'
               : // Signed in but not added to a client yet (access is
-                // granted per client by Place To Stand).
-                "Your portal isn't set up yet. Your Place To Stand team will let you know when it's ready."
+                // granted per client by the business's admins).
+                `Your portal isn't set up yet. Your ${business.name} team will let you know when it's ready.`
           }
         />
       ) : (

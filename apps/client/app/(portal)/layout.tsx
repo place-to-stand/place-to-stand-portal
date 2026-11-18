@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { BrandLogo } from '@pts/ui/brand'
 
 import { requireClientUser } from '@/lib/auth/session'
+import { brandPropsFor, getBusiness } from '@/lib/business'
 import { isAdmin } from '@/lib/auth/permissions'
 import {
   fetchPortalContactOptions,
@@ -30,9 +31,10 @@ export default async function PortalLayout({
   // Both cache()-wrapped, so the pages below reuse this same resolution. The
   // contact list is layout-only: pages never need it, and it is the one query
   // here that grows with the size of the contacts table.
-  const [scope, availableContacts] = await Promise.all([
+  const [scope, availableContacts, business] = await Promise.all([
     resolvePortalScope(user),
     fetchPortalContactOptions(user),
+    getBusiness(),
   ])
 
   return (
@@ -49,10 +51,14 @@ export default async function PortalLayout({
               links are gone. */}
           <Link
             href='/'
-            aria-label='Place To Stand Client Portal — home'
+            aria-label={`${business.name} Client Portal — home`}
             className='focus-visible:border-ring focus-visible:ring-ring/50 flex min-w-0 items-center gap-3 rounded-md outline-none focus-visible:ring-[3px]'
           >
-            <BrandLogo size='sm' className='shrink-0' />
+            <BrandLogo
+              size='sm'
+              className='shrink-0'
+              {...brandPropsFor(business)}
+            />
 
             {/* Hidden on the narrowest screens: the wordmark alone is enough
                 there, and the account menu needs the room. */}

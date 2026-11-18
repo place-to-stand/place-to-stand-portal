@@ -1,7 +1,14 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Keyboard, Loader2, LogOut, Moon, Sun, UserCog } from 'lucide-react'
+import {
+  Keyboard,
+  Loader2,
+  LogOut,
+  Moon,
+  Sun,
+  CircleUserRound,
+} from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import {
@@ -21,8 +28,7 @@ import { useTheme } from '@/components/providers/theme-provider'
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
-
-import { EditProfileDialog } from './edit-profile-dialog'
+import { openAccountSheet } from '@/lib/account/use-account-sheet'
 
 type Props = {
   user: AppUser
@@ -35,7 +41,6 @@ type Props = {
 export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
   const [isPending, startTransition] = useTransition()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
   const { theme, toggleTheme } = useTheme()
   const { setOpen: setShortcutsOpen } = useKeyboardShortcuts()
 
@@ -50,13 +55,6 @@ export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
   const avatarSrc = user.avatar_url
     ? `/api/storage/user-avatar/${user.id}?v=${encodeURIComponent(user.updated_at ?? '')}`
     : null
-
-  const handleProfileDialogChange = (open: boolean) => {
-    setIsProfileDialogOpen(open)
-    if (!open) {
-      setIsMenuOpen(false)
-    }
-  }
 
   return (
     <>
@@ -109,12 +107,12 @@ export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
               onSelect={event => {
                 event.preventDefault()
                 setIsMenuOpen(false)
-                setIsProfileDialogOpen(true)
+                openAccountSheet()
               }}
               className='flex items-center gap-2'
             >
-              <UserCog className='h-4 w-4' />
-              <span>Edit profile</span>
+              <CircleUserRound className='h-4 w-4' />
+              <span>Account</span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={event => {
@@ -167,11 +165,6 @@ export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
-      <EditProfileDialog
-        user={user}
-        open={isProfileDialogOpen}
-        onOpenChange={handleProfileDialogChange}
-      />
     </>
   )
 }

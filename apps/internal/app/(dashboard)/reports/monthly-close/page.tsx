@@ -12,6 +12,7 @@ import {
   getPartnerRatesEndDate,
 } from '@/lib/billing/partner-rates'
 import { fetchMonthlyCloseView } from '@/lib/data/reports/close'
+import { getProfitSharePolicy } from '@/lib/data/reports/profit-share'
 import { clampToReportBounds } from '@/lib/data/reports/monthly-close'
 import { loadStripeFees } from '@/lib/stripe/fees'
 
@@ -79,9 +80,8 @@ export default async function MonthlyClosePage({
   // Started before the report is awaited so the round trip overlaps the
   // database reads; the card streams in when Stripe answers.
   const stripeFees = loadStripeFees(validYear, closeMonthNumber)
-  const { report, close, profitShare } = await fetchMonthlyCloseView(
-    validYear,
-    closeMonthNumber
+  const [{ report, close, profitShare }, profitSharePolicy] = await Promise.all(
+    [fetchMonthlyCloseView(validYear, closeMonthNumber), getProfitSharePolicy()]
   )
 
   // Date-only strings format in UTC, so labels never drift a month.
@@ -197,6 +197,7 @@ export default async function MonthlyClosePage({
               report={report}
               profitShare={profitShare}
               inProgress={inProgress}
+              profitShareStartsOn={profitSharePolicy?.startsOn ?? null}
             />
 
             <PartnerPayoutsTable

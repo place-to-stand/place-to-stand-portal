@@ -58,7 +58,7 @@ export function registerDirectoryTools(server: McpServer) {
     name: 'whoami',
     title: 'Who am I',
     description:
-      'Return the Place To Stand portal user this connection acts as (including their role), and the app it is connected through.',
+      'Return the portal user this connection acts as (including their role), and the app it is connected through.',
     effect: 'read',
     input: {},
     run: async (_args, { user, agent }) => ({

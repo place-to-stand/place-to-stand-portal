@@ -2,25 +2,30 @@ import 'server-only'
 
 import { cache } from 'react'
 
+import { readProfitSharePolicy, type ProfitSharePolicy } from '@pts/db/business'
 import { companyMonthEndCutoff } from '@pts/ui/dates'
 
 import {
-  PROFIT_SHARE_POLICY,
+  profitShareAppliesTo,
   computeProfitShare,
   type ProfitShareData,
   type ProfitSharePartner,
 } from '@/lib/billing/profit-share'
+import { getBusinessIdentity } from '@/lib/business/identity'
+import { db } from '@/lib/db'
 import { serverEnv } from '@/lib/env.server'
 import {
   MercuryApiError,
   fetchMercuryBalanceAt,
   type MercuryBalanceAt,
 } from '@/lib/integrations/mercury/api'
-import { fetchUsersByEmail } from '@/lib/queries/reports/profit-share-partners'
+import { fetchUsersByIds } from '@/lib/queries/reports/profit-share-partners'
 
 /**
- * The instant a month ends in the company time zone (see
- * companyMonthEndCutoff in @pts/ui/dates).
+ * The instant a month ends for the profit share: midnight in the Business
+ * time zone (Settings → Business; see companyMonthEndCutoff in @pts/ui/dates).
+ * Closed months keep the profit share frozen in their snapshot whatever the
+ * zone is now.
  */
 export function monthEndCutoff(year: number, month: number): Date {
   return companyMonthEndCutoff(year, month)
@@ -60,6 +65,9 @@ export const loadMonthEndBalance = cache(
       }
     }
 
+    // Read the Business time zone first: this can run before the root
+    // layout has loaded it.
+    await getBusinessIdentity()
     const cutoff = monthEndCutoff(year, month)
     const monthComplete = cutoff.getTime() <= Date.now()
 
@@ -80,14 +88,29 @@ export const loadMonthEndBalance = cache(
   }
 )
 
-/** The profit-share partners as users, in policy order. */
+/** The profit share set on Settings → Billing, or null while it is off. */
+export const getProfitSharePolicy = cache(
+  (): Promise<ProfitSharePolicy | null> => readProfitSharePolicy(db)
+)
+
+/** True when the month's profit share is set up and has started. */
+export async function profitShareApplies(
+  year: number,
+  month: number
+): Promise<boolean> {
+  return profitShareAppliesTo(await getProfitSharePolicy(), year, month)
+}
+
+/** The profit-share partners as users, in the order they were picked. */
 export const fetchProfitSharePartners = cache(
   async (): Promise<Array<Omit<ProfitSharePartner, 'amount'>>> => {
-    const rows = await fetchUsersByEmail(PROFIT_SHARE_POLICY.partnerEmails)
-    const byEmail = new Map(rows.map(row => [row.email.toLowerCase(), row]))
+    const policy = await getProfitSharePolicy()
+    if (!policy) return []
+    const rows = await fetchUsersByIds(policy.partnerIds)
+    const byId = new Map(rows.map(row => [row.id, row]))
 
-    return PROFIT_SHARE_POLICY.partnerEmails.flatMap(email => {
-      const row = byEmail.get(email)
+    return policy.partnerIds.flatMap(id => {
+      const row = byId.get(id)
       if (!row) return []
       return [
         {
@@ -108,9 +131,19 @@ export async function buildProfitShare(params: {
   balance: Extract<MonthEndBalanceResult, { ok: true }>
   payouts: number
   addedAfterCloseAt?: string | null
+  /**
+   * The terms a closed month froze. Drift compares against these, so a later
+   * change on Settings → Billing never reads as drift in an old month.
+   */
+  terms?: Pick<ProfitShareData, 'minimumBalance' | 'partners'>
 }): Promise<ProfitShareData> {
-  const partners = await fetchProfitSharePartners()
+  const [livePartners, policy] = params.terms
+    ? [null, null]
+    : await Promise.all([fetchProfitSharePartners(), getProfitSharePolicy()])
+  // Frozen partners keep their amount field; computeProfitShare recomputes it.
+  const partners = params.terms?.partners ?? livePartners ?? []
   return computeProfitShare({
+    minimumBalance: params.terms?.minimumBalance ?? policy?.minimumBalance ?? 0,
     asOfDate: lastDayOfMonth(params.year, params.month),
     monthComplete: params.balance.monthComplete,
     balance: params.balance.value.balance,

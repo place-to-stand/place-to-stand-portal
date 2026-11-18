@@ -1,5 +1,10 @@
 import { renderBlocks, type EmailBlock } from '../blocks'
-import { renderRichEmail, type RenderedEmail } from '../layout'
+import {
+  DEFAULT_EMAIL_BRAND,
+  renderRichEmail,
+  type EmailBrand,
+  type RenderedEmail,
+} from '../layout'
 import {
   contactRows,
   identityLine,
@@ -18,6 +23,8 @@ export type ContactNotificationEmailArgs = {
   message: string
   source: SubmissionSource
   repeat: SubmissionRepeat | null
+  /** The business sending it (Settings → Business). */
+  brand?: EmailBrand
 }
 
 /**
@@ -35,6 +42,7 @@ export function contactNotificationEmail({
   message,
   source,
   repeat,
+  brand = DEFAULT_EMAIL_BRAND,
 }: ContactNotificationEmailArgs): RenderedEmail {
   const identity = identityLine(contact)
 
@@ -56,6 +64,7 @@ export function contactNotificationEmail({
       ? `[Contact] ${identity} — ${subjectLine}`
       : `[Contact] ${identity}`,
     {
+      brand,
       preheader: message.replace(/\s+/g, ' ').slice(0, 140),
       label: 'New inquiry',
       bodyHtml: body.html,

@@ -26,7 +26,6 @@ env:
   NEXT_PUBLIC_POSTHOG_HOST: http://localhost:8000
   RESEND_API_KEY: placeholder
   RESEND_FROM_EMAIL: dev@example.test
-  RESEND_REPLY_TO_EMAIL: dev@example.test
   AI_GATEWAY_API_KEY: placeholder
   GOOGLE_CLIENT_ID: placeholder
   GOOGLE_CLIENT_SECRET: placeholder

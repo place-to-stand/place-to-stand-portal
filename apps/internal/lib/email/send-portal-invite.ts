@@ -7,6 +7,7 @@ import {
 } from '@pts/email'
 
 import { serverEnv } from '@/lib/env.server'
+import { getEmailSender } from '@/lib/business/identity'
 import { sendEmail } from '@/lib/email/send'
 
 /** Matches `otp_expiry` in `supabase/config.toml` (3600s). */
@@ -24,14 +25,17 @@ export async function sendPortalInviteEmail({
   fullName,
   actionLink,
 }: SendPortalInviteArgs) {
+  const sender = await getEmailSender()
   await send(
     to,
+    sender,
     portalInviteEmail({
       fullName,
       actionLink,
       signInUrl: `${serverEnv.CLIENT_PORTAL_URL}/sign-in`,
       expiresInMinutes: LINK_EXPIRY_MINUTES,
-      replyTo: serverEnv.RESEND_REPLY_TO_EMAIL,
+      replyTo: sender.replyTo,
+      brand: sender.brand,
     })
   )
 }
@@ -51,23 +55,30 @@ export async function sendAdminInviteEmail({
   temporaryPassword,
   baseUrl,
 }: SendAdminInviteArgs) {
+  const sender = await getEmailSender()
   await send(
     to,
+    sender,
     adminInviteEmail({
       email: to,
       fullName,
       temporaryPassword,
       signInUrl: `${baseUrl}/sign-in`,
-      replyTo: serverEnv.RESEND_REPLY_TO_EMAIL,
+      replyTo: sender.replyTo,
+      brand: sender.brand,
     })
   )
 }
 
-async function send(to: string, { subject, text, html }: RenderedEmail) {
+async function send(
+  to: string,
+  { from, replyTo }: { from: string; replyTo: string },
+  { subject, text, html }: RenderedEmail
+) {
   await sendEmail({
-    from: `Place To Stand <${serverEnv.RESEND_FROM_EMAIL}>`,
+    from,
     to,
-    replyTo: serverEnv.RESEND_REPLY_TO_EMAIL,
+    replyTo,
     subject,
     text,
     html,

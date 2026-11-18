@@ -46,6 +46,7 @@ import { UrlInput } from '@/components/ui/url-input'
 import { TagField } from '@/components/tags/tag-field'
 import { TagList } from '@/components/tags/tag-list'
 
+import { ImageUploadSpecimen } from './components-image-upload'
 import { DesignSection, Example, Specimen } from './specimen'
 
 const STATIC_COMPANIES = [
@@ -215,6 +216,8 @@ export function ComponentsInputs() {
           />
         </Example>
       </Specimen>
+
+      <ImageUploadSpecimen />
 
       <Specimen
         label='Tags'

@@ -5,7 +5,7 @@ import {
   FileText,
   Home as HomeIcon,
   Palette,
-  Plug,
+  Settings as SettingsIcon,
   ShieldCheck,
 } from 'lucide-react'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
@@ -121,13 +121,19 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    title: 'Settings',
+    title: 'Admin',
     items: [
       {
-        href: '/settings/integrations',
-        capability: 'integrations.manage',
-        label: 'Integrations',
-        icon: Plug,
+        // Business, Billing and Integrations are tabs on one page.
+        href: '/settings/business',
+        capability: 'settings.business',
+        label: 'Settings',
+        icon: SettingsIcon,
+        matchHrefs: [
+          '/settings/business',
+          '/settings/billing',
+          '/settings/integrations',
+        ],
       },
       {
         href: '/settings/permissions',

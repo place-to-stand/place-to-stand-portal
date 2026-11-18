@@ -1,5 +1,6 @@
 'use client'
 
+import { ConnectInAccountButton } from '@/components/account/connect-in-account-button'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Trash2, ExternalLink, Loader2 } from 'lucide-react'
 import { Button } from '@pts/ui/button'
@@ -265,12 +266,8 @@ export function GitHubReposSection({
         status={
           <>
             <EmptyState
-              message='Connect your GitHub account in Settings to link repositories.'
-              action={
-                <Button variant='outline' size='sm' asChild>
-                  <a href='/settings/integrations'>Go to integrations</a>
-                </Button>
-              }
+              message='Connect your GitHub account to link repositories.'
+              action={<ConnectInAccountButton />}
             />
           </>
         }

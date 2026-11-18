@@ -12,6 +12,7 @@ import { rowActionShortcut } from '@/components/keyboard/shortcut-tooltip'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { ariaKeyShortcuts } from '@/lib/keyboard/format'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
+import { cn } from '@/lib/utils'
 import {
   announceSaveMode,
   modeInFlight,
@@ -58,13 +59,77 @@ function SaveKeysTooltip({
  * Children lay out in a justified row: secondary actions in a left group,
  * the primary action last on the right.
  */
-export function SheetFooterBar({ children }: { children: ReactNode }) {
+export function SheetFooterBar({
+  children,
+  innerClassName,
+}: {
+  children: ReactNode
+  /**
+   * Only the page form's bar sets it: its row's sides line up with the page
+   * column (`px-3 sm:px-4`) instead of the sheet's 10px.
+   */
+  innerClassName?: string
+}) {
   return (
     <div className='border-border/40 bg-muted/95 supports-backdrop-filter:bg-muted/90 z-10 w-full border-t shadow-lg backdrop-blur'>
-      <div className='flex w-full items-center justify-between gap-2 p-2.5'>
+      <div
+        className={cn(
+          'flex w-full items-center justify-between gap-2 p-2.5',
+          innerClassName
+        )}
+      >
         {children}
       </div>
     </div>
+  )
+}
+
+/**
+ * The one footer for every form that saves: the sheet footer and the page
+ * form's save bar both render it. Undo and Redo on the left; the form's own
+ * actions on the right (a sheet: Save, Save and close; a page: Discard,
+ * Save), primary last.
+ */
+export function FormFooterBar({
+  undo,
+  redo,
+  canUndo,
+  canRedo,
+  innerClassName,
+  children,
+}: {
+  undo: () => void
+  redo: () => void
+  canUndo: boolean
+  canRedo: boolean
+  innerClassName?: string
+  /** The right-hand actions. */
+  children: ReactNode
+}) {
+  return (
+    <SheetFooterBar innerClassName={innerClassName}>
+      <div className='flex items-center gap-1.5'>
+        <RowActionButton
+          type='button'
+          variant='outline'
+          onClick={undo}
+          disabled={!canUndo}
+          label='Undo'
+          {...rowActionShortcut(SHORTCUTS.undo)}
+          icon={<Undo2 />}
+        />
+        <RowActionButton
+          type='button'
+          variant='outline'
+          onClick={redo}
+          disabled={!canRedo}
+          label='Redo'
+          {...rowActionShortcut(SHORTCUTS.redo)}
+          icon={<Redo2 />}
+        />
+      </div>
+      <div className='flex items-center gap-1.5'>{children}</div>
+    </SheetFooterBar>
   )
 }
 
@@ -166,80 +231,58 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
     inFlight && mode === 'close' ? saveLabel : `${verb} and close`
 
   return (
-    <SheetFooterBar>
-      <div className='flex items-center gap-1.5'>
-        <RowActionButton
-          type='button'
-          variant='outline'
-          onClick={undo}
-          disabled={!canUndo}
-          label='Undo'
-          {...rowActionShortcut(SHORTCUTS.undo)}
-          icon={<Undo2 />}
-        />
-        <RowActionButton
-          type='button'
-          variant='outline'
-          onClick={redo}
-          disabled={!canRedo}
-          label='Redo'
-          {...rowActionShortcut(SHORTCUTS.redo)}
-          icon={<Redo2 />}
-        />
-      </div>
-      <div className='flex items-center gap-1.5'>
-        <span className='sr-only' aria-live='polite'>
-          {justSaved ? 'Saved' : ''}
-        </span>
-        <DisabledFieldTooltip
+    <FormFooterBar undo={undo} redo={redo} canUndo={canUndo} canRedo={canRedo}>
+      <span className='sr-only' aria-live='polite'>
+        {justSaved ? 'Saved' : ''}
+      </span>
+      <DisabledFieldTooltip
+        disabled={submitDisabled}
+        reason={submitDisabledReason}
+      >
+        <SaveKeysTooltip
+          label={`${verb} and keep open`}
+          shortcut={SHORTCUTS.saveAndStay}
           disabled={submitDisabled}
-          reason={submitDisabledReason}
         >
-          <SaveKeysTooltip
-            label={`${verb} and keep open`}
-            shortcut={SHORTCUTS.saveAndStay}
+          <Button
+            type='button'
+            variant='outline'
+            // xs (28px) to match the icon actions: one height per row.
+            size='xs'
             disabled={submitDisabled}
+            onClick={() => {
+              announceSaveMode('stay')
+              onSave('stay')
+            }}
+            aria-label={`${verb} and keep open`}
+            aria-keyshortcuts={ariaKeyShortcuts(SHORTCUTS.saveAndStay)}
           >
-            <Button
-              type='button'
-              variant='outline'
-              // xs (28px) to match the icon actions: one height per row.
-              size='xs'
-              disabled={submitDisabled}
-              onClick={() => {
-                announceSaveMode('stay')
-                onSave('stay')
-              }}
-              aria-label={`${verb} and keep open`}
-              aria-keyshortcuts={ariaKeyShortcuts(SHORTCUTS.saveAndStay)}
-            >
-              {stayLabel}
-            </Button>
-          </SaveKeysTooltip>
-        </DisabledFieldTooltip>
-        <DisabledFieldTooltip
+            {stayLabel}
+          </Button>
+        </SaveKeysTooltip>
+      </DisabledFieldTooltip>
+      <DisabledFieldTooltip
+        disabled={submitDisabled}
+        reason={submitDisabledReason}
+      >
+        {/* Submits the form, so Enter in a field also saves and closes. */}
+        <SaveKeysTooltip
+          label={`${verb} and close`}
+          shortcut={SHORTCUTS.save}
           disabled={submitDisabled}
-          reason={submitDisabledReason}
         >
-          {/* Submits the form, so Enter in a field also saves and closes. */}
-          <SaveKeysTooltip
-            label={`${verb} and close`}
-            shortcut={SHORTCUTS.save}
+          <Button
+            type='submit'
+            form={formId}
+            size='xs'
             disabled={submitDisabled}
+            aria-label={`${verb} and close`}
+            aria-keyshortcuts={ariaKeyShortcuts(SHORTCUTS.save)}
           >
-            <Button
-              type='submit'
-              form={formId}
-              size='xs'
-              disabled={submitDisabled}
-              aria-label={`${verb} and close`}
-              aria-keyshortcuts={ariaKeyShortcuts(SHORTCUTS.save)}
-            >
-              {closeLabel}
-            </Button>
-          </SaveKeysTooltip>
-        </DisabledFieldTooltip>
-      </div>
-    </SheetFooterBar>
+            {closeLabel}
+          </Button>
+        </SaveKeysTooltip>
+      </DisabledFieldTooltip>
+    </FormFooterBar>
   )
 }

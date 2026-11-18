@@ -7,6 +7,7 @@ import { RowActionButton } from '@pts/ui/row-action-button'
 import { EmptyState } from '@pts/ui/empty-state'
 import { Input } from '@pts/ui/input'
 import { Switch } from '@pts/ui/switch'
+// oxlint-disable-next-line no-restricted-imports -- the style guide shows the bare chrome
 import { SheetFooterBar } from '@/components/sheets/sheet-form-footer'
 
 import { DesignSection, DoDont } from './specimen'

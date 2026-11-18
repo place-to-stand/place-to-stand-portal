@@ -4,12 +4,23 @@ import { eq, and, isNull } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
 import { getActiveInstallationForProject } from '@/lib/github/app-installations'
+import { UUID_PATTERN } from '@pts/db/uuid'
+
+import { roleCan } from '@/lib/auth/capabilities'
 import { authorizeRoute } from '@/lib/auth/guard'
 
 export async function GET(request: NextRequest) {
-  const { user, denied } = await authorizeRoute('integrations.manage')
+  const { user, denied } = await authorizeRoute('integrations.personal')
   if (denied) return denied
-  const projectId = request.nextUrl.searchParams.get('projectId')
+  // The client's GitHub App installation is project data that members may not
+  // see (projects.view_financials), so only those who can see it get it.
+  const requestedProjectId = request.nextUrl.searchParams.get('projectId')
+  const projectId =
+    requestedProjectId &&
+    UUID_PATTERN.test(requestedProjectId) &&
+    roleCan(user.role, 'projects.view_financials')
+      ? requestedProjectId
+      : null
 
   // Fetch all GitHub accounts for this user (multi-account support)
   const connections = await db

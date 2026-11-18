@@ -1,9 +1,16 @@
-import { renderEmail, type RenderedEmail } from '../layout'
+import {
+  DEFAULT_EMAIL_BRAND,
+  renderEmail,
+  type EmailBrand,
+  type RenderedEmail,
+} from '../layout'
 
 export type PasswordChangedEmailArgs = {
   /** Where the password now applies, in words — "the client portal". */
   destination: string
   replyTo: string
+  /** Sender identity; Place To Stand when left out. */
+  brand?: EmailBrand
 }
 
 /**
@@ -19,8 +26,9 @@ export type PasswordChangedEmailArgs = {
 export function passwordChangedEmail({
   destination,
   replyTo,
+  brand = DEFAULT_EMAIL_BRAND,
 }: PasswordChangedEmailArgs): RenderedEmail {
-  return renderEmail('Your Place To Stand password was changed', {
+  return renderEmail(`Your ${brand.name} password was changed`, {
     preheader: `The password for your account on ${destination} was just changed.`,
     label: 'Password changed',
     heading: 'Your password was changed',
@@ -29,5 +37,6 @@ export function passwordChangedEmail({
     ],
     footerLead: "If you didn't make this change, please contact us at",
     replyTo,
+    brand,
   })
 }

@@ -87,10 +87,27 @@ export function drawSectionLabel(
   doc.text('»', end + 6 * PX - charSpace, baseline)
 }
 
-/** Blueprint mark (framed square, lime dot) beside the wordmark. `top` is the mark's top edge. */
-export function drawLogo(doc: jsPDF, x: number, top: number) {
+/**
+ * Blueprint mark (framed square, lime dot) beside the wordmark. `top` is the
+ * mark's top edge. The mark is Place To Stand's own, so another business's
+ * invoice shows its name alone, in the same place.
+ */
+export function drawLogo(
+  doc: jsPDF,
+  x: number,
+  top: number,
+  { name, showMark }: { name: string; showMark: boolean }
+) {
   const size = 24 * PX
   const dot = 8 * PX
+
+  if (!showMark) {
+    setType(doc, FONTS.head, 20, COLORS.ink)
+    drawText(doc, name, x, top + size / 2 + capHeight(doc) / 2, {
+      charSpace: tracking(doc, -0.025),
+    })
+    return
+  }
 
   doc.setLineWidth(1 * PX)
   doc.setDrawColor(COLORS.markFrame)
@@ -99,13 +116,9 @@ export function drawLogo(doc: jsPDF, x: number, top: number) {
   doc.rect(x + (size - dot) / 2, top + (size - dot) / 2, dot, dot, 'F')
 
   setType(doc, FONTS.head, 20, COLORS.ink)
-  drawText(
-    doc,
-    'Place To Stand',
-    x + size + 12 * PX,
-    top + size / 2 + capHeight(doc) / 2,
-    { charSpace: tracking(doc, -0.025) }
-  )
+  drawText(doc, name, x + size + 12 * PX, top + size / 2 + capHeight(doc) / 2, {
+    charSpace: tracking(doc, -0.025),
+  })
 }
 
 /**

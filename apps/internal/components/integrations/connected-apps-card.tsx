@@ -5,15 +5,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bot, Loader2, Unplug } from 'lucide-react'
 
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@pts/ui/card'
+  INTEGRATION_ROW_CLASS,
+  IntegrationCard,
+  IntegrationStatus,
+} from './integration-card'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { formatCalendarDate } from '@pts/ui/dates'
-import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { toast } from '@/components/ui/use-toast'
 import type { ConnectedApp } from '@/lib/mcp/grants'
@@ -74,68 +71,50 @@ export function ConnectedAppsCard() {
 
   return (
     <>
-      <Card>
-        <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-          <div className='flex flex-col space-y-1.5'>
-            <CardTitle className='flex items-center gap-2'>
-              <Bot className='h-5 w-5' />
-              Connected apps
-            </CardTitle>
-            <CardDescription>
-              Apps like Claude or ChatGPT that you connected through MCP. They
-              act as you.
-            </CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className='text-muted-foreground text-sm'>
-              Checking status...
-            </div>
+      <IntegrationCard
+        icon={<Bot />}
+        title='Connected apps'
+        description='Claude, ChatGPT and other apps you connected through MCP. They act as you.'
+        action={
+          isLoading ? (
+            <IntegrationStatus>Checking...</IntegrationStatus>
           ) : isError ? (
-            <div className='text-muted-foreground text-sm'>
-              Unable to load connected apps.
-            </div>
+            <IntegrationStatus>Unable to load</IntegrationStatus>
           ) : !data?.length ? (
-            <EmptyState message='No apps connected.' />
-          ) : (
-            <div className='space-y-3'>
-              {data.map(app => {
-                const isRevoking =
-                  revoke.isPending &&
-                  revoke.variables?.clientId === app.clientId
-
-                return (
-                  <div
-                    key={app.clientId}
-                    className='flex items-center justify-between rounded-lg border p-3'
-                  >
-                    <div className='flex flex-col'>
-                      <span className='text-sm font-medium'>{app.name}</span>
-                      <span className='text-muted-foreground text-xs'>
-                        Connected {formatCalendarDate(app.grantedAt) ?? '—'}
-                      </span>
-                    </div>
-                    <RowActionButton
-                      label={`Revoke ${app.name}`}
-                      icon={
-                        isRevoking ? (
-                          <Loader2 className='animate-spin' />
-                        ) : (
-                          <Unplug />
-                        )
-                      }
-                      className='text-muted-foreground hover:text-destructive'
-                      disabled={isRevoking}
-                      onClick={() => setPendingRevoke(app)}
-                    />
+            <IntegrationStatus>None yet</IntegrationStatus>
+          ) : null
+        }
+      >
+        {data?.length
+          ? data.map(app => {
+              const isRevoking =
+                revoke.isPending && revoke.variables?.clientId === app.clientId
+              return (
+                <div key={app.clientId} className={INTEGRATION_ROW_CLASS}>
+                  <div className='flex min-w-0 items-baseline gap-2'>
+                    <span className='shrink-0 text-sm'>{app.name}</span>
+                    <span className='text-muted-foreground truncate text-xs'>
+                      Connected {formatCalendarDate(app.grantedAt) ?? '—'}
+                    </span>
                   </div>
-                )
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  <RowActionButton
+                    label={`Revoke ${app.name}`}
+                    icon={
+                      isRevoking ? (
+                        <Loader2 className='animate-spin' />
+                      ) : (
+                        <Unplug />
+                      )
+                    }
+                    className='text-muted-foreground hover:text-destructive'
+                    disabled={isRevoking}
+                    onClick={() => setPendingRevoke(app)}
+                  />
+                </div>
+              )
+            })
+          : null}
+      </IntegrationCard>
 
       <ConfirmDialog
         open={pendingRevoke !== null}

@@ -7,7 +7,7 @@ import { authorizeRoute } from '@/lib/auth/guard'
 const bodySchema = z.object({ clientId: z.string().uuid() })
 
 export async function POST(request: Request) {
-  const { denied } = await authorizeRoute('integrations.manage')
+  const { denied } = await authorizeRoute('integrations.personal')
   if (denied) return denied
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => ({})))

@@ -2,3 +2,5 @@
 // file means Next still emits twitter:image tags, so X and Slack previews
 // keep working without a second design to maintain.
 export { default, alt, size, contentType } from './opengraph-image'
+
+export const dynamic = 'force-dynamic'

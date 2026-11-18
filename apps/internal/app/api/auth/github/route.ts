@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 
-import { requireUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { getGitHubAuthUrl } from '@/lib/oauth/github'
 import { generateOAuthState } from '@/lib/oauth/state'
 
 export async function GET() {
-  // Ensure user is logged in
-  await requireUser()
+  // Anyone on staff connects their own GitHub (Account → Integrations).
+  await requirePage('integrations.personal')
 
   const state = await generateOAuthState()
   const authUrl = getGitHubAuthUrl(state)

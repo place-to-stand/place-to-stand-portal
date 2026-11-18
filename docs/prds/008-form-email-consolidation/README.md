@@ -168,7 +168,7 @@ older payloads still land, and audits stored before then simply render without t
 
 **Sender:** new optional env vars with fallbacks, so today's visible sender is preserved —
 `RESEND_FORMS_FROM_EMAIL` (prod: `hello@send.placetostandagency.com`; falls back to
-`RESEND_FROM_EMAIL`) and `FORMS_NOTIFY_EMAIL` (falls back to `RESEND_REPLY_TO_EMAIL`).
+`RESEND_FROM_EMAIL`) and `FORMS_NOTIFY_EMAIL` (falls back to the inbox email on Settings → Business; `RESEND_REPLY_TO_EMAIL` was retired).
 `RESEND_AUDIENCE_ID` becomes a real optional var. All three go in `apps/internal/lib/env.server.ts`,
 `turbo.json` → `passThroughEnv`, `apps/internal/.env.example`, and Vercel.
 

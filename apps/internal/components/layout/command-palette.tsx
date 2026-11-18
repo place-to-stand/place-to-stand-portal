@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useRouter } from 'next/navigation'
-import { Keyboard } from 'lucide-react'
+import { Keyboard, Plug, CircleUserRound } from 'lucide-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 import {
@@ -30,9 +30,13 @@ import { CommandPaletteRecords } from '@/components/layout/command-palette-recor
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { matchesShortcut } from '@/lib/keyboard/match'
-import { confirmDiscardAll } from '@/lib/sheets/discard-guards'
+import {
+  confirmDiscardAll,
+  PAGE_FORM_GUARD_ID,
+} from '@/lib/sheets/discard-guards'
 import { parseSheetStack } from '@/lib/sheets/stack'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
+import { openAccountSheet } from '@/lib/account/use-account-sheet'
 
 const MIN_QUERY_LENGTH = 2
 const DEBOUNCE_MS = 200
@@ -159,9 +163,13 @@ function CommandPalette() {
       // Leaving drops the open sheets: each with unsaved changes asks first,
       // top sheet first, as going back in the stack does. "Stay" brings the
       // palette back as it was.
-      const ids = parseSheetStack(new URLSearchParams(window.location.search))
-        .map(item => item.id)
-        .reverse()
+      // Then the page's own form (Settings → Business), if it has changes.
+      const ids = [
+        ...parseSheetStack(new URLSearchParams(window.location.search))
+          .map(item => item.id)
+          .reverse(),
+        PAGE_FORM_GUARD_ID,
+      ]
       confirmDiscardAll(
         ids,
         () => {
@@ -226,6 +234,28 @@ function CommandPalette() {
           records={recordSearchEnabled ? (records ?? null) : null}
           onSelect={navigate}
         />
+        <CommandGroup heading='You'>
+          <CommandItem
+            value='You account profile name photo email password'
+            onSelect={() => {
+              handleOpenChange(false)
+              openAccountSheet('profile')
+            }}
+          >
+            <CircleUserRound className='size-4' />
+            <span>Account</span>
+          </CommandItem>
+          <CommandItem
+            value='You my integrations connect google github vercel supabase connected apps'
+            onSelect={() => {
+              handleOpenChange(false)
+              openAccountSheet('integrations')
+            }}
+          >
+            <Plug className='size-4' />
+            <span>My integrations</span>
+          </CommandItem>
+        </CommandGroup>
         <CommandGroup heading='Help'>
           <CommandItem
             value='Help keyboard shortcuts keys'

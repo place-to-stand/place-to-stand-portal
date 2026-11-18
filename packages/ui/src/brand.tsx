@@ -79,6 +79,9 @@ export function BlueprintCorners({
  */
 type BrandTone = 'theme' | 'brand'
 
+/** The name every install starts with; the blueprint mark belongs to it. */
+export const DEFAULT_BRAND_NAME = 'Place To Stand'
+
 const TONE_CLASSES: Record<
   BrandTone,
   { frame: string; dot: string; word: string }
@@ -104,12 +107,58 @@ export function BrandLogoMark({
   size = 24,
   tone = 'theme',
   className,
+  iconSrc,
+  name = DEFAULT_BRAND_NAME,
 }: {
   size?: number
   tone?: BrandTone
   className?: string
+  /** The business's uploaded icon (Settings → Business), in place of the mark. */
+  iconSrc?: string | null
+  /**
+   * The business name. Another business with no icon gets its first letter
+   * in the frame: the blueprint mark belongs to Place To Stand.
+   */
+  name?: string
 }) {
+  if (iconSrc) {
+    return (
+      // A data or same-origin route URL of unknown size: next/image adds nothing here.
+      <img
+        src={iconSrc}
+        alt=''
+        aria-hidden
+        width={size}
+        height={size}
+        className={cn('shrink-0 object-contain', className)}
+        style={{ width: size, height: size }}
+      />
+    )
+  }
+
   const dot = Math.round(size / 3)
+
+  if (name !== DEFAULT_BRAND_NAME) {
+    return (
+      <span
+        aria-hidden
+        className={cn(
+          'inline-flex shrink-0 items-center justify-center rounded-sm border leading-none font-bold',
+          TONE_CLASSES[tone].frame,
+          TONE_CLASSES[tone].word,
+          className
+        )}
+        style={{
+          width: size,
+          height: size,
+          fontSize: Math.round(size * 0.6),
+          fontFamily: 'var(--font-space-grotesk, inherit)',
+        }}
+      >
+        {name.trim().charAt(0).toUpperCase() || '·'}
+      </span>
+    )
+  }
 
   return (
     <span
@@ -135,21 +184,49 @@ const LOGO_SIZES = {
   lg: { mark: 24, text: 'text-xl', gap: 'gap-3' },
 } as const
 
-/** Mark + wordmark, as in the marketing site header. `lg` is its exact size. */
+/**
+ * Mark + wordmark, as in the marketing site header. `lg` is its exact size.
+ * An install that set its own business shows its uploaded logo, or its icon
+ * and name; the blueprint mark only ever stands beside Place To Stand.
+ */
 export function BrandLogo({
   size = 'md',
   tone = 'theme',
   className,
+  name = DEFAULT_BRAND_NAME,
+  logoSrc,
+  iconSrc,
 }: {
   size?: keyof typeof LOGO_SIZES
   tone?: BrandTone
   className?: string
+  name?: string
+  /** Uploaded logo (Settings → Business): replaces mark and wordmark. */
+  logoSrc?: string | null
+  iconSrc?: string | null
 }) {
   const { mark, text, gap } = LOGO_SIZES[size]
 
+  if (logoSrc) {
+    return (
+      <span className={cn('inline-flex items-center', className)}>
+        <img
+          src={logoSrc}
+          alt={name}
+          className='w-auto max-w-[200px] object-contain'
+          style={{ height: mark + 8 }}
+        />
+      </span>
+    )
+  }
+
+  const showMark = Boolean(iconSrc) || name === DEFAULT_BRAND_NAME
+
   return (
     <span className={cn('inline-flex items-center', gap, className)}>
-      <BrandLogoMark size={mark} tone={tone} />
+      {showMark ? (
+        <BrandLogoMark size={mark} tone={tone} iconSrc={iconSrc} name={name} />
+      ) : null}
       <span
         className={cn(
           'leading-none font-bold tracking-tight whitespace-nowrap',
@@ -158,7 +235,7 @@ export function BrandLogo({
         )}
         style={{ fontFamily: 'var(--font-space-grotesk, inherit)' }}
       >
-        Place To Stand
+        {name}
       </span>
     </span>
   )
@@ -168,10 +245,21 @@ export function BrandLogo({
  * Mark + wordmark + a mono micro-label naming which portal you are signing in
  * to. `label` is what distinguishes the two apps' screens from each other.
  */
-export function BrandLockup({ label }: { label: string }) {
+export function BrandLockup({
+  label,
+  name = DEFAULT_BRAND_NAME,
+  iconSrc,
+}: {
+  label: string
+  name?: string
+  iconSrc?: string | null
+}) {
+  const showMark = Boolean(iconSrc) || name === DEFAULT_BRAND_NAME
   return (
     <div className='flex flex-col items-center gap-4'>
-      <BrandLogoMark size={36} tone='brand' />
+      {showMark ? (
+        <BrandLogoMark size={36} tone='brand' iconSrc={iconSrc} name={name} />
+      ) : null}
       <div className='flex flex-col items-center gap-2'>
         <span
           className='text-xl font-bold tracking-tight'
@@ -180,7 +268,7 @@ export function BrandLockup({ label }: { label: string }) {
             fontFamily: 'var(--font-space-grotesk, inherit)',
           }}
         >
-          Place To Stand
+          {name}
         </span>
         <span
           className='text-overline font-mono tracking-[0.1em] uppercase'

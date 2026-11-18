@@ -3,7 +3,7 @@ import { Download } from 'lucide-react'
 import { authSecondaryButtonClass } from '@pts/ui/auth-shell'
 import { BlueprintCorners } from '@pts/ui/brand'
 
-import { serverEnv } from '@/lib/env.server'
+import { getBusinessIdentity, replyToFor } from '@/lib/business/identity'
 import type { InvoiceWithLineItems } from '@/lib/invoices/invoice-form'
 import { cn } from '@/lib/utils'
 
@@ -26,7 +26,7 @@ type PublicInvoiceProps = {
   preview?: boolean
 }
 
-export function PublicInvoice({
+export async function PublicInvoice({
   invoice,
   shareToken,
   paymentStatus,
@@ -42,7 +42,8 @@ export function PublicInvoice({
   const showPayment = isPayable && isStripeConfigured && !preview
   // A preview shows the payment area as it will look once sent, not live.
   const showPaymentPreview = preview && !isPaid && !isVoid
-  const replyTo = serverEnv.RESEND_REPLY_TO_EMAIL
+  const business = await getBusinessIdentity()
+  const replyTo = replyToFor(business)
 
   return (
     <>
@@ -63,7 +64,14 @@ export function PublicInvoice({
         />
 
         <div className='grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8'>
-          <InvoiceDocument invoice={invoice} isPaid={isPaid} isVoid={isVoid} />
+          <InvoiceDocument
+            invoice={invoice}
+            isPaid={isPaid}
+            isVoid={isVoid}
+            issuerLine={[business.legalName, business.websiteLabel]
+              .filter(Boolean)
+              .join(' · ')}
+          />
 
           {/* Panel and download stick together as one column on desktop. */}
           <div className='flex flex-col gap-3 lg:sticky lg:top-6'>

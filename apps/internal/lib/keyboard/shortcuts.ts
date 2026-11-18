@@ -15,7 +15,7 @@
 
 export type ShortcutGroup =
   | 'Anywhere'
-  | 'Sheets'
+  | 'Sheets and page forms'
   | 'Project board'
   | 'Planning chat'
   | 'Text editor'
@@ -33,7 +33,7 @@ export type Shortcut = {
 /** The order groups appear in the shortcuts dialog. */
 export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
   'Anywhere',
-  'Sheets',
+  'Sheets and page forms',
   'Project board',
   'Planning chat',
   'Text editor',
@@ -58,21 +58,29 @@ export const SHORTCUTS = {
   },
 
   // Sheets (use-sheet-form-controls)
-  save: { keys: 'mod+s', label: 'Save and close', group: 'Sheets' },
+  save: {
+    keys: 'mod+s',
+    label: 'Save; in a sheet, save and close',
+    group: 'Sheets and page forms',
+  },
   saveAndStay: {
     keys: 'mod+shift+s',
     label: 'Save and keep open',
-    group: 'Sheets',
+    group: 'Sheets and page forms',
   },
-  undo: { keys: 'mod+z', label: 'Undo', group: 'Sheets' },
+  undo: { keys: 'mod+z', label: 'Undo', group: 'Sheets and page forms' },
   redo: {
     keys: 'mod+shift+z',
     alternatives: ['ctrl+y'],
     label: 'Redo',
-    group: 'Sheets',
+    group: 'Sheets and page forms',
   },
   // Handled by the Sheet primitive (Base UI dialog), listed for completeness.
-  closeSheet: { keys: 'escape', label: 'Close', group: 'Sheets' },
+  closeSheet: {
+    keys: 'escape',
+    label: 'Close',
+    group: 'Sheets and page forms',
+  },
 
   // Project board (use-record-cycle)
   previousProject: {

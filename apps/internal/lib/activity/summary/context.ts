@@ -48,14 +48,14 @@ export const TARGET_LABELS: Record<string, string> = {
 
 export const DEFAULT_PROJECT_LABEL = 'General'
 export const DEFAULT_CLIENT_LABEL = 'General'
-export const COMPANY_GENERAL_CLIENT_LABEL = 'Place To Stand'
+export const COMPANY_GENERAL_CLIENT_LABEL = 'Company-wide'
 
 export function formatActivityLog(
   log: ActivityLogWithActor,
   context: ActivityContext
 ): string {
   const { project, client } = resolveProjectClientLabels(log, context)
-  // formatCalendarDate pins timestamps to the company timezone (Pacific).
+  // formatCalendarDate pins timestamps to the company timezone (Settings → Business).
   const formattedTimestamp = `${formatCalendarDate(log.created_at, {
     month: 'short',
     day: 'numeric',

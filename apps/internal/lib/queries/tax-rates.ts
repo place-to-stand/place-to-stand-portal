@@ -2,7 +2,10 @@ import 'server-only'
 
 import { asc, eq, sql } from 'drizzle-orm'
 
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
+
+/** The default client, or the transaction Settings → Billing saves in. */
+type Executor = typeof db | DbTx
 import { taxRates } from '@/lib/db/schema'
 
 // ---------------------------------------------------------------------------
@@ -53,8 +56,11 @@ export async function listTaxRates(): Promise<TaxRateRow[]> {
   return rows.map(mapTaxRateRow)
 }
 
-export async function getTaxRateById(id: string): Promise<TaxRateRow | null> {
-  const rows = await db
+export async function getTaxRateById(
+  id: string,
+  executor: Executor = db
+): Promise<TaxRateRow | null> {
+  const rows = await executor
     .select(taxRateSelection)
     .from(taxRates)
     .where(eq(taxRates.id, id))
@@ -64,8 +70,11 @@ export async function getTaxRateById(id: string): Promise<TaxRateRow | null> {
   return row ? mapTaxRateRow(row) : null
 }
 
-export async function createTaxRate(input: TaxRateInput): Promise<TaxRateRow> {
-  const rows = await db
+export async function createTaxRate(
+  input: TaxRateInput,
+  executor: Executor = db
+): Promise<TaxRateRow> {
+  const rows = await executor
     .insert(taxRates)
     .values({
       state: input.state,
@@ -80,9 +89,10 @@ export async function createTaxRate(input: TaxRateInput): Promise<TaxRateRow> {
 
 export async function updateTaxRate(
   id: string,
-  input: TaxRateInput
+  input: TaxRateInput,
+  executor: Executor = db
 ): Promise<TaxRateRow> {
-  const rows = await db
+  const rows = await executor
     .update(taxRates)
     .set({
       state: input.state,

@@ -2025,6 +2025,69 @@ export const productCatalogItems = pgTable(
   ]
 )
 
+/**
+ * The install's own business: one row, read through `@pts/db/business`.
+ * The display name stays on the staff company (`companies.is_staff`); this
+ * holds everything else the portal prints about the business. A new install
+ * has no row; the first save of the Business page creates it and sets
+ * `confirmed_at`, and the portal shows admins a banner until then.
+ * Logo and icon are small images kept as data URLs, served by the app, so an
+ * install needs no storage bucket for them.
+ */
+export const businessSettings = pgTable(
+  'business_settings',
+  {
+    id: boolean().primaryKey().default(true).notNull(),
+    legalName: text('legal_name'),
+    website: text(),
+    addressLine1: text('address_line1'),
+    addressLine2: text('address_line2'),
+    city: text(),
+    region: text(),
+    postalCode: text('postal_code'),
+    country: text(),
+    phone: text(),
+    inboxEmail: text('inbox_email'),
+    sendingEmail: text('sending_email'),
+    bookingUrl: text('booking_url'),
+    timeZone: text('time_zone').default('America/Chicago').notNull(),
+    // Partner profit share (Reports → Monthly close). Off while starts_on is
+    // empty or no partner is picked.
+    profitShareStartsOn: date('profit_share_starts_on', { mode: 'string' }),
+    profitShareMinimumBalance: numeric('profit_share_minimum_balance', {
+      precision: 12,
+      scale: 2,
+    })
+      .default('0')
+      .notNull(),
+    profitSharePartnerIds: uuid('profit_share_partner_ids')
+      .array()
+      .default(sql`'{}'::uuid[]`)
+      .notNull(),
+    logoDataUrl: text('logo_data_url'),
+    iconDataUrl: text('icon_data_url'),
+    confirmedAt: timestamp('confirmed_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    updatedBy: uuid('updated_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`now()`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`now()`)
+      .notNull(),
+  },
+  table => [
+    check('business_settings_single_row', sql`${table.id}`),
+    foreignKey({
+      columns: [table.updatedBy],
+      foreignColumns: [users.id],
+      name: 'business_settings_updated_by_fkey',
+    }),
+  ]
+)
+
 export const taxRates = pgTable('tax_rates', {
   id: uuid().defaultRandom().primaryKey().notNull(),
   state: varchar({ length: 2 }).notNull().unique(),

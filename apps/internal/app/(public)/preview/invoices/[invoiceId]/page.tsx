@@ -2,14 +2,18 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 import { requirePage } from '@/lib/auth/session'
+import { getBusinessIdentity } from '@/lib/business/identity'
 import { getInvoiceById } from '@/lib/queries/invoices'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 
 import { PublicInvoice } from '../../../share/invoices/[token]/public-invoice'
 
-export const metadata: Metadata = {
-  title: { absolute: 'Invoice preview | Place To Stand' },
-  robots: { index: false, follow: false },
+export async function generateMetadata(): Promise<Metadata> {
+  const business = await getBusinessIdentity()
+  return {
+    title: { absolute: `Invoice preview | ${business.name}` },
+    robots: { index: false, follow: false },
+  }
 }
 
 /**

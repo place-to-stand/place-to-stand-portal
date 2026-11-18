@@ -246,7 +246,7 @@ export const CAPABILITIES = {
     area: 'Directory',
     label: 'Edit the staff company',
     description:
-      'Place To Stand’s own company: who is on staff and their titles. Staff sign in through it.',
+      'Your own business’s company: who is on staff and their titles. Staff sign in through it.',
     roles: ADMIN_ONLY,
     surfaces: ['app', 'mcp'],
   },
@@ -277,7 +277,8 @@ export const CAPABILITIES = {
   'billing.manage': {
     area: 'Billing & reports',
     label: 'Manage billing',
-    description: 'Invoices, hour blocks and time logs.',
+    description:
+      'Invoices, hour blocks and time logs; Settings → Billing (products, tax rates, profit share).',
     roles: ADMIN_ONLY,
     surfaces: ['app', 'mcp', 'cli'],
   },
@@ -290,6 +291,14 @@ export const CAPABILITIES = {
   },
 
   // Settings
+  'settings.business': {
+    area: 'Settings',
+    label: 'Business settings',
+    description:
+      'Name, logo, address, email addresses and time zone the portal uses.',
+    roles: ADMIN_ONLY,
+    surfaces: ['app'],
+  },
   'settings.users': {
     area: 'Settings',
     label: 'Manage users and roles',
@@ -343,10 +352,19 @@ export const CAPABILITIES = {
     roles: STAFF,
     surfaces: ['app'],
   },
+  'integrations.personal': {
+    area: 'Integrations',
+    label: 'Connect and manage their own accounts',
+    description:
+      'Their own GitHub, Vercel and Supabase connections and the apps connected as them (Account → Integrations). Nobody else sees them.',
+    roles: STAFF,
+    surfaces: ['app'],
+  },
   'integrations.manage': {
     area: 'Integrations',
-    label: 'Connect Google, GitHub, Vercel and Supabase',
-    description: 'Agency-wide integrations.',
+    label: 'Agency integrations',
+    description:
+      'The company services (Mercury, Stripe, email) and linking repositories and hosting to projects.',
     roles: ADMIN_ONLY,
     surfaces: ['app'],
   },

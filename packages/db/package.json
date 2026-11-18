@@ -12,7 +12,8 @@
     "./names": "./src/names.ts",
     "./client-state": "./src/client-state.ts",
     "./terms": "./src/terms.ts",
-    "./uuid": "./src/uuid.ts"
+    "./uuid": "./src/uuid.ts",
+    "./business": "./src/business.ts"
   },
   "scripts": {
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",

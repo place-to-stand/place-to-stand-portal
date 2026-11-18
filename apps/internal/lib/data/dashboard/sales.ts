@@ -21,6 +21,8 @@ import {
 import { LEAD_STATUS_LABELS, type LeadStatusValue } from '@/lib/leads/constants'
 import { companyCalendarDate } from '@pts/ui/dates'
 
+import { getBusinessIdentity } from '@/lib/business/identity'
+
 /** Stages the pipeline widget counts: everything still in play. */
 const PIPELINE_STAGES: LeadStatusValue[] = [
   'NEW_OPPORTUNITIES',
@@ -69,6 +71,9 @@ export async function fetchSalesHomeData(
   user: AppUser
 ): Promise<SalesHomeData> {
   assertCrmAccess(user)
+  // Renders beside the root layout, so it may run before the layout loads
+  // the business time zone that `today` is read in.
+  await getBusinessIdentity()
   const now = Date.now()
 
   const leadFields = {

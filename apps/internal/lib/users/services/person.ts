@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { DEFAULT_BUSINESS_NAME } from '@pts/db/business'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import { db, type DbTx } from '@/lib/db'
@@ -9,8 +10,11 @@ import { joinCompany, leaveCompany } from '@/lib/queries/memberships'
 type Executor = typeof db | DbTx
 type Role = 'ADMIN' | 'SALES' | 'CLIENT'
 
-/** The name the staff company gets if it has to be created. */
-const STAFF_COMPANY_NAME = 'Place To Stand'
+/**
+ * The name the staff company gets if it has to be created before anyone
+ * fills in Settings → Business, which renames it.
+ */
+const STAFF_COMPANY_NAME = DEFAULT_BUSINESS_NAME
 
 const isStaffRole = (role: Role | null | undefined) =>
   role === 'ADMIN' || role === 'SALES'

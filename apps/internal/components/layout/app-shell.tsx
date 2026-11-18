@@ -1,15 +1,17 @@
 'use client'
 
 import * as React from 'react'
-import { useMemo, type ReactNode } from 'react'
+import { Suspense, useMemo, type ReactNode } from 'react'
 
 import type { AppUser } from '@/lib/auth/session'
 import { SidebarProvider } from '@/components/ui/sidebar'
+import { BusinessNameProvider } from '@/components/providers/business-name'
 import { ViewerAccessProvider } from '@/components/providers/viewer-access-provider'
 
+import { AccountSheet } from '@/components/account/account-sheet'
 import { KeyboardShortcutsProvider } from '@/components/keyboard/keyboard-shortcuts-dialog'
 
-import { Sidebar } from './sidebar'
+import { Sidebar, type SidebarBrand } from './sidebar'
 import { CommandPaletteProvider } from './command-palette'
 import { ListRefreshProvider } from './list-refresh'
 
@@ -21,6 +23,10 @@ interface Props {
   sidebarDefaultOpen?: boolean
   /** Names sheet presence channels (`presenceRoomKey`). */
   presenceKey?: string
+  /** The business name and uploaded images (Settings → Business). */
+  brand: SidebarBrand
+  /** A notice above every page (the business setup banner). */
+  banner?: ReactNode
 }
 
 /**
@@ -34,6 +40,8 @@ export function AppShell({
   unacknowledgedSubmissionsCount,
   sidebarDefaultOpen = true,
   presenceKey,
+  brand,
+  banner,
 }: Props) {
   // Keyed by nav href so future counts (e.g. leads) reuse the same channel.
   const navBadges = useMemo(
@@ -55,20 +63,27 @@ export function AppShell({
       hasPhoto={Boolean(user.avatar_url)}
       presenceKey={presenceKey}
     >
-      <KeyboardShortcutsProvider>
-        <CommandPaletteProvider>
-          <SidebarProvider
-            defaultOpen={sidebarDefaultOpen}
-            style={{ '--sidebar-width': '13rem' } as React.CSSProperties}
-            className='bg-muted h-dvh min-h-0 overflow-hidden'
-          >
-            <Sidebar user={user} badges={navBadges} />
-            <div className='flex h-dvh min-h-0 min-w-0 flex-1 flex-col'>
-              <ListRefreshProvider>{children}</ListRefreshProvider>
-            </div>
-          </SidebarProvider>
-        </CommandPaletteProvider>
-      </KeyboardShortcutsProvider>
+      <BusinessNameProvider name={brand.name}>
+        <KeyboardShortcutsProvider>
+          <CommandPaletteProvider>
+            <SidebarProvider
+              defaultOpen={sidebarDefaultOpen}
+              style={{ '--sidebar-width': '13rem' } as React.CSSProperties}
+              className='bg-muted h-dvh min-h-0 overflow-hidden'
+            >
+              <Sidebar user={user} badges={navBadges} brand={brand} />
+              <div className='flex h-dvh min-h-0 min-w-0 flex-1 flex-col'>
+                {banner}
+                <ListRefreshProvider>{children}</ListRefreshProvider>
+              </div>
+              {/* Reads `?account=`; Suspense keeps the URL read client-only. */}
+              <Suspense fallback={null}>
+                <AccountSheet user={user} />
+              </Suspense>
+            </SidebarProvider>
+          </CommandPaletteProvider>
+        </KeyboardShortcutsProvider>
+      </BusinessNameProvider>
     </ViewerAccessProvider>
   )
 }

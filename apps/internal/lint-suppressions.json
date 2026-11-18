@@ -50,13 +50,13 @@
     }
   },
   "app/(dashboard)/design/_components/components-forms.tsx": {
+    "max-lines": {
+      "count": 1
+    },
     "typescript/no-deprecated": {
       "count": 1
     },
     "typescript/no-misused-promises": {
-      "count": 1
-    },
-    "max-lines": {
       "count": 1
     }
   },
@@ -96,10 +96,10 @@
     }
   },
   "app/(dashboard)/invoices/_components/invoice-email-dialog.tsx": {
-    "typescript/no-misused-promises": {
+    "max-lines": {
       "count": 1
     },
-    "max-lines": {
+    "typescript/no-misused-promises": {
       "count": 1
     }
   },
@@ -119,10 +119,10 @@
     }
   },
   "app/(dashboard)/invoices/actions/save-invoice.ts": {
-    "typescript/no-deprecated": {
+    "max-lines": {
       "count": 1
     },
-    "max-lines": {
+    "typescript/no-deprecated": {
       "count": 1
     }
   },
@@ -132,38 +132,11 @@
     }
   },
   "app/(dashboard)/invoices/invoice-sheet.tsx": {
-    "typescript/no-misused-promises": {
-      "count": 1
-    },
-    "max-lines": {
-      "count": 1
-    }
-  },
-  "app/(dashboard)/invoices/settings/_components/product-catalog-section.tsx": {
-    "typescript/no-misused-promises": {
-      "count": 1
-    },
     "max-lines": {
       "count": 1
     },
-    "pts/use-id-not-fixed-id": {
-      "count": 14
-    }
-  },
-  "app/(dashboard)/invoices/settings/_components/tax-rates-section.tsx": {
     "typescript/no-misused-promises": {
       "count": 1
-    },
-    "max-lines": {
-      "count": 1
-    },
-    "pts/use-id-not-fixed-id": {
-      "count": 8
-    }
-  },
-  "app/(dashboard)/invoices/settings/actions.ts": {
-    "typescript/no-deprecated": {
-      "count": 2
     }
   },
   "app/(dashboard)/leads/_actions/move-lead.ts": {
@@ -207,13 +180,13 @@
     }
   },
   "app/(dashboard)/people/_components/contact-sheet/contact-sheet-form.tsx": {
+    "max-lines": {
+      "count": 1
+    },
     "typescript/no-deprecated": {
       "count": 1
     },
     "typescript/no-misused-promises": {
-      "count": 1
-    },
-    "max-lines": {
       "count": 1
     }
   },
@@ -238,10 +211,10 @@
     }
   },
   "app/(dashboard)/projects/_components/project-sheet/project-sheet-form.tsx": {
-    "typescript/no-deprecated": {
+    "max-lines": {
       "count": 1
     },
-    "max-lines": {
+    "typescript/no-deprecated": {
       "count": 1
     }
   },
@@ -271,10 +244,10 @@
     }
   },
   "app/(dashboard)/projects/_components/task-sheet/planning-panel.tsx": {
-    "typescript/no-misused-promises": {
+    "max-lines": {
       "count": 1
     },
-    "max-lines": {
+    "typescript/no-misused-promises": {
       "count": 1
     }
   },
@@ -304,11 +277,11 @@
     }
   },
   "app/(dashboard)/projects/actions/trigger-worker.ts": {
-    "typescript/no-deprecated": {
-      "count": 4
-    },
     "max-lines": {
       "count": 1
+    },
+    "typescript/no-deprecated": {
+      "count": 4
     }
   },
   "app/(dashboard)/projects/actions/unaccept-task.ts": {
@@ -332,11 +305,11 @@
     }
   },
   "app/(dashboard)/reports/monthly-close/_components/drift-notice.tsx": {
-    "typescript/switch-exhaustiveness-check": {
-      "count": 1
-    },
     "pts/use-id-not-fixed-id": {
       "count": 2
+    },
+    "typescript/switch-exhaustiveness-check": {
+      "count": 1
     }
   },
   "app/(dashboard)/reports/monthly-close/_components/partner-payouts-table.tsx": {
@@ -367,9 +340,20 @@
       "count": 2
     }
   },
-  "app/(dashboard)/settings/integrations/integrations-panel.tsx": {
+  "app/(dashboard)/settings/billing/_components/product-catalog-section.tsx": {
     "max-lines": {
       "count": 1
+    },
+    "pts/use-id-not-fixed-id": {
+      "count": 14
+    }
+  },
+  "app/(dashboard)/settings/billing/_components/tax-rates-section.tsx": {
+    "max-lines": {
+      "count": 1
+    },
+    "pts/use-id-not-fixed-id": {
+      "count": 8
     }
   },
   "app/(dashboard)/settings/templates/_components/pdfs-gallery.tsx": {
@@ -551,22 +535,22 @@
     }
   },
   "components/dashboard/hours-widget/hours-widget.tsx": {
-    "typescript/no-misused-promises": {
-      "count": 4
-    },
     "max-lines": {
       "count": 1
     },
     "pts/use-id-not-fixed-id": {
       "count": 2
+    },
+    "typescript/no-misused-promises": {
+      "count": 4
     }
   },
   "components/dashboard/my-tasks-widget/my-tasks-widget.tsx": {
-    "typescript/no-misused-promises": {
-      "count": 1
-    },
     "pts/use-id-not-fixed-id": {
       "count": 2
+    },
+    "typescript/no-misused-promises": {
+      "count": 1
     }
   },
   "components/dashboard/notifications-widget.tsx": {
@@ -599,11 +583,6 @@
       "count": 2
     }
   },
-  "components/forms/avatar-upload-field.tsx": {
-    "typescript/no-misused-promises": {
-      "count": 1
-    }
-  },
   "components/integrations/connected-accounts-list.tsx": {
     "typescript/no-misused-promises": {
       "count": 1
@@ -614,22 +593,11 @@
       "count": 1
     }
   },
-  "components/layout/edit-profile-dialog.tsx": {
-    "typescript/no-deprecated": {
-      "count": 1
-    },
-    "typescript/no-misused-promises": {
-      "count": 1
-    },
-    "max-lines": {
-      "count": 1
-    }
-  },
   "components/my-tasks/my-tasks-board.tsx": {
-    "typescript/switch-exhaustiveness-check": {
+    "max-lines": {
       "count": 1
     },
-    "max-lines": {
+    "typescript/switch-exhaustiveness-check": {
       "count": 1
     }
   },
@@ -639,10 +607,10 @@
     }
   },
   "components/my-tasks/my-tasks-page.tsx": {
-    "typescript/no-misused-promises": {
+    "max-lines": {
       "count": 1
     },
-    "max-lines": {
+    "typescript/no-misused-promises": {
       "count": 1
     }
   },
@@ -877,11 +845,11 @@
     }
   },
   "lib/people/use-contact-sheet-state.ts": {
-    "typescript/no-deprecated": {
-      "count": 2
-    },
     "max-lines": {
       "count": 1
+    },
+    "typescript/no-deprecated": {
+      "count": 2
     }
   },
   "lib/projects/board/state/use-board-scroll-persistence.ts": {
@@ -940,11 +908,11 @@
     }
   },
   "lib/projects/time-log/use-project-time-log-dialog.ts": {
-    "typescript/no-deprecated": {
-      "count": 2
-    },
     "max-lines": {
       "count": 1
+    },
+    "typescript/no-deprecated": {
+      "count": 2
     }
   },
   "lib/queries/companies/index.ts": {
