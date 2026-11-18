@@ -24,8 +24,3 @@ export const profitShareSettingsSchema = z.object({
     }),
   profitSharePartnerIds: z.array(z.guid()).max(20),
 })
-
-export type ProfitShareSettingsInput = z.input<typeof profitShareSettingsSchema>
-export type ProfitShareSettingsValues = z.output<
-  typeof profitShareSettingsSchema
->

@@ -139,33 +139,6 @@
       "count": 1
     }
   },
-  "app/(dashboard)/settings/billing/_components/product-catalog-section.tsx": {
-    "max-lines": {
-      "count": 1
-    },
-    "pts/use-id-not-fixed-id": {
-      "count": 14
-    },
-    "typescript/no-misused-promises": {
-      "count": 1
-    }
-  },
-  "app/(dashboard)/settings/billing/_components/tax-rates-section.tsx": {
-    "max-lines": {
-      "count": 1
-    },
-    "pts/use-id-not-fixed-id": {
-      "count": 8
-    },
-    "typescript/no-misused-promises": {
-      "count": 1
-    }
-  },
-  "app/(dashboard)/settings/billing/actions.ts": {
-    "typescript/no-deprecated": {
-      "count": 2
-    }
-  },
   "app/(dashboard)/leads/_actions/move-lead.ts": {
     "typescript/no-deprecated": {
       "count": 1
@@ -365,6 +338,22 @@
   "app/(dashboard)/reports/monthly-close/_components/stripe-fees-card.tsx": {
     "pts/use-id-not-fixed-id": {
       "count": 2
+    }
+  },
+  "app/(dashboard)/settings/billing/_components/product-catalog-section.tsx": {
+    "max-lines": {
+      "count": 1
+    },
+    "pts/use-id-not-fixed-id": {
+      "count": 14
+    }
+  },
+  "app/(dashboard)/settings/billing/_components/tax-rates-section.tsx": {
+    "max-lines": {
+      "count": 1
+    },
+    "pts/use-id-not-fixed-id": {
+      "count": 8
     }
   },
   "app/(dashboard)/settings/integrations/integrations-panel.tsx": {

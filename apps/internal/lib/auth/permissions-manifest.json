@@ -680,36 +680,15 @@
   },
   {
     "type": "action",
-    "name": "saveProductCatalogItem",
+    "name": "saveBillingSettings",
     "file": "apps/internal/app/(dashboard)/settings/billing/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "saveTaxRate",
-    "file": "apps/internal/app/(dashboard)/settings/billing/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "toggleTaxRateActiveAction",
-    "file": "apps/internal/app/(dashboard)/settings/billing/actions.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "billing.manage"
   },
   {
     "type": "page",
     "name": "/settings/billing",
     "file": "apps/internal/app/(dashboard)/settings/billing/page.tsx",
-    "kind": "capability",
-    "capability": "billing.manage"
-  },
-  {
-    "type": "action",
-    "name": "saveProfitShareSettings",
-    "file": "apps/internal/app/(dashboard)/settings/billing/profit-share-actions.ts",
     "kind": "capability",
     "capability": "billing.manage"
   },

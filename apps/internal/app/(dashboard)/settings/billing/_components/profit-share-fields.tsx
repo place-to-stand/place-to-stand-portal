@@ -32,9 +32,9 @@ import {
   monthLabel,
 } from '@/lib/billing/months'
 import type {
-  ProfitShareSettingsInput,
-  ProfitShareSettingsValues,
-} from '@/lib/billing/profit-share-form'
+  BillingSettingsInput,
+  BillingSettingsValues,
+} from '@/lib/billing/billing-settings-form'
 import type { ProfitShareStaff } from '@/lib/billing/profit-share-query'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
@@ -52,7 +52,7 @@ export function ProfitShareFields({
   savedPartnerIds,
   disabled,
 }: {
-  control: Control<ProfitShareSettingsInput, unknown, ProfitShareSettingsValues>
+  control: Control<BillingSettingsInput, unknown, BillingSettingsValues>
   staff: ProfitShareStaff[]
   /** The partners as saved, so a removed one shows as Pending removal. */
   savedPartnerIds: string[]

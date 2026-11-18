@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo, useTransition } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -48,7 +48,7 @@ import { parseSortParam } from '@/lib/pagination/sort'
 import { sortRows } from '@/lib/table/sort-rows'
 import { US_STATES } from '@/lib/companies/billing/us-states'
 
-import { saveTaxRate, toggleTaxRateActiveAction } from '../actions'
+import { newRowId, RowChangeBadge, rowChange } from './row-change'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -80,14 +80,31 @@ type TaxRateFormValues = z.infer<typeof taxRateFormSchema>
 // ---------------------------------------------------------------------------
 
 type TaxRatesSectionProps = {
-  initialRates: TaxRateRow[]
+  /** The rows as they stand in the page form. */
+  rates: TaxRateRow[]
+  /** The rows as saved, so a new or changed one is marked until Save. */
+  savedRates: TaxRateRow[]
+  /** Changes the page form; nothing is written until the page's Save. */
+  onRatesChange: (rates: TaxRateRow[]) => void
+  disabled: boolean
 }
 
-export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
-  const [rates, setRates] = useState(initialRates)
+/**
+ * Tax rates, edited in place: the dialog and the Active switch change the
+ * page's form, and the page's Save writes them with everything else.
+ */
+export function TaxRatesSection({
+  rates,
+  savedRates,
+  onRatesChange,
+  disabled,
+}: TaxRatesSectionProps) {
+  const savedById = useMemo(
+    () => new Map(savedRates.map(rate => [rate.id, rate])),
+    [savedRates]
+  )
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingRate, setEditingRate] = useState<TaxRateRow | null>(null)
-  const [isPending, startTransition] = useTransition()
   // Local sort state (PRD 004 §03): two small config tables share this page,
   // so sort stays out of the URL. undefined = the 'label:asc' default.
   const [sort, setSort] = useState<SortValue | undefined>(undefined)
@@ -191,67 +208,57 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
     [form]
   )
 
-  const handleToggleActive = useCallback((rate: TaxRateRow) => {
-    startTransition(async () => {
-      const result = await toggleTaxRateActiveAction(rate.id, !rate.is_active)
-
-      if (result.ok) {
-        setRates(prev =>
-          prev.map(r =>
-            r.id === rate.id ? { ...r, is_active: !r.is_active } : r
-          )
+  const handleToggleActive = useCallback(
+    (rate: TaxRateRow) => {
+      onRatesChange(
+        rates.map(r =>
+          r.id === rate.id ? { ...r, is_active: !r.is_active } : r
         )
-      }
-    })
-  }, [])
+      )
+    },
+    [rates, onRatesChange]
+  )
 
   const onSubmit = useCallback(
     (values: TaxRateFormValues) => {
-      startTransition(async () => {
-        const rateDecimal = (Number(values.rate) / 100).toString()
-
-        const result = await saveTaxRate({
-          id: editingRate?.id,
-          state: values.state,
-          rate: rateDecimal,
-          label: values.label,
-          isActive: values.isActive,
-        })
-
-        if (result.ok) {
-          setDialogOpen(false)
-          if (editingRate) {
-            setRates(prev =>
-              prev.map(r =>
-                r.id === editingRate.id
-                  ? {
-                      ...r,
-                      state: values.state,
-                      rate: rateDecimal,
-                      label: values.label,
-                      is_active: values.isActive,
-                    }
-                  : r
-              )
+      const rateDecimal = (Number(values.rate) / 100).toString()
+      const fields = {
+        state: values.state,
+        label: values.label.trim(),
+        is_active: values.isActive,
+      }
+      onRatesChange(
+        editingRate
+          ? rates.map(r =>
+              r.id === editingRate.id
+                ? {
+                    ...r,
+                    ...fields,
+                    // The same number keeps the saved string ("0.0825" vs
+                    // "0.082500"), so an untouched rate isn't "Edited".
+                    rate:
+                      Number(r.rate) === Number(rateDecimal)
+                        ? r.rate
+                        : rateDecimal,
+                  }
+                : r
             )
-          } else {
-            setRates(prev => [
-              ...prev,
+          : [
+              ...rates,
               {
-                id: crypto.randomUUID(),
-                state: values.state,
+                // A new row's id is local until Save creates it.
+                id: newRowId(),
                 rate: rateDecimal,
-                label: values.label,
-                is_active: values.isActive,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
+                ...fields,
+                created_at: '',
+                updated_at: '',
               },
-            ])
-          }
-        }
-      })
+            ]
+      )
+      form.reset(form.getValues())
+      setDialogOpen(false)
     },
-    [editingRate]
+    [editingRate, form, rates, onRatesChange]
   )
 
   return (
@@ -259,7 +266,12 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
       title='Tax rates'
       layout='block'
       action={
-        <Button size='sm' onClick={openAddDialog}>
+        <Button
+          size='sm'
+          type='button'
+          onClick={openAddDialog}
+          disabled={disabled}
+        >
           <Plus />
           Create tax rate
         </Button>
@@ -290,6 +302,9 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
                 <TableRow key={rate.id}>
                   <TableCell className='truncate font-medium'>
                     {rate.state}
+                    <RowChangeBadge
+                      change={rowChange(rate, savedById.get(rate.id))}
+                    />
                   </TableCell>
                   <TableCell label='Rate' className='text-right tabular-nums'>
                     {formatPercent(rate.rate)}
@@ -301,7 +316,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
                     <Switch
                       size='sm'
                       checked={rate.is_active}
-                      disabled={isPending}
+                      disabled={disabled}
                       onCheckedChange={() => handleToggleActive(rate)}
                     />
                   </TableCell>
@@ -328,12 +343,20 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
             </DialogTitle>
             <DialogDescription>
               {editingRate
-                ? 'Update tax rate details.'
-                : 'Create a new tax rate for invoicing.'}
+                ? 'Change the tax rate. It saves with the page.'
+                : 'Add a tax rate for invoicing. It saves with the page.'}
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+          {/* Inside the page's form in React's tree (the dialog is only
+              portalled in the DOM), so its submit must not reach the page. */}
+          <form
+            onSubmit={event => {
+              event.stopPropagation()
+              void form.handleSubmit(onSubmit)(event)
+            }}
+            className='space-y-4'
+          >
             <div className='flex items-center gap-3'>
               <Switch
                 id='tax-is-active'
@@ -412,8 +435,8 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
               >
                 Cancel
               </Button>
-              <Button type='submit' disabled={isPending}>
-                {isPending ? 'Saving...' : editingRate ? 'Update' : 'Create'}
+              <Button type='submit'>
+                {editingRate ? 'Update tax rate' : 'Add tax rate'}
               </Button>
             </DialogFooter>
           </form>

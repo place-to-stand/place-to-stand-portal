@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo, useTransition } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -42,7 +42,7 @@ import type { ProductCatalogItemRow } from '@/lib/queries/product-catalog'
 import { parseSortParam } from '@/lib/pagination/sort'
 import { sortRows } from '@/lib/table/sort-rows'
 
-import { saveProductCatalogItem } from '../actions'
+import { newRowId, RowChangeBadge, rowChange } from './row-change'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -85,20 +85,25 @@ type ProductFormValues = z.infer<typeof productFormSchema>
 
 type ProductRowProps = {
   item: ProductCatalogItemRow
+  saved: ProductCatalogItemRow | undefined
   onEdit: (item: ProductCatalogItemRow) => void
   onToggleActive: (item: ProductCatalogItemRow) => void
-  isPending: boolean
+  disabled: boolean
 }
 
 function ProductRow({
   item,
+  saved,
   onEdit,
   onToggleActive,
-  isPending,
+  disabled,
 }: ProductRowProps) {
   return (
     <TableRow>
-      <TableCell className='truncate font-medium'>{item.name}</TableCell>
+      <TableCell className='truncate font-medium'>
+        {item.name}
+        <RowChangeBadge change={rowChange(item, saved)} />
+      </TableCell>
       <TableCell label='Price' className='text-right tabular-nums'>
         {formatCurrency(item.unit_price)}
       </TableCell>
@@ -113,7 +118,7 @@ function ProductRow({
         <Switch
           size='sm'
           checked={item.is_active}
-          disabled={isPending}
+          disabled={disabled}
           onCheckedChange={() => onToggleActive(item)}
         />
       </TableCell>
@@ -133,18 +138,34 @@ function ProductRow({
 // ---------------------------------------------------------------------------
 
 type ProductCatalogSectionProps = {
-  initialItems: ProductCatalogItemRow[]
+  /** The rows as they stand in the page form. */
+  items: ProductCatalogItemRow[]
+  /** The rows as saved, so a new or changed one is marked until Save. */
+  savedItems: ProductCatalogItemRow[]
+  /** Changes the page form; nothing is written until the page's Save. */
+  onItemsChange: (items: ProductCatalogItemRow[]) => void
+  disabled: boolean
 }
 
+/**
+ * The product catalog, edited in place: the dialog and the Active switch
+ * change the page's form, and the page's Save writes them with everything
+ * else on Settings → Billing.
+ */
 export function ProductCatalogSection({
-  initialItems,
+  items,
+  savedItems,
+  onItemsChange,
+  disabled,
 }: ProductCatalogSectionProps) {
-  const [items, setItems] = useState(initialItems)
+  const savedById = useMemo(
+    () => new Map(savedItems.map(item => [item.id, item])),
+    [savedItems]
+  )
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<ProductCatalogItemRow | null>(
     null
   )
-  const [isPending, startTransition] = useTransition()
   // Local sort state (PRD 004 §03): two small config tables share this page,
   // so sort stays out of the URL. undefined = the 'name:asc' default.
   const [sort, setSort] = useState<SortValue | undefined>(undefined)
@@ -264,93 +285,45 @@ export function ProductCatalogSection({
     [form]
   )
 
-  const handleToggleActive = useCallback((item: ProductCatalogItemRow) => {
-    startTransition(async () => {
-      const result = await saveProductCatalogItem({
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        unitPrice: item.unit_price,
-        unitLabel: item.unit_label,
-        createsHourBlockDefault: item.creates_hour_block_default,
-        isActive: !item.is_active,
-        minQuantity: item.min_quantity,
-        sortOrder: item.sort_order,
-      })
-
-      if (result.ok) {
-        setItems(prev =>
-          prev.map(p =>
-            p.id === item.id ? { ...p, is_active: !p.is_active } : p
-          )
+  const handleToggleActive = useCallback(
+    (item: ProductCatalogItemRow) => {
+      onItemsChange(
+        items.map(p =>
+          p.id === item.id ? { ...p, is_active: !p.is_active } : p
         )
-      }
-    })
-  }, [])
+      )
+    },
+    [items, onItemsChange]
+  )
 
   const onSubmit = useCallback(
     (values: ProductFormValues) => {
-      startTransition(async () => {
-        const minQty =
-          values.minQuantity && values.minQuantity.trim() !== ''
-            ? parseInt(values.minQuantity, 10)
-            : null
-
-        const result = await saveProductCatalogItem({
-          id: editingItem?.id,
-          name: values.name,
-          description: values.description?.trim() || null,
-          unitPrice: values.unitPrice,
-          unitLabel: values.unitLabel,
-          createsHourBlockDefault: values.createsHourBlockDefault,
-          isActive: values.isActive,
-          minQuantity: minQty,
-          sortOrder: editingItem?.sort_order ?? items.length,
-        })
-
-        if (result.ok) {
-          setDialogOpen(false)
-          // Optimistic: update local state for edits, or append for new
-          if (editingItem) {
-            setItems(prev =>
-              prev.map(p =>
-                p.id === editingItem.id
-                  ? {
-                      ...p,
-                      name: values.name,
-                      description: values.description?.trim() || null,
-                      unit_price: values.unitPrice,
-                      unit_label: values.unitLabel,
-                      creates_hour_block_default:
-                        values.createsHourBlockDefault,
-                      is_active: values.isActive,
-                      min_quantity: minQty,
-                    }
-                  : p
-              )
-            )
-          } else {
-            // For new items we need the server to give us the ID,
-            // so we rely on revalidation. Add a placeholder meanwhile.
-            setItems(prev => [
-              ...prev,
-              {
-                id: crypto.randomUUID(),
-                name: values.name,
-                description: values.description?.trim() || null,
-                unit_price: values.unitPrice,
-                unit_label: values.unitLabel,
-                creates_hour_block_default: values.createsHourBlockDefault,
-                is_active: values.isActive,
-                min_quantity: minQty,
-                sort_order: prev.length,
-              },
-            ])
-          }
-        }
-      })
+      const minQty =
+        values.minQuantity && values.minQuantity.trim() !== ''
+          ? parseInt(values.minQuantity, 10)
+          : null
+      const fields = {
+        name: values.name.trim(),
+        description: values.description?.trim() || null,
+        unit_price: values.unitPrice,
+        unit_label: values.unitLabel.trim(),
+        creates_hour_block_default: values.createsHourBlockDefault,
+        is_active: values.isActive,
+        min_quantity: minQty,
+      }
+      onItemsChange(
+        editingItem
+          ? items.map(p => (p.id === editingItem.id ? { ...p, ...fields } : p))
+          : [
+              ...items,
+              // A new row's id is local until Save creates it.
+              { id: newRowId(), sort_order: items.length, ...fields },
+            ]
+      )
+      form.reset(form.getValues())
+      setDialogOpen(false)
     },
-    [editingItem, items.length]
+    [editingItem, form, items, onItemsChange]
   )
 
   return (
@@ -358,7 +331,12 @@ export function ProductCatalogSection({
       title='Product catalog'
       layout='block'
       action={
-        <Button size='sm' onClick={openAddDialog}>
+        <Button
+          size='sm'
+          type='button'
+          onClick={openAddDialog}
+          disabled={disabled}
+        >
           <Plus />
           Create product
         </Button>
@@ -396,9 +374,10 @@ export function ProductCatalogSection({
                 <ProductRow
                   key={item.id}
                   item={item}
+                  saved={savedById.get(item.id)}
                   onEdit={openEditDialog}
                   onToggleActive={handleToggleActive}
-                  isPending={isPending}
+                  disabled={disabled}
                 />
               ))
             )}
@@ -415,12 +394,20 @@ export function ProductCatalogSection({
             </DialogTitle>
             <DialogDescription>
               {editingItem
-                ? 'Update the product details.'
-                : 'Create a product for the catalog.'}
+                ? 'Change the product. It saves with the page.'
+                : 'Add a product to the catalog. It saves with the page.'}
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
+          {/* Inside the page's form in React's tree (the dialog is only
+              portalled in the DOM), so its submit must not reach the page. */}
+          <form
+            onSubmit={event => {
+              event.stopPropagation()
+              void form.handleSubmit(onSubmit)(event)
+            }}
+            className='space-y-4'
+          >
             <div className='flex items-center gap-3'>
               <Switch
                 id='product-is-active'
@@ -533,8 +520,8 @@ export function ProductCatalogSection({
               >
                 Cancel
               </Button>
-              <Button type='submit' disabled={isPending}>
-                {isPending ? 'Saving...' : editingItem ? 'Update' : 'Create'}
+              <Button type='submit'>
+                {editingItem ? 'Update product' : 'Add product'}
               </Button>
             </DialogFooter>
           </form>
