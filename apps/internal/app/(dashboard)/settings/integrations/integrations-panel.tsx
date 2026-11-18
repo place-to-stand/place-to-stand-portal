@@ -386,9 +386,8 @@ function IntegrationSection({
       {fullWidth ? (
         children
       ) : (
-        <div className='grid grid-cols-1 items-start gap-4 lg:grid-cols-2'>
-          {children}
-        </div>
+        // Stretched, so the two cards on a row are the same height.
+        <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>{children}</div>
       )}
     </FormSection>
   )
