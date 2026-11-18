@@ -130,7 +130,7 @@ export async function deliverSubmissionEmails(
   }
 
   const { from, teamInbox } = resolveFormEmailAddresses(
-    (await getBusinessIdentity()).inboxEmail
+    await getBusinessIdentity()
   )
 
   const emails = renderSubmissionEmails(row, {
@@ -257,7 +257,7 @@ export async function deliverAddedDetails(
       .slice(0, 32)
 
     const { from, teamInbox } = resolveFormEmailAddresses(
-      (await getBusinessIdentity()).inboxEmail
+      await getBusinessIdentity()
     )
 
     await sendEmail({

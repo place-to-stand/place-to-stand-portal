@@ -2,6 +2,23 @@
 
 - Supabase storage expects a private `user-avatars` bucket. Create it once with authenticated access before enabling avatar uploads in the portal.
 
+## Your business details
+
+- After the first sign-in, an admin fills in **Settings → Business**: name, address, phone, inbox email, sending email, booking link, time zone and, if you use it, the partner profit share on the monthly close. A new install starts blank, and a banner asks for these until they are saved. Emails, invoices and the client portal read them from there.
+- Replies to portal email go to the **inbox email**, or to the sending address when it is blank.
+
+## Sending email (Resend)
+
+The portal sends all mail through [Resend](https://resend.com), from a domain you own and have verified there. Resend refuses mail from any other domain.
+
+1. Create a Resend account, and add a sending domain under **Domains**. A subdomain such as `send.example.com` keeps this mail apart from your everyday inbox.
+2. Add the DNS records Resend shows (SPF, DKIM and the return-path MX) at your DNS host, and wait until Resend marks the domain **Verified**.
+3. Create an API key with full access (a sending-only key can't list domains, so the Business page can only accept addresses on the domain in `RESEND_FROM_EMAIL`).
+4. Set `RESEND_API_KEY` and `RESEND_FROM_EMAIL` (an address on the verified domain, such as `portal@send.example.com`) in both apps. The marketing form emails can use their own sender in `RESEND_FORMS_FROM_EMAIL`.
+5. Optionally set **Sending email** on Settings → Business. The portal checks its domain is verified in Resend before saving it.
+
+Outside production, mail goes to Mailpit and needs none of this.
+
 ## Marketing form intake
 
 - The marketing site POSTs the contact form to `/api/integrations/contact-submissions` and Opportunity Audit progress to `/api/integrations/audit-responses`. Each needs a `Bearer` token matching `CONTACT_INTAKE_TOKEN` / `AUDIT_INTAKE_TOKEN`.

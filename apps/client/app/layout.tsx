@@ -2,11 +2,13 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono, Space_Grotesk } from 'next/font/google'
 import '@/styles/globals.css'
 
+import { DEFAULT_BUSINESS_NAME } from '@pts/db/business'
+import { BusinessBrandProvider } from '@pts/ui/business-brand'
 import { CompanyTimeZone } from '@pts/ui/company-time-zone'
 import { TooltipProvider } from '@pts/ui/tooltip'
 
 import { ThemeProvider } from '@/components/providers/theme-provider'
-import { getBusinessOrNull } from '@/lib/business'
+import { brandPropsFor, getBusinessOrNull } from '@/lib/business'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -25,15 +27,18 @@ const spaceGrotesk = Space_Grotesk({
   display: 'swap',
 })
 
-export const metadata: Metadata = {
-  title: {
-    default: 'Client Portal | Place To Stand',
-    template: '%s | Place To Stand Client Portal',
-  },
-  description: 'View your projects and remaining hours',
-  // A login-gated app — keep every route (sign-in, forgot-password, …) out of
-  // search indexes. The marketing site links here, so crawlers do find it.
-  robots: { index: false, follow: false },
+export async function generateMetadata(): Promise<Metadata> {
+  const name = (await getBusinessOrNull())?.name ?? DEFAULT_BUSINESS_NAME
+  return {
+    title: {
+      default: `Client Portal | ${name}`,
+      template: `%s | ${name} Client Portal`,
+    },
+    description: 'View your projects and remaining hours',
+    // A login-gated app — keep every route (sign-in, forgot-password, …) out
+    // of search indexes. The marketing site links here, so crawlers do find it.
+    robots: { index: false, follow: false },
+  }
 }
 
 export default async function RootLayout({
@@ -68,7 +73,11 @@ export default async function RootLayout({
       >
         <ThemeProvider>
           {business ? <CompanyTimeZone timeZone={business.timeZone} /> : null}
-          <TooltipProvider>{children}</TooltipProvider>
+          <BusinessBrandProvider
+            brand={business ? brandPropsFor(business) : null}
+          >
+            <TooltipProvider>{children}</TooltipProvider>
+          </BusinessBrandProvider>
         </ThemeProvider>
       </body>
     </html>

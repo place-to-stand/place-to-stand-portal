@@ -7,23 +7,13 @@
  *   each partner = available ÷ partners, rounded DOWN to the cent
  *
  * Rounding down means a stray cent stays in the account instead of being
- * paid twice. Like the partner rate schedule, the policy lives in code: it
- * changes through engineering, never at runtime.
+ * paid twice. The start month, minimum balance and partners are set on
+ * Settings → Business (`readProfitSharePolicy` in @pts/db/business); a
+ * closed month keeps the figures frozen in its snapshot.
  *
  * Pure module (no server-only): the close drift comparison and the UI both
  * call computeProfitShare.
  */
-
-export const PROFIT_SHARE_POLICY = {
-  /** First month (YYYY-MM-01) the profit share applies to. */
-  effectiveFrom: '2026-08-01',
-  minimumBalance: 10_000,
-  /** Partners who split the profit share, matched to users by email. */
-  partnerEmails: [
-    'jason@placetostandagency.com',
-    'kris@placetostandagency.com',
-  ],
-} as const
 
 export type ProfitSharePartner = {
   userId: string
@@ -64,10 +54,18 @@ export type ProfitShareData = {
 
 const round2 = (value: number): number => Math.round(value * 100) / 100
 
-/** True when the month (1-indexed) is on or after the policy start. */
-export function profitShareAppliesTo(year: number, month: number): boolean {
+/**
+ * True when the profit share is set up and the month (1-indexed) is on or
+ * after its start.
+ */
+export function profitShareAppliesTo(
+  policy: { startsOn: string } | null,
+  year: number,
+  month: number
+): boolean {
+  if (!policy) return false
   const period = `${year}-${String(month).padStart(2, '0')}-01`
-  return period >= PROFIT_SHARE_POLICY.effectiveFrom
+  return period >= policy.startsOn
 }
 
 export function computeProfitShare(input: {
@@ -79,10 +77,9 @@ export function computeProfitShare(input: {
   addedAfterCloseAt?: string | null
   payouts: number
   partners: Array<Omit<ProfitSharePartner, 'amount'>>
-  minimumBalance?: number
+  minimumBalance: number
 }): ProfitShareData {
-  const minimumBalance =
-    input.minimumBalance ?? PROFIT_SHARE_POLICY.minimumBalance
+  const minimumBalance = input.minimumBalance
   const raw = round2(input.balance - input.payouts - minimumBalance)
   const available = Math.max(0, raw)
   const count = input.partners.length

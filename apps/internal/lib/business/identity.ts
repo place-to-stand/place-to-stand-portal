@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { cache } from 'react'
+import { connection } from 'next/server'
 
 import { readBusinessIdentity, type BusinessIdentity } from '@pts/db/business'
 import { formatSender, type EmailBrand } from '@pts/email'
@@ -95,13 +96,13 @@ export function brandPropsFor(identity: BusinessIdentity) {
 }
 
 /**
- * For the root layout, which renders every page, including ones built ahead
- * of time without a database: the defaults rather than an error.
+ * For the root layout, which renders every page: the defaults rather than an
+ * error when the database is away.
  */
 export async function getBusinessIdentityOrDefaults(): Promise<BusinessIdentity | null> {
-  // Pages built ahead of time have no database to read: use the defaults.
-  // oxlint-disable-next-line pts/env-through-schema -- Next sets NEXT_PHASE itself; it is not deploy config
-  if (process.env.NEXT_PHASE === 'phase-production-build') return null
+  // Every page shows the business, so none is built ahead of time (a build
+  // has no database): each renders per request with the saved details.
+  await connection()
   try {
     return await getBusinessIdentity()
   } catch (error) {

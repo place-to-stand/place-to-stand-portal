@@ -14,11 +14,11 @@ export type ProfitSharePartnerUserRow = {
   updatedAt: string
 }
 
-/** Active (non-archived) users matching the given emails. */
-export async function fetchUsersByEmail(
-  emails: readonly string[]
+/** Active (non-archived) users with the given ids. */
+export async function fetchUsersByIds(
+  ids: readonly string[]
 ): Promise<ProfitSharePartnerUserRow[]> {
-  if (emails.length === 0) return []
+  if (ids.length === 0) return []
 
   return db
     .select({
@@ -29,5 +29,5 @@ export async function fetchUsersByEmail(
       updatedAt: users.updatedAt,
     })
     .from(users)
-    .where(and(inArray(users.email, [...emails]), isNull(users.deletedAt)))
+    .where(and(inArray(users.id, [...ids]), isNull(users.deletedAt)))
 }

@@ -59,9 +59,9 @@ const SAMPLE_AUDIT_RESULT = {
  */
 export function buildFormEmailEntries(
   internalOrigin: string,
-  businessInbox: string | null
+  business: { name: string; inboxEmail: string | null }
 ): EmailTemplateEntry[] {
-  const formAddresses = resolveFormEmailAddresses(businessInbox)
+  const formAddresses = resolveFormEmailAddresses(business)
 
   return [
     {

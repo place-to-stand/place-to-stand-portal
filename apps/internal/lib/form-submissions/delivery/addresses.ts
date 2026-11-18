@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { formatSender } from '@pts/email'
+
 import { serverEnv } from '@/lib/env.server'
 
 /**
@@ -7,16 +9,20 @@ import { serverEnv } from '@/lib/env.server'
  * own transactional sender so visitors keep seeing `hello@…`, the address the
  * marketing site sent from before PRD 008 moved the sends here.
  */
-export function resolveFormEmailAddresses(businessInbox: string | null) {
+export function resolveFormEmailAddresses(business: {
+  name: string
+  inboxEmail: string | null
+}) {
   const fromAddress =
     serverEnv.RESEND_FORMS_FROM_EMAIL ?? serverEnv.RESEND_FROM_EMAIL
   return {
-    from: `Place To Stand <${fromAddress}>`,
+    from: formatSender(business.name, fromAddress),
     /**
      * Receives team notifications, and is the Reply-To on visitor mail:
      * FORMS_NOTIFY_EMAIL, else the Business page's inbox email.
      */
-    teamInbox: serverEnv.FORMS_NOTIFY_EMAIL ?? businessInbox ?? fromAddress,
+    teamInbox:
+      serverEnv.FORMS_NOTIFY_EMAIL ?? business.inboxEmail ?? fromAddress,
   }
 }
 

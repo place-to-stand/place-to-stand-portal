@@ -24,7 +24,7 @@ export default function AccountNotSetUpPage() {
       wide
       label='Internal Portal'
       title="You're not set up yet"
-      description="We couldn't find a sign-in for that email. If you're expecting access, ask a Place To Stand admin to set you up."
+      description="We couldn't find a sign-in for that email. If you're expecting access, ask an admin to set you up."
       footer={
         <Link className={authLinkClass} href='/sign-in'>
           Back to sign in

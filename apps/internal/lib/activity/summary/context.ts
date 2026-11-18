@@ -48,7 +48,7 @@ export const TARGET_LABELS: Record<string, string> = {
 
 export const DEFAULT_PROJECT_LABEL = 'General'
 export const DEFAULT_CLIENT_LABEL = 'General'
-export const COMPANY_GENERAL_CLIENT_LABEL = 'Place To Stand'
+export const COMPANY_GENERAL_CLIENT_LABEL = 'Company-wide'
 
 export function formatActivityLog(
   log: ActivityLogWithActor,

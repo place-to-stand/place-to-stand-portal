@@ -234,7 +234,7 @@ export function buildEmailTemplateCatalog({
         },
       ],
     },
-    ...buildFormEmailEntries(internalOrigin, inboxEmail),
+    ...buildFormEmailEntries(internalOrigin, { name: brand.name, inboxEmail }),
     {
       id: 'invoice',
       overview: 'Sent when an admin sends a client an invoice.',

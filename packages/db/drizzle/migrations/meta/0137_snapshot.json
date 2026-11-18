@@ -1,5 +1,5 @@
 {
-  "id": "270bde00-1085-478f-8f16-4215239f6b7c",
+  "id": "f960ad4f-7ba9-436c-9ea6-7d2e27effd52",
   "prevId": "a229c619-1d11-4c7c-96b9-f7c1997084ab",
   "version": "7",
   "dialect": "postgresql",
@@ -556,6 +556,26 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'America/Chicago'"
+        },
+        "profit_share_starts_on": {
+          "name": "profit_share_starts_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "profit_share_minimum_balance": {
+          "name": "profit_share_minimum_balance",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "profit_share_partner_ids": {
+          "name": "profit_share_partner_ids",
+          "type": "uuid[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::uuid[]"
         },
         "logo_data_url": {
           "name": "logo_data_url",

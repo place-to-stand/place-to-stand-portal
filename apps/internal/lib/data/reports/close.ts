@@ -10,10 +10,7 @@ import {
 } from '@/lib/activity/events'
 import { assertAdmin } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
-import {
-  profitShareAppliesTo,
-  type ProfitShareData,
-} from '@/lib/billing/profit-share'
+import { type ProfitShareData } from '@/lib/billing/profit-share'
 import { db } from '@/lib/db'
 import {
   fetchLateRecords,
@@ -29,6 +26,7 @@ import { computeDeltas, computeProfitShareDeltas } from './close-drift'
 import {
   buildProfitShare,
   loadMonthEndBalance,
+  profitShareApplies,
   type MonthEndBalanceResult,
 } from './profit-share'
 import type { MonthlyCloseReport, ProfitShareState } from './types'
@@ -418,7 +416,7 @@ async function resolveProfitShareForClose(params: {
   addedAfterCloseAt?: string
 }): Promise<ProfitShareForClose> {
   const { year, month } = params
-  if (!profitShareAppliesTo(year, month)) {
+  if (!(await profitShareApplies(year, month))) {
     return { ok: true, profitShare: null }
   }
 
@@ -638,7 +636,7 @@ export async function addProfitShareToClose(
   if (parsed.profitShare) {
     return { error: 'This close already has a profit share.' }
   }
-  if (!profitShareAppliesTo(year, month)) {
+  if (!(await profitShareApplies(year, month))) {
     return { error: 'Profit share does not apply to this month.' }
   }
 
@@ -751,7 +749,7 @@ async function liveProfitShare(
   payouts: number,
   balance: MonthEndBalanceResult
 ): Promise<ProfitShareState> {
-  if (!profitShareAppliesTo(year, month)) {
+  if (!(await profitShareApplies(year, month))) {
     return { status: 'inactive' }
   }
   if (!balance.ok) {
@@ -860,7 +858,7 @@ export async function fetchMonthlyCloseView(
   month: number
 ): Promise<MonthlyCloseView> {
   const { startDate, endDate } = monthDateRange(year, month)
-  const applies = profitShareAppliesTo(year, month)
+  const applies = await profitShareApplies(year, month)
   // Started up front so the Mercury round trip overlaps the database reads.
   const balance = applies ? loadMonthEndBalance(year, month) : null
 
@@ -1004,7 +1002,7 @@ export async function fetchMonthlyCloseForAgent(
   assertAdmin(user)
 
   const { startDate, endDate } = monthDateRange(year, month)
-  const applies = profitShareAppliesTo(year, month)
+  const applies = await profitShareApplies(year, month)
   const period = { year, month, label: periodLabel(year, month) }
   const snapshot = await getActiveSnapshot(year, month)
   const parsed = snapshot ? parseSnapshotReport(snapshot.report) : null

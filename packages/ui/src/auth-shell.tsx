@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
-import { BRAND, BRAND_DOT_GRID, BrandLockup } from './brand'
+import { BRAND, BRAND_DOT_GRID } from './brand'
+import { BusinessBrandLockup } from './business-brand'
 import { cn } from './cn'
 
 /**
@@ -43,7 +44,7 @@ export function AuthShell({
       style={{ backgroundColor: BRAND.bg, ...BRAND_DOT_GRID }}
     >
       <div className={cn('w-full space-y-8', wide ? 'max-w-md' : 'max-w-sm')}>
-        <BrandLockup label={label} />
+        <BusinessBrandLockup label={label} />
 
         <div
           className='space-y-6 border p-8'

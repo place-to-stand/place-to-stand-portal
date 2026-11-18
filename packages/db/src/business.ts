@@ -233,3 +233,40 @@ function isMissingRelation(error: unknown): boolean {
   }
   return false
 }
+
+/** The partner profit share as set on Settings → Business. */
+export type ProfitSharePolicy = {
+  /** First month (YYYY-MM-01) it applies to. */
+  startsOn: string
+  minimumBalance: number
+  /** Users who split it, in the order picked. */
+  partnerIds: string[]
+}
+
+/**
+ * The profit share, or null when it is off: no start month, no partners, or
+ * a database before migration 0137.
+ */
+export async function readProfitSharePolicy(
+  db: DbClient
+): Promise<ProfitSharePolicy | null> {
+  try {
+    const [row] = await db
+      .select({
+        startsOn: businessSettings.profitShareStartsOn,
+        minimumBalance: businessSettings.profitShareMinimumBalance,
+        partnerIds: businessSettings.profitSharePartnerIds,
+      })
+      .from(businessSettings)
+      .limit(1)
+    if (!row?.startsOn || row.partnerIds.length === 0) return null
+    return {
+      startsOn: `${row.startsOn.slice(0, 7)}-01`,
+      minimumBalance: Number(row.minimumBalance),
+      partnerIds: row.partnerIds,
+    }
+  } catch (error) {
+    if (isMissingRelation(error)) return null
+    throw error
+  }
+}

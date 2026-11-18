@@ -5,8 +5,13 @@ import { Analytics } from '@vercel/analytics/react'
 import { AppProviders } from '@/components/providers/app-providers'
 import { SupabaseListener } from '@/components/providers/supabase-listener'
 import { ViewportScrollReset } from '@/components/layout/viewport-scroll-reset'
+import { DEFAULT_BUSINESS_NAME } from '@pts/db/business'
+import { BusinessBrandProvider } from '@pts/ui/business-brand'
 import { CompanyTimeZone } from '@pts/ui/company-time-zone'
-import { getBusinessIdentityOrDefaults } from '@/lib/business/identity'
+import {
+  brandPropsFor,
+  getBusinessIdentityOrDefaults,
+} from '@/lib/business/identity'
 import { cn } from '@/lib/utils'
 import { serverEnv } from '@/lib/env.server'
 
@@ -29,13 +34,17 @@ const spaceGrotesk = Space_Grotesk({
   display: 'swap',
 })
 
-export const metadata: Metadata = {
-  metadataBase: new URL(serverEnv.APP_BASE_URL ?? 'http://localhost:3000'),
-  title: {
-    default: 'Place To Stand Portal',
-    template: '%s | Place To Stand Portal',
-  },
-  description: 'Client and project management for Place To Stand.',
+export async function generateMetadata(): Promise<Metadata> {
+  const name =
+    (await getBusinessIdentityOrDefaults())?.name ?? DEFAULT_BUSINESS_NAME
+  return {
+    metadataBase: new URL(serverEnv.APP_BASE_URL ?? 'http://localhost:3000'),
+    title: {
+      default: `${name} Portal`,
+      template: `%s | ${name} Portal`,
+    },
+    description: `Client and project management for ${name}.`,
+  }
 }
 
 export default async function RootLayout({
@@ -82,7 +91,11 @@ export default async function RootLayout({
           {business ? <CompanyTimeZone timeZone={business.timeZone} /> : null}
           <SupabaseListener />
           <ViewportScrollReset />
-          {children}
+          <BusinessBrandProvider
+            brand={business ? brandPropsFor(business) : null}
+          >
+            {children}
+          </BusinessBrandProvider>
         </AppProviders>
         <Analytics />
       </body>

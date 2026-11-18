@@ -246,7 +246,7 @@ export const CAPABILITIES = {
     area: 'Directory',
     label: 'Edit the staff company',
     description:
-      'Place To Stand’s own company: who is on staff and their titles. Staff sign in through it.',
+      'Your own business’s company: who is on staff and their titles. Staff sign in through it.',
     roles: ADMIN_ONLY,
     surfaces: ['app', 'mcp'],
   },

@@ -63,6 +63,19 @@ export const businessSettingsSchema = z.object({
   sendingEmail: optionalEmail,
   bookingUrl: optionalUrl,
   timeZone: z.string().min(1, 'Pick a time zone.'),
+  profitShareStartMonth: z
+    .string()
+    .trim()
+    .refine(value => value === '' || /^\d{4}-(0[1-9]|1[0-2])$/.test(value), {
+      message: 'Pick a month.',
+    }),
+  profitShareMinimumBalance: z
+    .string()
+    .trim()
+    .refine(value => value === '' || /^\d{1,10}(\.\d{1,2})?$/.test(value), {
+      message: 'Enter an amount in dollars, like 10000.',
+    }),
+  profitSharePartnerIds: z.array(z.guid()).max(20),
   logo: imageChange,
   icon: imageChange,
 })
@@ -70,9 +83,14 @@ export const businessSettingsSchema = z.object({
 export type BusinessSettingsInput = z.input<typeof businessSettingsSchema>
 export type BusinessSettingsValues = z.output<typeof businessSettingsSchema>
 
-/** Labels for the activity log's list of changed fields. */
+type ProfitShareField =
+  | 'profitShareStartMonth'
+  | 'profitShareMinimumBalance'
+  | 'profitSharePartnerIds'
+
+/** Labels for the activity log's list of changed text fields. */
 export const BUSINESS_FIELD_LABELS: Record<
-  Exclude<keyof BusinessSettingsValues, 'logo' | 'icon'>,
+  Exclude<keyof BusinessSettingsValues, 'logo' | 'icon' | ProfitShareField>,
   string
 > = {
   name: 'name',

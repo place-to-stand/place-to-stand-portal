@@ -1,6 +1,5 @@
 import { formatCalendarDate } from '@pts/ui/dates'
 
-import { PROFIT_SHARE_POLICY } from '@/lib/billing/profit-share'
 import type {
   MonthlyCloseReport,
   ProfitShareState,
@@ -17,6 +16,8 @@ type SummaryStripProps = {
   profitShare: ProfitShareState
   /** The month is still running: every figure is "so far". */
   inProgress: boolean
+  /** First month of the profit share (Settings → Business), or null: off. */
+  profitShareStartsOn: string | null
 }
 
 function Stat({
@@ -51,7 +52,8 @@ function Stat({
 
 function profitShareStat(
   state: ProfitShareState,
-  inProgress: boolean
+  inProgress: boolean,
+  startsOn: string | null
 ): { value: string; caption: string; muted?: boolean } {
   switch (state.status) {
     case 'ready': {
@@ -83,7 +85,9 @@ function profitShareStat(
     case 'inactive':
       return {
         value: '—',
-        caption: `Starts with ${formatCalendarDate(PROFIT_SHARE_POLICY.effectiveFrom, { month: 'long', year: 'numeric' })}`,
+        caption: startsOn
+          ? `Starts with ${formatCalendarDate(startsOn, { month: 'long', year: 'numeric' })}`
+          : 'Not set up (Settings → Business)',
         muted: true,
       }
   }
@@ -93,11 +97,12 @@ export function SummaryStrip({
   report,
   profitShare,
   inProgress,
+  profitShareStartsOn,
 }: SummaryStripProps) {
   const soFar = inProgress ? ' so far' : ''
   const billedHours =
     report.prepaidBilling.totalHours + report.net30Billing.totalHours
-  const share = profitShareStat(profitShare, inProgress)
+  const share = profitShareStat(profitShare, inProgress, profitShareStartsOn)
 
   const payoutParts = [
     report.rates.payrollPerHour > 0 ? 'Payroll' : null,

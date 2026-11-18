@@ -1,9 +1,10 @@
 import 'server-only'
 
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { and, eq, isNull, ne, sql } from 'drizzle-orm'
 
 import { DEFAULT_TIME_ZONE } from '@pts/db/business'
-import { businessSettings, companies } from '@pts/db/schema'
+import { personNameSql } from '@pts/db/names'
+import { businessSettings, companies, users } from '@pts/db/schema'
 
 import { db } from '@/lib/db'
 
@@ -25,13 +26,21 @@ export type BusinessSettingsFormData = {
   sendingEmail: string
   bookingUrl: string
   timeZone: string
+  /** YYYY-MM, or empty while the profit share is off. */
+  profitShareStartMonth: string
+  profitShareMinimumBalance: string
+  profitSharePartnerIds: string[]
+  /** Staff who can be picked as profit-share partners. */
+  staff: { id: string; name: string }[]
   logoSrc: string | null
   iconSrc: string | null
   confirmedAt: string | null
 }
 
+const staffName = sql<string>`coalesce(nullif(${personNameSql}, ''), ${users.email})`
+
 export async function loadBusinessSettingsForm(): Promise<BusinessSettingsFormData> {
-  const [[staff], [row]] = await Promise.all([
+  const [[staff], [row], staffUsers] = await Promise.all([
     db
       .select({ name: companies.name })
       .from(companies)
@@ -52,6 +61,9 @@ export async function loadBusinessSettingsForm(): Promise<BusinessSettingsFormDa
         sendingEmail: businessSettings.sendingEmail,
         bookingUrl: businessSettings.bookingUrl,
         timeZone: businessSettings.timeZone,
+        profitShareStartsOn: businessSettings.profitShareStartsOn,
+        profitShareMinimumBalance: businessSettings.profitShareMinimumBalance,
+        profitSharePartnerIds: businessSettings.profitSharePartnerIds,
         hasLogo: sql<boolean>`${businessSettings.logoDataUrl} is not null`,
         hasIcon: sql<boolean>`${businessSettings.iconDataUrl} is not null`,
         confirmedAt: businessSettings.confirmedAt,
@@ -59,7 +71,14 @@ export async function loadBusinessSettingsForm(): Promise<BusinessSettingsFormDa
       })
       .from(businessSettings)
       .limit(1),
+    db
+      .select({ id: users.id, name: staffName })
+      .from(users)
+      .where(and(isNull(users.deletedAt), ne(users.role, 'CLIENT')))
+      .orderBy(staffName),
   ])
+
+  const partnerIds = row?.profitSharePartnerIds ?? []
 
   return {
     name: staff?.name ?? '',
@@ -76,6 +95,13 @@ export async function loadBusinessSettingsForm(): Promise<BusinessSettingsFormDa
     sendingEmail: row?.sendingEmail ?? '',
     bookingUrl: row?.bookingUrl ?? '',
     timeZone: row?.timeZone ?? DEFAULT_TIME_ZONE,
+    profitShareStartMonth: row?.profitShareStartsOn?.slice(0, 7) ?? '',
+    profitShareMinimumBalance: formatAmount(row?.profitShareMinimumBalance),
+    // An archived partner is left out, as the monthly close leaves them out.
+    profitSharePartnerIds: partnerIds.filter(id =>
+      staffUsers.some(user => user.id === id)
+    ),
+    staff: staffUsers,
     logoSrc: businessImageSrc(
       'logo',
       row?.hasLogo ?? false,
@@ -88,4 +114,11 @@ export async function loadBusinessSettingsForm(): Promise<BusinessSettingsFormDa
     ),
     confirmedAt: row?.confirmedAt ?? null,
   }
+}
+
+/** "10000.00" as "10000"; zero as empty, so the field shows its hint. */
+function formatAmount(value: string | null | undefined): string {
+  const amount = Number(value ?? 0)
+  if (!amount) return ''
+  return Number.isInteger(amount) ? String(amount) : amount.toFixed(2)
 }

@@ -2051,6 +2051,19 @@ export const businessSettings = pgTable(
     sendingEmail: text('sending_email'),
     bookingUrl: text('booking_url'),
     timeZone: text('time_zone').default('America/Chicago').notNull(),
+    // Partner profit share (Reports → Monthly close). Off while starts_on is
+    // empty or no partner is picked.
+    profitShareStartsOn: date('profit_share_starts_on', { mode: 'string' }),
+    profitShareMinimumBalance: numeric('profit_share_minimum_balance', {
+      precision: 12,
+      scale: 2,
+    })
+      .default('0')
+      .notNull(),
+    profitSharePartnerIds: uuid('profit_share_partner_ids')
+      .array()
+      .default(sql`'{}'::uuid[]`)
+      .notNull(),
     logoDataUrl: text('logo_data_url'),
     iconDataUrl: text('icon_data_url'),
     confirmedAt: timestamp('confirmed_at', {

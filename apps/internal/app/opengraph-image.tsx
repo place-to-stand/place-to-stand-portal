@@ -3,19 +3,23 @@ import type { CSSProperties } from 'react'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
+import { DEFAULT_BUSINESS_NAME } from '@pts/db/business'
+
+import { getBusinessIdentityOrDefaults } from '@/lib/business/identity'
+
 /**
  * Social share image (Open Graph / Twitter card), rendered from code.
  *
  * It is built from the brand, not from a page: dark blueprint ground, the
- * 24px dot grid, accent corner marks, the logo mark and wordmark, and the
- * one line of positioning the site keeps everywhere. Hero copy and layout
- * change; this does not, so the card never drifts out of date.
+ * 24px dot grid, accent corner marks, the logo mark and the business's name
+ * and website from Settings → Business. Read per request, so it follows a
+ * rename without a redeploy.
  *
  * Fonts come from public/fonts, the same files the referral PDF uses.
  */
 
-export const alt =
-  'Place To Stand. Custom software, automation, and AI built around how your business actually works.'
+export const dynamic = 'force-dynamic'
+export const alt = 'Client portal'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -100,10 +104,12 @@ function CornerMark({ top, left }: { top?: boolean; left?: boolean }) {
 }
 
 export default async function OpenGraphImage() {
-  const [spaceGrotesk, sourceSans] = await Promise.all([
+  const [spaceGrotesk, sourceSans, business] = await Promise.all([
     readFile(path.join(fontDir, 'SpaceGrotesk-Bold.ttf')),
     readFile(path.join(fontDir, 'SourceSans3-Regular.ttf')),
+    getBusinessIdentityOrDefaults(),
   ])
+  const name = business?.name ?? DEFAULT_BUSINESS_NAME
 
   return new ImageResponse(
     <div
@@ -148,11 +154,11 @@ export default async function OpenGraphImage() {
             letterSpacing: '-0.02em',
           }}
         >
-          Place To Stand
+          {name}
         </div>
       </div>
 
-      {/* Positioning line: the one claim the site makes on every page */}
+      {/* What the portal is for */}
       <div
         style={{
           display: 'flex',
@@ -164,14 +170,14 @@ export default async function OpenGraphImage() {
           letterSpacing: '-0.03em',
         }}
       >
-        <div style={{ display: 'flex' }}>Software built around</div>
-        <div style={{ display: 'flex' }}>how your business</div>
+        <div style={{ display: 'flex' }}>Projects, hours</div>
+        <div style={{ display: 'flex' }}>and invoices,</div>
         <div style={{ display: 'flex', color: color.accent }}>
-          actually works.
+          in one place.
         </div>
       </div>
 
-      {/* Footer: what we do, and where to find us */}
+      {/* Footer: what this is, and the business's website */}
       <div
         style={{
           display: 'flex',
@@ -181,10 +187,8 @@ export default async function OpenGraphImage() {
           color: color.textMuted,
         }}
       >
-        <div style={{ display: 'flex' }}>
-          Custom software, automation &amp; AI
-        </div>
-        <div style={{ display: 'flex' }}>placetostandagency.com</div>
+        <div style={{ display: 'flex' }}>Client portal</div>
+        <div style={{ display: 'flex' }}>{business?.websiteLabel ?? ''}</div>
       </div>
     </div>,
     {

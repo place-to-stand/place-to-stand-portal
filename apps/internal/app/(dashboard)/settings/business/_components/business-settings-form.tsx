@@ -4,7 +4,6 @@ import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import type { z } from 'zod'
 
 import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
@@ -19,21 +18,20 @@ import {
 } from '@/components/ui/form'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import { useToast } from '@/components/ui/use-toast'
-import {
-  businessSettingsSchema,
-  type BusinessImageChange,
-} from '@/lib/business/settings-form'
+import type { BusinessImageChange } from '@/lib/business/settings-form'
 import type { BusinessSettingsFormData } from '@/lib/business/settings-query'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 
 import { saveBusinessSettings } from '../actions'
+import {
+  SECTIONS,
+  textSchema,
+  type TextInput,
+  type TextOutput,
+} from './business-form-fields'
 import { BusinessImageField } from './business-image-field'
+import { ProfitShareFields } from './profit-share-fields'
 import { timeZoneOptions } from './time-zone-options'
-
-const textSchema = businessSettingsSchema.omit({ logo: true, icon: true })
-type TextInput = z.input<typeof textSchema>
-type TextOutput = z.output<typeof textSchema>
-type TextField = keyof TextInput
 
 const KEEP: BusinessImageChange = { kind: 'keep' }
 
@@ -53,95 +51,11 @@ function textDefaults(initial: BusinessSettingsFormData): TextInput {
     sendingEmail: initial.sendingEmail,
     bookingUrl: initial.bookingUrl,
     timeZone: initial.timeZone,
+    profitShareStartMonth: initial.profitShareStartMonth,
+    profitShareMinimumBalance: initial.profitShareMinimumBalance,
+    profitSharePartnerIds: initial.profitSharePartnerIds,
   }
 }
-
-type Field = {
-  name: TextField
-  label: string
-  optional?: boolean
-  type?: 'email' | 'url' | 'tel'
-  autoComplete?: string
-  wide?: boolean
-}
-
-const SECTIONS: { title: string; fields: Field[] }[] = [
-  {
-    title: 'Business',
-    fields: [
-      { name: 'name', label: 'Name', autoComplete: 'organization' },
-      { name: 'legalName', label: 'Legal name', optional: true },
-      { name: 'website', label: 'Website', optional: true, type: 'url' },
-    ],
-  },
-  {
-    title: 'Address',
-    fields: [
-      {
-        name: 'addressLine1',
-        label: 'Street',
-        optional: true,
-        wide: true,
-        autoComplete: 'address-line1',
-      },
-      {
-        name: 'addressLine2',
-        label: 'Street line 2',
-        optional: true,
-        wide: true,
-        autoComplete: 'address-line2',
-      },
-      {
-        name: 'city',
-        label: 'City',
-        optional: true,
-        autoComplete: 'address-level2',
-      },
-      {
-        name: 'region',
-        label: 'State',
-        optional: true,
-        autoComplete: 'address-level1',
-      },
-      {
-        name: 'postalCode',
-        label: 'Postal code',
-        optional: true,
-        autoComplete: 'postal-code',
-      },
-      {
-        name: 'country',
-        label: 'Country',
-        optional: true,
-        autoComplete: 'country',
-      },
-    ],
-  },
-  {
-    title: 'Phone and email',
-    fields: [
-      { name: 'phone', label: 'Phone', optional: true, type: 'tel' },
-      {
-        name: 'inboxEmail',
-        label: 'Inbox email',
-        optional: true,
-        type: 'email',
-      },
-      {
-        name: 'sendingEmail',
-        label: 'Sending email',
-        optional: true,
-        type: 'email',
-      },
-      {
-        name: 'bookingUrl',
-        label: 'Booking link',
-        optional: true,
-        type: 'url',
-      },
-    ],
-  },
-]
 
 export function BusinessSettingsForm({
   initial,
@@ -182,7 +96,7 @@ export function BusinessSettingsForm({
           ...rest
         } = result.fieldErrors ?? {}
         for (const [name, message] of Object.entries(rest)) {
-          form.setError(name as TextField, { message })
+          form.setError(name as keyof TextInput, { message })
         }
         setImageErrors({ logo: logoError, icon: iconError })
         toast({
@@ -288,6 +202,11 @@ export function BusinessSettingsForm({
             />
           </div>
         </section>
+        <ProfitShareFields
+          control={form.control}
+          staff={initial.staff}
+          disabled={isPending}
+        />
         <div>
           <Button type='submit' disabled={isPending}>
             {isPending ? 'Saving...' : 'Save'}

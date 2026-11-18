@@ -2,22 +2,24 @@ import 'server-only'
 
 import { cache } from 'react'
 
+import { readProfitSharePolicy, type ProfitSharePolicy } from '@pts/db/business'
 import { companyMonthEndCutoff } from '@pts/ui/dates'
 
 import {
-  PROFIT_SHARE_POLICY,
+  profitShareAppliesTo,
   computeProfitShare,
   type ProfitShareData,
   type ProfitSharePartner,
 } from '@/lib/billing/profit-share'
 import { getBusinessIdentity } from '@/lib/business/identity'
+import { db } from '@/lib/db'
 import { serverEnv } from '@/lib/env.server'
 import {
   MercuryApiError,
   fetchMercuryBalanceAt,
   type MercuryBalanceAt,
 } from '@/lib/integrations/mercury/api'
-import { fetchUsersByEmail } from '@/lib/queries/reports/profit-share-partners'
+import { fetchUsersByIds } from '@/lib/queries/reports/profit-share-partners'
 
 /**
  * The instant a month ends for the profit share: midnight in the Business
@@ -86,14 +88,29 @@ export const loadMonthEndBalance = cache(
   }
 )
 
-/** The profit-share partners as users, in policy order. */
+/** The profit share set on Settings → Business, or null while it is off. */
+export const getProfitSharePolicy = cache(
+  (): Promise<ProfitSharePolicy | null> => readProfitSharePolicy(db)
+)
+
+/** True when the month's profit share is set up and has started. */
+export async function profitShareApplies(
+  year: number,
+  month: number
+): Promise<boolean> {
+  return profitShareAppliesTo(await getProfitSharePolicy(), year, month)
+}
+
+/** The profit-share partners as users, in the order they were picked. */
 export const fetchProfitSharePartners = cache(
   async (): Promise<Array<Omit<ProfitSharePartner, 'amount'>>> => {
-    const rows = await fetchUsersByEmail(PROFIT_SHARE_POLICY.partnerEmails)
-    const byEmail = new Map(rows.map(row => [row.email.toLowerCase(), row]))
+    const policy = await getProfitSharePolicy()
+    if (!policy) return []
+    const rows = await fetchUsersByIds(policy.partnerIds)
+    const byId = new Map(rows.map(row => [row.id, row]))
 
-    return PROFIT_SHARE_POLICY.partnerEmails.flatMap(email => {
-      const row = byEmail.get(email)
+    return policy.partnerIds.flatMap(id => {
+      const row = byId.get(id)
       if (!row) return []
       return [
         {
@@ -115,8 +132,12 @@ export async function buildProfitShare(params: {
   payouts: number
   addedAfterCloseAt?: string | null
 }): Promise<ProfitShareData> {
-  const partners = await fetchProfitSharePartners()
+  const [partners, policy] = await Promise.all([
+    fetchProfitSharePartners(),
+    getProfitSharePolicy(),
+  ])
   return computeProfitShare({
+    minimumBalance: policy?.minimumBalance ?? 0,
     asOfDate: lastDayOfMonth(params.year, params.month),
     monthComplete: params.balance.monthComplete,
     balance: params.balance.value.balance,
