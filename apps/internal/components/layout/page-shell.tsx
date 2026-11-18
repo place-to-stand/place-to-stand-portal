@@ -16,7 +16,6 @@ import {
 import { Separator } from '@pts/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 
-import { HelpButton } from './help-button'
 import { TabsNav, type TabsNavTab } from './tabs-nav'
 import { TOOLBAR_ACTIONS_CLASS } from './toolbar-action'
 
@@ -112,7 +111,6 @@ export function PageShell({
         </Breadcrumb>
         <div className='flex min-w-0 shrink-0 items-center gap-1.5'>
           {headerRight}
-          <HelpButton />
           <NotificationsBell />
         </div>
       </header>

@@ -118,7 +118,6 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 │   ├── my/           # Current user's pages (home, tasks)
 │   ├── projects/     # Project workspace (tabbed, see below; archive, activity)
 │   ├── reports/      # Reports (monthly-close)
-│   ├── help/         # Help (header button beside Notifications): Get help, the fixed Place To Stand card, for everyone; later What's new and Feedback
 │   ├── reference/    # Sidebar "Reference": roles & permissions, templates (emails, PDFs, notifications), design system. Pages that show how the portal is set up; admin only today
 │   ├── settings/     # Sidebar "Admin": Settings (tabs: business, billing (products, tax rates, profit share), integrations (the agency's services)). A person's own settings are the Account sheet, not here
 │   └── submissions/  # Website form submissions
@@ -433,6 +432,8 @@ Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never
 - Generate links with the builders in `lib/sheets/hrefs.ts` (board task links come from `buildBoardPath`), never string-concatenated inline.
 
 **Account sheet:** the signed-in person's own settings (profile, their Google/GitHub/Vercel/Supabase connections and connected apps, preferences) are one sheet over any page, `?account=<profile|integrations|preferences>` (`lib/account/use-account-sheet.ts`, `components/account/`), opened from the user menu, Ctrl K and "Connect in Account" buttons. It is not a record, so it sits outside the sheet stack and layers on top (`SheetContent aboveStack`). Every staff role gets all of it (`integrations.personal`); the agency's own services stay on Settings → Integrations (`integrations.manage`). OAuth callbacks return to `/my/home?account=integrations`.
+
+**Get help:** who built the portal and how to reach them (`PTS_CONTACT`, fixed on every install) is a dialog, not a page: user menu → Get help, or Ctrl K (`components/help/get-help-dialog.tsx`). What's new and Feedback will sit beside it.
 
 **Retired routes and params:** static redirects live in `apps/internal/next.config.ts` `redirects()`; only routes that need a lookup stay as redirect pages (`/clients/[clientSlug]`, `/settings/users`). Old `?client=`/`?user=` sheet params are mapped in `proxy.ts`.
 

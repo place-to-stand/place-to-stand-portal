@@ -36,15 +36,15 @@ test('sales is sent back from admin pages', async ({ page }) => {
   }
 })
 
-// Help is everyone's; its reference tabs follow each page's capability.
-test('sales gets Help with only the Get help tab', async ({ page }) => {
-  await page.goto('/help')
+// Get help is everyone's.
+test('sales can open Get help from the command palette', async ({ page }) => {
+  await page.goto('/my/home')
   await expectHealthy(page)
-  await expect(page.getByRole('tab')).toHaveText(['Get help'])
-  await expect(page.getByRole('link', { name: 'Book a call' })).toHaveAttribute(
-    'href',
-    /placetostandagency\.com\/contact/
-  )
+  await page.keyboard.press('ControlOrMeta+k')
+  await page.getByRole('option', { name: 'Get help' }).click()
+  await expect(
+    page.getByRole('dialog').getByRole('link', { name: 'Book a call' })
+  ).toHaveAttribute('href', /placetostandagency\.com\/contact/)
 })
 
 // Account → Integrations is everyone's: their own connections, all of them.

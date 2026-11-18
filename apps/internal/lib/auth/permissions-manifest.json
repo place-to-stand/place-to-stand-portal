@@ -189,13 +189,6 @@
     "capability": "companies.manage"
   },
   {
-    "type": "page",
-    "name": "/help",
-    "file": "apps/internal/app/(dashboard)/help/page.tsx",
-    "kind": "capability",
-    "capability": "portal.sign_in"
-  },
-  {
     "type": "action",
     "name": "softDeleteHourBlock",
     "file": "apps/internal/app/(dashboard)/hour-blocks/actions/archive-hour-block.ts",

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Keyboard, Loader2, LogOut, Moon, Sun } from 'lucide-react'
+import { Keyboard, LifeBuoy, Loader2, LogOut, Moon, Sun } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import {
@@ -19,6 +19,7 @@ import type { AppUser } from '@/lib/auth/session'
 import { signOut } from '@/app/(dashboard)/_actions/sign-out'
 import { useTheme } from '@/components/providers/theme-provider'
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
+import { useGetHelp } from '@/components/help/get-help-dialog'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
@@ -40,6 +41,7 @@ export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { theme, toggleTheme } = useTheme()
   const { setOpen: setShortcutsOpen } = useKeyboardShortcuts()
+  const { setOpen: setGetHelpOpen } = useGetHelp()
 
   const initials = user.full_name
     ? user.full_name
@@ -141,6 +143,20 @@ export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
                 className='ml-auto'
               />
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={event => {
+                event.preventDefault()
+                setIsMenuOpen(false)
+                setGetHelpOpen(true)
+              }}
+              className='flex items-center gap-2'
+            >
+              <LifeBuoy className='h-4 w-4' />
+              <span>Get help</span>
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
             <DropdownMenuItem
               disabled={isPending}
               onSelect={event => {

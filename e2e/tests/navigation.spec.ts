@@ -39,11 +39,16 @@ test('Settings is one tabbed page; /settings lands on Business', async ({
   await expect(item).toHaveAttribute('data-active', 'true')
 })
 
-test('Help opens from the header', async ({ page }) => {
+test('Get help opens from the user menu', async ({ page }) => {
   await page.goto('/my/home')
-  await page.locator('header').getByRole('link', { name: 'Help' }).click()
-  await expect(page).toHaveURL(/\/help$/)
-  await expect(page.getByRole('link', { name: 'Book a call' })).toBeVisible()
+  await page
+    .locator('[data-sidebar="footer"]')
+    .getByRole('button')
+    .first()
+    .click()
+  await page.getByRole('menuitem', { name: 'Get help' }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('link', { name: 'Book a call' })).toBeVisible()
 })
 
 test('Templates stays active across its tabs', async ({ page }) => {

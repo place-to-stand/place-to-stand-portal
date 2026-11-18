@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useRouter } from 'next/navigation'
-import { Keyboard, Plug } from 'lucide-react'
+import { Keyboard, LifeBuoy, Plug } from 'lucide-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 import {
@@ -25,7 +25,7 @@ import { NAV_GROUPS } from '@/components/layout/navigation-config'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'
 import { filterNavGroupsForRole } from '@/lib/auth/roles'
-import { helpTabEntriesFor } from '@/lib/navigation/help-tabs'
+import { useGetHelp } from '@/components/help/get-help-dialog'
 import type { PaletteSearchResult } from '@/lib/command-palette/types'
 import { CommandPaletteRecords } from '@/components/layout/command-palette-records'
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
@@ -134,7 +134,7 @@ function CommandPalette() {
     [role]
   )
   // Help lives in the page header, so its tabs are listed here.
-  const helpTabs = useMemo(() => (role ? helpTabEntriesFor(role) : []), [role])
+  const { setOpen: setGetHelpOpen } = useGetHelp()
   const router = useRouter()
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query.trim(), DEBOUNCE_MS)
@@ -237,23 +237,6 @@ function CommandPalette() {
             })}
           </CommandGroup>
         ))}
-        {helpTabs.length > 0 ? (
-          <CommandGroup heading='Help'>
-            {helpTabs.map(tab => {
-              const Icon = tab.icon
-              return (
-                <CommandItem
-                  key={tab.href}
-                  value={`Help ${tab.label}`}
-                  onSelect={() => navigate(tab.href)}
-                >
-                  <Icon className='size-4' />
-                  <span>{tab.label}</span>
-                </CommandItem>
-              )
-            })}
-          </CommandGroup>
-        ) : null}
         <CommandPaletteRecords
           records={recordSearchEnabled ? (records ?? null) : null}
           onSelect={navigate}
@@ -295,6 +278,16 @@ function CommandPalette() {
               size='sm'
               className='ml-auto'
             />
+          </CommandItem>
+          <CommandItem
+            value='Help get help contact support book a call email place to stand'
+            onSelect={() => {
+              handleOpenChange(false)
+              setGetHelpOpen(true)
+            }}
+          >
+            <LifeBuoy className='size-4' />
+            <span>Get help</span>
           </CommandItem>
         </CommandGroup>
       </CommandList>
