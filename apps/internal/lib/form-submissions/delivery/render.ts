@@ -5,6 +5,7 @@ import {
   contactConfirmationEmail,
   contactNotificationEmail,
   type AuditEmailResult,
+  type EmailBrand,
   type RenderedEmail,
   type SubmissionContact,
   type SubmissionRepeat,
@@ -32,6 +33,8 @@ export type SubmissionEmailContext = {
   /** Reply-To on the visitor's copy. */
   teamInbox: string
   repeat: { count: number; leadId: string | null } | null
+  /** The business sending it (Settings → Business). */
+  brand: EmailBrand
 }
 
 const VIEWPORT_LABELS: Record<string, string> = {
@@ -136,7 +139,10 @@ function buildContact(row: FormSubmission): SubmissionContact | null {
  */
 export function renderAuditDetailsEmail(
   row: FormSubmission,
-  { portalOrigin }: Pick<SubmissionEmailContext, 'portalOrigin'>
+  {
+    portalOrigin,
+    brand,
+  }: Pick<SubmissionEmailContext, 'portalOrigin' | 'brand'>
 ): RenderedEmail | null {
   const contact = buildContact(row)
   if (!contact) return null
@@ -145,6 +151,7 @@ export function renderAuditDetailsEmail(
     submissionUrl: `${portalOrigin}${submissionHref(row.id)}`,
     contact,
     message: row.message?.trim() || null,
+    brand,
   })
 }
 
@@ -155,7 +162,7 @@ export function renderAuditDetailsEmail(
  */
 export function renderSubmissionEmails(
   row: FormSubmission,
-  { portalOrigin, teamInbox, repeat }: SubmissionEmailContext
+  { portalOrigin, teamInbox, repeat, brand }: SubmissionEmailContext
 ): SubmissionEmails | null {
   // Signups send no email (they never request delivery); belt and braces.
   if (row.kind === 'subscribe') return null
@@ -179,6 +186,7 @@ export function renderSubmissionEmails(
 
     return {
       team: contactNotificationEmail({
+        brand,
         submissionUrl,
         contact,
         subject: row.subject,
@@ -187,6 +195,7 @@ export function renderSubmissionEmails(
         repeat: repeatArgs,
       }),
       confirmation: contactConfirmationEmail({
+        brand,
         contact,
         subject: row.subject,
         message,
@@ -200,6 +209,7 @@ export function renderSubmissionEmails(
 
   return {
     team: auditNotificationEmail({
+      brand,
       submissionUrl,
       contact,
       message: row.message,
@@ -210,6 +220,7 @@ export function renderSubmissionEmails(
     }),
     confirmation: emailResult
       ? auditResultsEmail({
+          brand,
           name: contact.name,
           result: emailResult,
           replyTo: teamInbox,

@@ -90,7 +90,9 @@ export function ImageUploadControls({
         id={inputId}
         type='file'
         accept={accept}
-        hidden
+        // Not `hidden`: a label pointing at it must reach a real control.
+        className='sr-only'
+        tabIndex={-1}
         disabled={locked}
         onChange={event => {
           const file = event.target.files?.[0]

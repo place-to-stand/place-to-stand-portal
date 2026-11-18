@@ -1,5 +1,10 @@
 import { renderBlocks, type EmailBlock } from '../blocks'
-import { renderRichEmail, type RenderedEmail } from '../layout'
+import {
+  DEFAULT_EMAIL_BRAND,
+  renderRichEmail,
+  type EmailBrand,
+  type RenderedEmail,
+} from '../layout'
 import {
   contactRows,
   identityLine,
@@ -12,6 +17,8 @@ export type AuditDetailsEmailArgs = {
   contact: SubmissionContact
   /** The note they added, if any. */
   message: string | null
+  /** The business sending it (Settings → Business). */
+  brand?: EmailBrand
 }
 
 /**
@@ -27,6 +34,7 @@ export function auditDetailsEmail({
   submissionUrl,
   contact,
   message,
+  brand = DEFAULT_EMAIL_BRAND,
 }: AuditDetailsEmailArgs): RenderedEmail {
   const blocks: EmailBlock[] = [
     { type: 'heading', text: `${contact.name} added details to their audit` },
@@ -47,6 +55,7 @@ export function auditDetailsEmail({
   const body = renderBlocks(blocks)
 
   return renderRichEmail(`[Audit] ${identityLine(contact)} — added details`, {
+    brand,
     preheader: message
       ? `${contact.name} added a note to their audit.`
       : `${contact.name} added their details to their audit.`,

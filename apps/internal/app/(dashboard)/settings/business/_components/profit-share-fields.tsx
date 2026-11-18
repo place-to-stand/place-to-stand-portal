@@ -98,6 +98,9 @@ export function ProfitShareFields({
           render={({ field }) => (
             <FormItem className='sm:col-span-2'>
               <PartnerList
+                // A save keeps this page mounted: start a fresh list from
+                // what was saved, so a saved removal stops reading as pending.
+                key={savedPartnerIds.join()}
                 value={field.value}
                 onChange={field.onChange}
                 staff={staff}
