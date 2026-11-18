@@ -13,7 +13,7 @@ The action control: six variants, seven sizes, a 2px (`gap-2`) icon gap built in
 - `destructive`: `bg-destructive text-white`, dark `bg-destructive/60`. Always names what it destroys ("Archive client").
 - `link`: `text-primary underline-offset-4 hover:underline`.
 
-**Sizes** (`size`): `xs` h-7 text-xs · `sm` h-8 · `default` h-9 px-4 · `lg` h-10 px-6 · `icon` size-9 · `icon-sm` size-7 with 14px glyph (table row actions) · `icon-lg` size-10 · `icon-xs` size-5 with a 12px glyph and an invisible 28px hit area (a badge on a corner: the image field's remove ×). With a leading svg, padding tightens (`has-[>svg]:px-3`).
+**Sizes** (`size`): `xs` h-7 text-xs · `sm` h-8 · `default` h-9 px-4 · `lg` h-10 px-6 · `icon` size-9 · `icon-sm` size-7 with 14px glyph (table row actions) · `icon-lg` size-10. With a leading svg, padding tightens (`has-[>svg]:px-3`).
 
 **Do**
 

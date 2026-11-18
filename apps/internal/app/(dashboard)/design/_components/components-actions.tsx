@@ -48,7 +48,7 @@ const VARIANTS = [
   'link',
 ] as const
 const SIZES = ['xs', 'sm', 'default', 'lg'] as const
-const ICON_SIZES = ['icon-xs', 'icon-sm', 'icon', 'icon-lg'] as const
+const ICON_SIZES = ['icon-sm', 'icon', 'icon-lg'] as const
 
 const TASK_STATUSES = [
   'ON_DECK',

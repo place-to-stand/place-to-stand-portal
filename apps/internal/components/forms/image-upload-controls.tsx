@@ -57,17 +57,6 @@ const FRAME_CLASSES: Record<ImageUploadShape, string> = {
   circle: '',
 }
 
-/**
- * Where the edit badge sits: inside the frame's top-right corner, 4px in,
- * and inside a photo's 64px box on the circle's edge, so it never pokes out
- * of the field (or into the label above it).
- */
-const EDIT_POSITION: Record<ImageUploadShape, string> = {
-  square: 'top-1 right-1',
-  wide: 'top-1 right-1',
-  circle: 'top-0 right-0',
-}
-
 /** True while the drag carries files (not text or a link). */
 function draggingFiles(event: DragEvent) {
   return Array.from(event.dataTransfer.types).includes('Files')
@@ -77,8 +66,8 @@ function draggingFiles(event: DragEvent) {
  * The one shape for every image field (a person's photo, the business logo
  * and icon): the preview tile is the control. Click it (or Enter/Space) to
  * pick a file, or drop one on it. Nothing is drawn over the image: hover
- * darkens the border, focus shows the ring. With an image, a small pencil in
- * the corner opens Replace… and Remove. Where the file goes is the caller's
+ * darkens the border, focus shows the ring. With an image, a pencil beside
+ * the tile opens Replace… and Remove. Where the file goes is the caller's
  * job.
  */
 export function ImageUploadControls({
@@ -129,7 +118,9 @@ export function ImageUploadControls({
 
   return (
     <div className='flex flex-col items-start gap-2'>
-      <div className='relative'>
+      {/* The tile, then (with an image) its edit menu beside it: nothing
+          ever sits on the frame or the photo. */}
+      <div className='flex items-center gap-2'>
         <DisabledFieldTooltip disabled={locked} reason={reason}>
           <button
             type='button'
@@ -180,14 +171,7 @@ export function ImageUploadControls({
                 label={`Edit ${noun}`}
                 icon={<Pencil />}
                 variant='outline'
-                size='icon-xs'
                 tooltip={false}
-                className={cn(
-                  // A solid badge in both themes (the outline variant is
-                  // see-through in dark).
-                  'text-foreground bg-background dark:bg-background border-border dark:border-border hover:bg-accent dark:hover:bg-accent absolute z-10 rounded-full shadow-sm',
-                  EDIT_POSITION[shape]
-                )}
               />
             </DropdownMenuTrigger>
             <DropdownMenuContent>
