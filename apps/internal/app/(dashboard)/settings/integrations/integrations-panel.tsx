@@ -17,6 +17,10 @@ import {
   ConnectedAccountsList,
   type ConnectedAccount,
 } from '@/components/integrations/connected-accounts-list'
+import {
+  FORM_SECTIONS_CLASS,
+  FormSection,
+} from '@/components/forms/form-section'
 import { CompanyServicesList } from '@/components/integrations/company-services-list'
 import { ConnectedAppsCard } from '@/components/integrations/connected-apps-card'
 import { TokenIntegrationCard } from '@/components/integrations/token-integration-card'
@@ -245,7 +249,7 @@ export function IntegrationsPanel() {
   const githubAccounts = transformAccounts(githubData?.accounts)
 
   return (
-    <div className='space-y-8'>
+    <div className={FORM_SECTIONS_CLASS}>
       <IntegrationSection
         title='Personal'
         description='Your own accounts. Everyone connects their own.'
@@ -364,6 +368,7 @@ export function IntegrationsPanel() {
   )
 }
 
+/** A FormSection whose cards sit two to a row (one on phones). */
 function IntegrationSection({
   title,
   description,
@@ -376,15 +381,8 @@ function IntegrationSection({
   fullWidth?: boolean
   children: ReactNode
 }) {
-  const headingId = `integrations-${title.toLowerCase()}`
   return (
-    <section aria-labelledby={headingId} className='space-y-3'>
-      <div className='space-y-0.5'>
-        <h2 id={headingId} className='text-base font-semibold'>
-          {title}
-        </h2>
-        <p className='text-muted-foreground text-sm'>{description}</p>
-      </div>
+    <FormSection title={title} description={description} layout='block'>
       {fullWidth ? (
         children
       ) : (
@@ -392,6 +390,6 @@ function IntegrationSection({
           {children}
         </div>
       )}
-    </section>
+    </FormSection>
   )
 }

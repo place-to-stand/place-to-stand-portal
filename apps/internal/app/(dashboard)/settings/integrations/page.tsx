@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 
 import { requirePage } from '@/lib/auth/session'
 
+import { PagePanel } from '@/components/layout/page-panel'
 import { PageShell } from '@/components/layout/page-shell'
 
 import { IntegrationsPanel } from './integrations-panel'
@@ -20,7 +21,9 @@ export default async function IntegrationsSettingsPage() {
       tabs={SETTINGS_TABS}
       activeTab='integrations'
     >
-      <IntegrationsPanel />
+      <PagePanel>
+        <IntegrationsPanel />
+      </PagePanel>
     </PageShell>
   )
 }
