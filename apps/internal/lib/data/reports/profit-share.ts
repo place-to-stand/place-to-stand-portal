@@ -10,6 +10,7 @@ import {
   type ProfitShareData,
   type ProfitSharePartner,
 } from '@/lib/billing/profit-share'
+import { getBusinessIdentity } from '@/lib/business/identity'
 import { serverEnv } from '@/lib/env.server'
 import {
   MercuryApiError,
@@ -19,11 +20,13 @@ import {
 import { fetchUsersByEmail } from '@/lib/queries/reports/profit-share-partners'
 
 /**
- * The instant a month ends for the profit share: midnight in the policy's
- * fixed time zone (see companyMonthEndCutoff in @pts/ui/dates).
+ * The instant a month ends for the profit share: midnight in the Business
+ * time zone (Settings → Business; see companyMonthEndCutoff in @pts/ui/dates).
+ * Closed months keep the profit share frozen in their snapshot whatever the
+ * zone is now.
  */
 export function monthEndCutoff(year: number, month: number): Date {
-  return companyMonthEndCutoff(year, month, PROFIT_SHARE_POLICY.timeZone)
+  return companyMonthEndCutoff(year, month)
 }
 
 function lastDayOfMonth(year: number, month: number): string {
@@ -60,6 +63,9 @@ export const loadMonthEndBalance = cache(
       }
     }
 
+    // Read the Business time zone first: this can run before the root
+    // layout has loaded it.
+    await getBusinessIdentity()
     const cutoff = monthEndCutoff(year, month)
     const monthComplete = cutoff.getTime() <= Date.now()
 
