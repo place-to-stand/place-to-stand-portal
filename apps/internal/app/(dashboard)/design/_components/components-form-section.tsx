@@ -1,5 +1,6 @@
 'use client'
 
+import { useForm } from 'react-hook-form'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
@@ -11,6 +12,8 @@ import {
   FORM_SECTIONS_CLASS,
   FormSection,
 } from '@/components/forms/form-section'
+import { PageForm } from '@/components/layout/page-form'
+import { PagePanel } from '@/components/layout/page-panel'
 
 import { DesignSection, Specimen } from './specimen'
 
@@ -18,8 +21,8 @@ export function ComponentsFormSections() {
   return (
     <DesignSection
       id='form-sections'
-      title='Form sections'
-      when='A full-page form (Settings pages): each titled group of fields, or a list with its own Create button. In a sheet use SheetSection.'
+      title='Form sections and page forms'
+      when='A full-page form (Settings pages): each titled group of fields, or a list with its own Create button, inside a PageForm that brings the save bar. In a sheet use SheetSection and the sheet footer.'
     >
       <Specimen
         label='FormSection'
@@ -58,6 +61,39 @@ export function ComponentsFormSections() {
           </FormSection>
         </div>
       </Specimen>
+      <Specimen
+        label='PageForm'
+        note='components/layout/page-form.tsx: type in the field to see the save bar: undo and redo, Discard, Save (⌘S). Saving here only waits; Save reads “Saved” for 2s.'
+        className='block'
+      >
+        <PagePanel className='max-w-3xl'>
+          <PageFormDemo />
+        </PagePanel>
+      </Specimen>
     </DesignSection>
+  )
+}
+
+function PageFormDemo() {
+  const form = useForm<{ name: string }>({
+    defaultValues: { name: 'Test Agency' },
+  })
+  return (
+    <PageForm
+      form={form}
+      historyKey='design-page-form'
+      onSave={async values => {
+        await new Promise(resolve => setTimeout(resolve, 600))
+        form.reset(values)
+        return true
+      }}
+    >
+      <FormSection title='Business'>
+        <div className='grid gap-2'>
+          <Label htmlFor='design-page-form-name'>Name</Label>
+          <Input id='design-page-form-name' {...form.register('name')} />
+        </div>
+      </FormSection>
+    </PageForm>
   )
 }

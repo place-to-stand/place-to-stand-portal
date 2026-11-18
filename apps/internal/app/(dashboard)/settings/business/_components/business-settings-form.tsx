@@ -1,11 +1,10 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
-import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
 
 import {
@@ -13,9 +12,9 @@ import {
   FORM_SECTIONS_CLASS,
   FormSection,
 } from '@/components/forms/form-section'
+import { PageForm } from '@/components/layout/page-form'
 
 import {
-  Form,
   FormControl,
   FormField,
   FormItem,
@@ -26,8 +25,6 @@ import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import { useToast } from '@/components/ui/use-toast'
 import type { BusinessImageChange } from '@/lib/business/settings-form'
 import type { BusinessSettingsFormData } from '@/lib/business/settings-query'
-import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
-import { cn } from '@/lib/utils'
 
 import { saveBusinessSettings } from '../actions'
 import {
@@ -67,7 +64,6 @@ export function BusinessSettingsForm({
 }) {
   const router = useRouter()
   const { toast } = useToast()
-  const [isPending, startTransition] = useTransition()
   const [logo, setLogo] = useState<BusinessImageChange>(KEEP)
   const [icon, setIcon] = useState<BusinessImageChange>(KEEP)
   const [imageErrors, setImageErrors] = useState<{
@@ -85,45 +81,59 @@ export function BusinessSettingsForm({
     [initial.timeZone]
   )
 
-  const isDirty =
-    form.formState.isDirty || logo.kind !== 'keep' || icon.kind !== 'keep'
-  const { dialog: discardDialog } = useUnsavedChangesWarning({ isDirty })
+  const isPending = form.formState.isSubmitting
 
-  const onSubmit = (values: TextOutput) => {
-    startTransition(async () => {
-      const result = await saveBusinessSettings({ ...values, logo, icon })
-      if (!result.ok) {
-        const {
-          logo: logoError,
-          icon: iconError,
-          ...rest
-        } = result.fieldErrors ?? {}
-        for (const [name, message] of Object.entries(rest)) {
-          form.setError(name as keyof TextInput, { message })
-        }
-        setImageErrors({ logo: logoError, icon: iconError })
-        toast({
-          variant: 'destructive',
-          title: 'Unable to save business settings',
-          description: result.error,
-        })
-        return
+  const onSave = async (values: TextOutput) => {
+    const result = await saveBusinessSettings({ ...values, logo, icon })
+    if (!result.ok) {
+      const {
+        logo: logoError,
+        icon: iconError,
+        ...rest
+      } = result.fieldErrors ?? {}
+      for (const [name, message] of Object.entries(rest)) {
+        form.setError(name as keyof TextInput, { message })
       }
-      setImageErrors({})
-      setLogo(KEEP)
-      setIcon(KEEP)
-      form.reset(form.getValues())
-      toast({ title: 'Business settings saved' })
-      router.refresh()
-    })
+      setImageErrors({ logo: logoError, icon: iconError })
+      toast({
+        variant: 'destructive',
+        title: 'Unable to save business settings',
+        description: result.error,
+      })
+      return false
+    }
+    setImageErrors({})
+    setLogo(KEEP)
+    setIcon(KEEP)
+    form.reset(form.getValues())
+    router.refresh()
+    return true
   }
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={event => void form.handleSubmit(onSubmit)(event)}
-        className={cn(FORM_SECTIONS_CLASS, 'max-w-3xl')}
-      >
+    <PageForm
+      form={form}
+      onSave={onSave}
+      historyKey='business-settings'
+      externalDirty={logo.kind !== 'keep' || icon.kind !== 'keep'}
+      getExternalState={() => ({ logo, icon })}
+      applyExternalState={state => {
+        const images = state as {
+          logo: BusinessImageChange
+          icon: BusinessImageChange
+        }
+        setLogo(images.logo)
+        setIcon(images.icon)
+      }}
+      onDiscard={() => {
+        setLogo(KEEP)
+        setIcon(KEEP)
+        setImageErrors({})
+      }}
+      // Until the details are confirmed once, Save shows with nothing changed.
+      alwaysShowBar={!initial.confirmedAt}
+    >
+      <div className={`${FORM_SECTIONS_CLASS} max-w-3xl`}>
         {SECTIONS.map((section, index) => (
           <FormSection key={section.title} title={section.title}>
             {section.fields.map(field => (
@@ -201,13 +211,7 @@ export function BusinessSettingsForm({
             )}
           />
         </FormSection>
-        <div>
-          <Button type='submit' disabled={isPending}>
-            {isPending ? 'Saving...' : 'Save'}
-          </Button>
-        </div>
-      </form>
-      {discardDialog}
-    </Form>
+      </div>
+    </PageForm>
   )
 }

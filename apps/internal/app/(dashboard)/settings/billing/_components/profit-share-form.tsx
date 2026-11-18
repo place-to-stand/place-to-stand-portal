@@ -1,13 +1,10 @@
 'use client'
 
-import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
-import { Button } from '@pts/ui/button'
-
-import { Form } from '@/components/ui/form'
+import { PageForm } from '@/components/layout/page-form'
 import { useToast } from '@/components/ui/use-toast'
 import {
   profitShareSettingsSchema,
@@ -15,16 +12,14 @@ import {
   type ProfitShareSettingsValues,
 } from '@/lib/billing/profit-share-form'
 import type { ProfitShareFormData } from '@/lib/billing/profit-share-query'
-import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 
 import { saveProfitShareSettings } from '../profit-share-actions'
 import { ProfitShareFields } from './profit-share-fields'
 
-/** Settings → Billing's Profit share: its own form, saved by its own Save. */
+/** Settings → Billing's Profit share: a page form with its own save bar. */
 export function ProfitShareForm({ initial }: { initial: ProfitShareFormData }) {
   const router = useRouter()
   const { toast } = useToast()
-  const [isPending, startTransition] = useTransition()
 
   const form = useForm<
     ProfitShareSettingsInput,
@@ -38,51 +33,35 @@ export function ProfitShareForm({ initial }: { initial: ProfitShareFormData }) {
       profitSharePartnerIds: initial.profitSharePartnerIds,
     },
   })
-  const { dialog: discardDialog } = useUnsavedChangesWarning({
-    isDirty: form.formState.isDirty,
-  })
 
-  const onSubmit = (values: ProfitShareSettingsValues) => {
-    startTransition(async () => {
-      const result = await saveProfitShareSettings(values)
-      if (!result.ok) {
-        for (const [name, message] of Object.entries(
-          result.fieldErrors ?? {}
-        )) {
-          form.setError(name as keyof ProfitShareSettingsInput, { message })
-        }
-        toast({
-          variant: 'destructive',
-          title: 'Unable to save the profit share',
-          description: result.error,
-        })
-        return
+  const onSave = async (values: ProfitShareSettingsValues) => {
+    const result = await saveProfitShareSettings(values)
+    if (!result.ok) {
+      for (const [name, message] of Object.entries(result.fieldErrors ?? {})) {
+        form.setError(name as keyof ProfitShareSettingsInput, { message })
       }
-      form.reset(form.getValues())
-      toast({ title: 'Profit share saved' })
-      router.refresh()
-    })
+      toast({
+        variant: 'destructive',
+        title: 'Unable to save the profit share',
+        description: result.error,
+      })
+      return false
+    }
+    form.reset(form.getValues())
+    router.refresh()
+    return true
   }
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={event => void form.handleSubmit(onSubmit)(event)}
-        className='flex max-w-3xl flex-col gap-4'
-      >
+    <PageForm form={form} onSave={onSave} historyKey='profit-share'>
+      <div className='max-w-3xl'>
         <ProfitShareFields
           control={form.control}
           staff={initial.staff}
           savedPartnerIds={initial.profitSharePartnerIds}
-          disabled={isPending}
+          disabled={form.formState.isSubmitting}
         />
-        <div>
-          <Button type='submit' disabled={isPending}>
-            {isPending ? 'Saving...' : 'Save'}
-          </Button>
-        </div>
-      </form>
-      {discardDialog}
-    </Form>
+      </div>
+    </PageForm>
   )
 }
