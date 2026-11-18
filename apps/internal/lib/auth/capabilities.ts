@@ -352,10 +352,19 @@ export const CAPABILITIES = {
     roles: STAFF,
     surfaces: ['app'],
   },
+  'integrations.personal': {
+    area: 'Integrations',
+    label: 'Connect and manage their own accounts',
+    description:
+      'Their own GitHub, Vercel and Supabase connections and the apps connected as them (Account → Integrations). Nobody else sees them.',
+    roles: STAFF,
+    surfaces: ['app'],
+  },
   'integrations.manage': {
     area: 'Integrations',
-    label: 'Connect Google, GitHub, Vercel and Supabase',
-    description: 'Agency-wide integrations.',
+    label: 'Agency integrations',
+    description:
+      'The company services (Mercury, Stripe, email) and linking repositories and hosting to projects.',
     roles: ADMIN_ONLY,
     surfaces: ['app'],
   },

@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useRouter } from 'next/navigation'
-import { Keyboard } from 'lucide-react'
+import { Keyboard, Plug, CircleUserRound } from 'lucide-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 import {
@@ -36,6 +36,7 @@ import {
 } from '@/lib/sheets/discard-guards'
 import { parseSheetStack } from '@/lib/sheets/stack'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
+import { openAccountSheet } from '@/lib/account/use-account-sheet'
 
 const MIN_QUERY_LENGTH = 2
 const DEBOUNCE_MS = 200
@@ -233,6 +234,28 @@ function CommandPalette() {
           records={recordSearchEnabled ? (records ?? null) : null}
           onSelect={navigate}
         />
+        <CommandGroup heading='You'>
+          <CommandItem
+            value='You account profile name photo email password'
+            onSelect={() => {
+              handleOpenChange(false)
+              openAccountSheet('profile')
+            }}
+          >
+            <CircleUserRound className='size-4' />
+            <span>Account</span>
+          </CommandItem>
+          <CommandItem
+            value='You my integrations connect google github vercel supabase connected apps'
+            onSelect={() => {
+              handleOpenChange(false)
+              openAccountSheet('integrations')
+            }}
+          >
+            <Plug className='size-4' />
+            <span>My integrations</span>
+          </CommandItem>
+        </CommandGroup>
         <CommandGroup heading='Help'>
           <CommandItem
             value='Help keyboard shortcuts keys'

@@ -79,3 +79,22 @@ test('old ?client= sheet links open the company sheet', async ({ page }) => {
   // Renamed in place, so the stack order (company under task) is kept.
   await expect(page).toHaveURL(new RegExp(`\\?company=${id}&task=new$`))
 })
+
+test('the user menu opens the Account sheet; Settings → Integrations is company only', async ({
+  page,
+}) => {
+  await page.goto('/my/home')
+  await page.locator('[data-sidebar="footer"] button').first().click()
+  await page.getByRole('menuitem', { name: 'Account' }).click()
+  await expect(page).toHaveURL(/[?&]account=profile/)
+  const sheet = page.getByRole('dialog', { name: 'Account' })
+  for (const heading of ['Profile', 'Integrations', 'Preferences']) {
+    await expect(sheet.getByRole('heading', { name: heading })).toBeVisible()
+  }
+  await page.keyboard.press('Escape')
+  await expect(page).not.toHaveURL(/account=/)
+
+  await page.goto('/settings/integrations')
+  await expect(page.getByText('Mercury').first()).toBeVisible()
+  await expect(page.getByText('Connected apps')).toHaveCount(0)
+})

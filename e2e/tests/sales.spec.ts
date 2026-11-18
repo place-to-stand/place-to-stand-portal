@@ -34,6 +34,32 @@ test('sales is sent back from admin pages', async ({ page }) => {
   }
 })
 
+// Account → Integrations is everyone's: their own connections, all of them.
+test('sales has the Account sheet with every personal integration', async ({
+  page,
+}) => {
+  await page.goto('/leads?account=integrations')
+  await expectHealthy(page)
+  const sheet = page.getByRole('dialog', { name: 'Account' })
+  await expect(sheet).toBeVisible()
+  for (const card of [
+    'Google',
+    'GitHub',
+    'Vercel',
+    'Supabase',
+    'Connected apps',
+  ]) {
+    await expect(sheet.getByText(card, { exact: true }).first()).toBeVisible()
+  }
+  // Their own status loads (403 would show an error, not a Connect button).
+  await expect(
+    sheet.getByRole('button', { name: /Connect (Google|GitHub)/ }).first()
+  ).toBeVisible()
+  // The agency's services stay admin-only.
+  await page.goto('/settings/integrations')
+  await expect(page).not.toHaveURL(/\/settings\/integrations$/)
+})
+
 test('sales sees a person with a sign-in read-only, access locked', async ({
   page,
 }) => {

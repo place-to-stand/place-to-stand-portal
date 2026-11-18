@@ -1,5 +1,6 @@
 'use client'
 
+import { ConnectInAccountButton } from '@/components/account/connect-in-account-button'
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ExternalLink, Loader2, Trash2 } from 'lucide-react'
@@ -197,12 +198,8 @@ export function IntegrationLinksSection({
         status={
           <>
             <EmptyState
-              message={`Connect your ${config.label} account in Settings to link ${config.projectNoun}s.`}
-              action={
-                <Button variant='outline' size='sm' asChild>
-                  <a href='/settings/integrations'>Go to integrations</a>
-                </Button>
-              }
+              message={`Connect your ${config.label} account to link ${config.projectNoun}s.`}
+              action={<ConnectInAccountButton />}
             />
           </>
         }

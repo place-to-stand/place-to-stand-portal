@@ -7,7 +7,7 @@ import { getActiveInstallationForProject } from '@/lib/github/app-installations'
 import { authorizeRoute } from '@/lib/auth/guard'
 
 export async function GET(request: NextRequest) {
-  const { user, denied } = await authorizeRoute('integrations.manage')
+  const { user, denied } = await authorizeRoute('integrations.personal')
   if (denied) return denied
   const projectId = request.nextUrl.searchParams.get('projectId')
 

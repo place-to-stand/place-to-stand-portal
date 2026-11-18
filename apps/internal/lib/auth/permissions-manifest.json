@@ -857,8 +857,8 @@
     "type": "route",
     "name": "GET /api/auth/callback/github",
     "file": "apps/internal/app/api/auth/callback/github/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.personal"
   },
   {
     "type": "route",
@@ -871,8 +871,8 @@
     "type": "route",
     "name": "GET /api/auth/github",
     "file": "apps/internal/app/api/auth/github/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.personal"
   },
   {
     "type": "route",
@@ -1166,14 +1166,14 @@
     "name": "POST /api/integrations/[provider]/connect",
     "file": "apps/internal/app/api/integrations/[provider]/connect/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.personal"
   },
   {
     "type": "route",
     "name": "POST /api/integrations/[provider]/disconnect",
     "file": "apps/internal/app/api/integrations/[provider]/disconnect/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.personal"
   },
   {
     "type": "route",
@@ -1187,7 +1187,7 @@
     "name": "GET /api/integrations/[provider]/status",
     "file": "apps/internal/app/api/integrations/[provider]/status/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.personal"
   },
   {
     "type": "route",
@@ -1201,14 +1201,14 @@
     "name": "POST /api/integrations/connected-apps/revoke",
     "file": "apps/internal/app/api/integrations/connected-apps/revoke/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.personal"
   },
   {
     "type": "route",
     "name": "GET /api/integrations/connected-apps",
     "file": "apps/internal/app/api/integrations/connected-apps/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.personal"
   },
   {
     "type": "route",
@@ -1222,7 +1222,7 @@
     "name": "POST /api/integrations/github/disconnect",
     "file": "apps/internal/app/api/integrations/github/disconnect/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.personal"
   },
   {
     "type": "route",
@@ -1236,7 +1236,7 @@
     "name": "GET /api/integrations/github/status",
     "file": "apps/internal/app/api/integrations/github/status/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.personal"
   },
   {
     "type": "route",

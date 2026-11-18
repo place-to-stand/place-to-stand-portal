@@ -356,11 +356,6 @@
       "count": 8
     }
   },
-  "app/(dashboard)/settings/integrations/integrations-panel.tsx": {
-    "max-lines": {
-      "count": 1
-    }
-  },
   "app/(dashboard)/settings/templates/_components/pdfs-gallery.tsx": {
     "pts/use-id-not-fixed-id": {
       "count": 1
@@ -595,17 +590,6 @@
   },
   "components/integrations/token-integration-card.tsx": {
     "typescript/no-deprecated": {
-      "count": 1
-    }
-  },
-  "components/layout/edit-profile-dialog.tsx": {
-    "max-lines": {
-      "count": 1
-    },
-    "typescript/no-deprecated": {
-      "count": 1
-    },
-    "typescript/no-misused-promises": {
       "count": 1
     }
   },

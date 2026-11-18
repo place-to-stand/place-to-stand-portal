@@ -11,7 +11,7 @@ export async function POST(
   request: Request,
   { params }: RouteContext<'/api/integrations/[provider]/disconnect'>
 ) {
-  const { user, denied } = await authorizeRoute('integrations.manage')
+  const { user, denied } = await authorizeRoute('integrations.personal')
   if (denied) return denied
   const resolved = resolveProviderParam((await params).provider)
   if ('response' in resolved) {
