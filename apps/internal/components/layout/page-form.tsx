@@ -173,15 +173,19 @@ export function PageForm<TIn extends FieldValues, TOut>({
             <span className='sr-only' aria-live='polite'>
               {justSaved ? 'Saved' : ''}
             </span>
-            <Button
-              type='button'
-              variant='secondary'
-              size='xs'
-              disabled={isPending || !isDirty}
-              onClick={discard}
-            >
-              Discard
-            </Button>
+            {/* Only with something to discard: undone back to the saved
+                values (the bar kept up for Redo) or just saved, it goes. */}
+            {isDirty ? (
+              <Button
+                type='button'
+                variant='secondary'
+                size='xs'
+                disabled={isPending}
+                onClick={discard}
+              >
+                Discard
+              </Button>
+            ) : null}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
