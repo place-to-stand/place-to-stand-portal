@@ -1,15 +1,23 @@
 'use client'
 
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+} from 'react'
 import type { FieldValues, UseFormReturn } from 'react-hook-form'
-import { Check, Redo2, Undo2 } from 'lucide-react'
+import { Check } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
-import { RowActionButton } from '@pts/ui/row-action-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
-import { rowActionShortcut } from '@/components/keyboard/shortcut-tooltip'
+import { FormFooterBar } from '@/components/sheets/sheet-form-footer'
 import { Form } from '@/components/ui/form'
 import { useConfirmLeavingPage } from '@/lib/hooks/use-confirm-leaving-page'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
@@ -46,8 +54,8 @@ type PageFormProps<TIn extends FieldValues, TOut> = {
  * A form that is part of a page (Settings → Business, Billing's profit
  * share): it owns the unsaved-changes warning (reload, tab close, in-app
  * links, Back and Forward, the Ctrl K palette), ⌘S, undo and redo (the
- * sheets' history), and a save bar always pinned to the bottom of the page
- * column, as a sheet's footer is. Sheets and
+ * sheets' history), and the sheet footer (`FormFooterBar`) as a save bar,
+ * fixed across the page column, that slides up on the first edit. Sheets and
  * dialogs keep their own footers.
  */
 export function PageForm<TIn extends FieldValues, TOut>({
@@ -103,6 +111,12 @@ export function PageForm<TIn extends FieldValues, TOut>({
     return () => clearTimeout(timer)
   }, [justSaved, savedCount])
 
+  // Slides up on the first edit; stays while dirty, saving or showing
+  // "Saved", then slides away.
+  const showBar = isDirty || isPending || justSaved
+  const barRef = useRef<HTMLDivElement>(null)
+  const columnStyle = usePageColumn(barRef)
+
   const { dialog, requestConfirmation } = useUnsavedChangesWarning({ isDirty })
   useConfirmLeavingPage(isDirty, requestConfirmation)
 
@@ -133,34 +147,30 @@ export function PageForm<TIn extends FieldValues, TOut>({
         className={cn('flex flex-col', className)}
       >
         {children}
-        {/* The panel's own footer, always there like a sheet's: sticky to the
-            bottom of the window while the form scrolls (the negative bottom
-            cancels <main>'s padding, so nothing shows through below it),
-            flush with the panel's edges and bottom radius, on the panel's
-            surface, with one top border as the only divider. In flow, so
-            the last field always ends above it. */}
-        <div className='bg-background sticky -bottom-3 z-10 -mx-4 mt-6 -mb-4 flex items-center justify-between gap-2 rounded-b-xl border-t px-4 py-2.5 sm:-bottom-4'>
-          <div className='flex items-center gap-1.5'>
-            <RowActionButton
-              type='button'
-              variant='outline'
-              onClick={controls.undo}
-              disabled={!controls.canUndo}
-              label='Undo'
-              {...rowActionShortcut(SHORTCUTS.undo)}
-              icon={<Undo2 />}
-            />
-            <RowActionButton
-              type='button'
-              variant='outline'
-              onClick={controls.redo}
-              disabled={!controls.canRedo}
-              label='Redo'
-              {...rowActionShortcut(SHORTCUTS.redo)}
-              icon={<Redo2 />}
-            />
-          </div>
-          <div className='flex items-center gap-1.5'>
+        {/* Reserve the bar's height while it shows, so the last field can
+            scroll above it. */}
+        {showBar ? <div aria-hidden className='h-16 shrink-0' /> : null}
+        <div
+          ref={barRef}
+          style={columnStyle}
+          // inert while hidden: off-screen buttons stay out of the tab order.
+          inert={!showBar}
+          className={cn(
+            'fixed bottom-0 z-30 pb-[env(safe-area-inset-bottom)] transition-[translate,opacity] duration-200 ease-out motion-reduce:transition-none',
+            showBar
+              ? 'translate-y-0 opacity-100'
+              : 'pointer-events-none translate-y-full opacity-0'
+          )}
+        >
+          <FormFooterBar
+            undo={controls.undo}
+            redo={controls.redo}
+            canUndo={controls.canUndo}
+            canRedo={controls.canRedo}
+            // Lines up with the page column: Undo under the panel's left
+            // edge, Save under its right.
+            innerClassName='px-3 sm:px-4'
+          >
             <span className='sr-only' aria-live='polite'>
               {justSaved ? 'Saved' : ''}
             </span>
@@ -191,10 +201,36 @@ export function PageForm<TIn extends FieldValues, TOut>({
                 </span>
               </TooltipContent>
             </Tooltip>
-          </div>
+          </FormFooterBar>
         </div>
       </form>
       {dialog}
     </Form>
   )
+}
+
+/**
+ * Where the page column is: the bar spans `<main>` (the sidebar's right edge
+ * to the window's), following it as the sidebar collapses or the window
+ * resizes.
+ */
+function usePageColumn(ref: RefObject<HTMLElement | null>): CSSProperties {
+  const [box, setBox] = useState<{ left: number; width: number } | null>(null)
+  useLayoutEffect(() => {
+    const main = ref.current?.closest('main')
+    if (!main) return
+    const measure = () => {
+      const rect = main.getBoundingClientRect()
+      setBox({ left: rect.left, width: rect.width })
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(main)
+    window.addEventListener('resize', measure)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [ref])
+  return box ? { left: box.left, width: box.width } : { left: 0, right: 0 }
 }

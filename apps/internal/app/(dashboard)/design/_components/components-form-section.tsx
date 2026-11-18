@@ -63,7 +63,7 @@ export function ComponentsFormSections() {
       </Specimen>
       <Specimen
         label='PageForm'
-        note='components/layout/page-form.tsx: type in the field to see the save bar: undo and redo, Discard, Save (⌘S). Saving here only waits; Save reads “Saved” for 2s.'
+        note='components/layout/page-form.tsx: type in the field and the save bar (the sheet footer, FormFooterBar) slides up across the bottom of the page: undo and redo, Discard, Save (⌘S). Saving here only waits; Save reads “Saved” for 2s, then the bar slides away.'
         className='block'
       >
         <PagePanel className='max-w-3xl'>
