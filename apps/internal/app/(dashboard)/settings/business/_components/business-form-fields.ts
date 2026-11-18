@@ -88,17 +88,18 @@ export const SECTIONS: { title: string; fields: Field[] }[] = [
         optional: true,
         type: 'email',
       },
-      {
-        name: 'sendingEmail',
-        label: 'Sending email',
-        optional: true,
-        type: 'email',
-      },
+      // Both emails in the right column: Phone | Inbox, Booking | Sending.
       {
         name: 'bookingUrl',
         label: 'Booking link',
         optional: true,
         type: 'url',
+      },
+      {
+        name: 'sendingEmail',
+        label: 'Sending email',
+        optional: true,
+        type: 'email',
       },
     ],
   },
