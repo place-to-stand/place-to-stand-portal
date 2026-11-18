@@ -15,9 +15,9 @@ import {
 } from '@/lib/oauth/state'
 
 /**
- * Starts connecting the signed-in person's own Google account. Admins come
- * from Settings → Integrations; anyone else from the lead sheet's Emails
- * section, which passes `returnTo` so the callback lands back on the lead.
+ * Starts connecting the signed-in person's own Google account, from the
+ * Account sheet or the lead sheet's Emails section. Both pass `returnTo` so
+ * the callback lands back on the page the person was on.
  */
 export async function GET(request: NextRequest) {
   const user = await requirePage('integrations.google')

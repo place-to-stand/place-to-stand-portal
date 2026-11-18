@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { safeReturnPath } from './state-path.ts'
+import { oauthLandingPath, safeReturnPath } from './state-path.ts'
 
 test('keeps a path inside the portal', () => {
   assert.equal(
@@ -29,4 +29,28 @@ test('never sends anyone to another site', () => {
   }
   assert.equal(safeReturnPath('/\t/evil.com'), null)
   assert.equal(safeReturnPath('//evil.com'), null)
+})
+
+test('an OAuth result lands on the Account sheet it came from', () => {
+  assert.equal(
+    oauthLandingPath(null, { success: 'github_connected' }),
+    '/my/home?account=integrations&success=github_connected'
+  )
+  assert.equal(
+    oauthLandingPath('/projects/a/b/tasks?project=x&account=integrations', {
+      error: 'oauth_failed',
+    }),
+    '/projects/a/b/tasks?project=x&account=integrations&error=oauth_failed'
+  )
+  assert.equal(
+    oauthLandingPath('/my/home?account=integrations&error=old', {
+      success: 'google_connected',
+    }),
+    '/my/home?account=integrations&success=google_connected'
+  )
+  // A lead's Emails section reads its own result; the URL stays clean.
+  assert.equal(
+    oauthLandingPath('/leads?lead=1', { success: 'google_connected' }),
+    '/leads?lead=1'
+  )
 })

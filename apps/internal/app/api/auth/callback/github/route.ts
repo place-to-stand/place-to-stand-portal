@@ -5,7 +5,8 @@ import { eq, and } from 'drizzle-orm'
 import { requirePage } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
-import { validateOAuthState } from '@/lib/oauth/state'
+import { consumeOAuthReturnTo, validateOAuthState } from '@/lib/oauth/state'
+import { oauthLandingPath } from '@/lib/oauth/state-path'
 import {
   exchangeCodeForTokens,
   getGitHubUserInfo,
@@ -18,6 +19,12 @@ import { oauthConnectedEvent } from '@/lib/activity/events'
 export async function GET(request: NextRequest) {
   const user = await requirePage('integrations.personal')
   const searchParams = request.nextUrl.searchParams
+  // The page the flow started from; without one, the Account sheet.
+  const returnTo = await consumeOAuthReturnTo()
+  const landing = (result: { success: string } | { error: string }) =>
+    NextResponse.redirect(
+      new URL(oauthLandingPath(returnTo, result), request.url)
+    )
 
   const code = searchParams.get('code')
   const state = searchParams.get('state')
@@ -25,27 +32,18 @@ export async function GET(request: NextRequest) {
 
   // Handle user denial
   if (error) {
-    return NextResponse.redirect(
-      new URL('/my/home?account=integrations&error=access_denied', request.url)
-    )
+    return landing({ error: 'access_denied' })
   }
 
   // Validate required params
   if (!code || !state) {
-    return NextResponse.redirect(
-      new URL(
-        '/my/home?account=integrations&error=invalid_request',
-        request.url
-      )
-    )
+    return landing({ error: 'invalid_request' })
   }
 
   // Validate state
   const isValidState = await validateOAuthState(state)
   if (!isValidState) {
-    return NextResponse.redirect(
-      new URL('/my/home?account=integrations&error=invalid_state', request.url)
-    )
+    return landing({ error: 'invalid_state' })
   }
 
   try {
@@ -152,16 +150,9 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    return NextResponse.redirect(
-      new URL(
-        '/my/home?account=integrations&success=github_connected',
-        request.url
-      )
-    )
+    return landing({ success: 'github_connected' })
   } catch (err) {
     console.error('GitHub OAuth error:', err)
-    return NextResponse.redirect(
-      new URL('/my/home?account=integrations&error=oauth_failed', request.url)
-    )
+    return landing({ error: 'oauth_failed' })
   }
 }
