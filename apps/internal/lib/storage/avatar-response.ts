@@ -7,12 +7,9 @@ import { getSupabaseServiceClient } from '@/lib/supabase/service'
 
 import { AVATAR_BUCKET } from './avatar'
 
-// Avatars render at up to 32px, so 64px covers 2x screens.
-const AVATAR_TRANSFORM = {
-  width: 64,
-  quality: 80,
-  resize: 'contain',
-} as const
+// Avatars render at up to 32px, so 64px covers 2x screens. The photo field
+// draws a 64px tile, so `?size=lg` asks for 128px.
+const AVATAR_WIDTHS = { sm: 64, lg: 128 } as const
 
 // A `?v=` URL names one photo for good, so the browser may keep it.
 const VERSIONED_CACHE = 'private, max-age=31536000, immutable'
@@ -50,7 +47,8 @@ export async function avatarImageResponse(
     )
   }
 
-  const etag = `"${path.replace(/[^\w./-]/g, '')}"`
+  const size = request.nextUrl.searchParams.get('size') === 'lg' ? 'lg' : 'sm'
+  const etag = `"${path.replace(/[^\w./-]/g, '')}-${size}"`
   const cacheControl = request.nextUrl.searchParams.has('v')
     ? VERSIONED_CACHE
     : UNVERSIONED_CACHE
@@ -61,7 +59,10 @@ export async function avatarImageResponse(
   }
 
   const bucket = getSupabaseServiceClient().storage.from(AVATAR_BUCKET)
-  const resized = await bucket.download(path, { transform: AVATAR_TRANSFORM })
+  const width = AVATAR_WIDTHS[size]
+  const resized = await bucket.download(path, {
+    transform: { width, quality: 80, resize: 'contain' },
+  })
   // Image resizing is off on some Supabase setups (local dev): send the
   // original rather than nothing.
   const { data, error } = resized.data ? resized : await bucket.download(path)

@@ -132,6 +132,10 @@ test('a form inside a dialog is DialogForm', () => {
       fires: ['pts/restricted-syntax'],
     },
     {
+      code: '<AlertDialogContent><form onSubmit={save} /></AlertDialogContent>',
+      fires: ['pts/restricted-syntax'],
+    },
+    {
       code: '<DialogContent><DialogForm onSubmit={save} /></DialogContent>',
       fires: [],
     },

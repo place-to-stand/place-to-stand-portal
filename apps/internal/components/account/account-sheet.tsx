@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useId, useRef } from 'react'
-import { Plug, SlidersHorizontal, CircleUserRound } from 'lucide-react'
+import { Plug, SlidersHorizontal } from 'lucide-react'
 
 import { Separator } from '@pts/ui/separator'
 
@@ -10,6 +10,8 @@ import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetSection } from '@/components/sheets/sheet-section'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+import { cn } from '@/lib/utils'
 import { useAccountSheet } from '@/lib/account/use-account-sheet'
 import type { AppUser } from '@/lib/auth/session'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
@@ -33,6 +35,9 @@ import {
  * over whatever page is open. It isn't a record, so it sits outside the
  * entity sheet stack and always layers on top of it.
  */
+// The person's own sign-in: the registry's Sign-in icon, in its colour.
+const UserIcon = ENTITY_ICONS.user
+
 export function AccountSheet({ user }: { user: AppUser }) {
   const { section, isOpen, close } = useAccountSheet()
   const formId = useId()
@@ -94,15 +99,15 @@ export function AccountSheet({ user }: { user: AppUser }) {
           <SheetFormHeader
             title='Account'
             leading={
-              <CircleUserRound
+              <UserIcon
                 aria-hidden
-                className='text-muted-foreground size-4 shrink-0'
+                className={cn('size-4 shrink-0', ENTITY_ACCENTS.user.icon)}
               />
             }
           />
           <Form {...form}>
             <div className='flex flex-1 flex-col gap-6 overflow-y-auto px-6 pt-6 pb-8'>
-              <SheetSection title='Profile' icon={CircleUserRound}>
+              <SheetSection title='Profile' icon={UserIcon}>
                 <form
                   id={formId}
                   onSubmit={event => {

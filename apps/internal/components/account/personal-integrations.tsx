@@ -167,17 +167,26 @@ export function PersonalIntegrations() {
     },
   })
 
+  // Come back to this page with the Account sheet open, whatever is under it.
+  const returnTo = () => {
+    const url = new URL(window.location.href)
+    url.searchParams.delete('success')
+    url.searchParams.delete('error')
+    url.searchParams.set('account', 'integrations')
+    return encodeURIComponent(`${url.pathname}${url.search}`)
+  }
+
   const handleConnectGoogle = () => {
     setIsRedirectingGoogle(true)
     // API route redirecting to external OAuth — not a Next.js page.
     // oxlint-disable-next-line next-js/no-location-assign-relative-destination -- an API route that redirects to external OAuth, not a Next.js page
-    window.location.href = '/api/auth/google'
+    window.location.href = `/api/auth/google?returnTo=${returnTo()}`
   }
 
   const handleConnectGitHub = () => {
     setIsRedirectingGitHub(true)
     // oxlint-disable-next-line next-js/no-location-assign-relative-destination -- an API route that redirects to external OAuth, not a Next.js page
-    window.location.href = '/api/auth/github'
+    window.location.href = `/api/auth/github?returnTo=${returnTo()}`
   }
 
   // Transform API response to ConnectedAccount format

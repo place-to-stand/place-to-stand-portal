@@ -75,8 +75,8 @@ export function LeadEmailsSection({ lead }: { lead: LeadRecord }) {
   const [loadingMore, setLoadingMore] = useState(false)
   const [moreFailed, setMoreFailed] = useState(false)
   const contactEmail = lead.contactEmail
-  // Admins manage their Google account in Settings, where it also feeds
-  // agency integrations; everyone else disconnects it here.
+  // An admin's Google account also feeds agency integrations, so admins
+  // disconnect it in Account → Integrations; everyone else can do it here.
   const canDisconnectHere = !roleCan(role, 'integrations.manage')
 
   const disconnect = useCallback((account: GmailAccount) => {

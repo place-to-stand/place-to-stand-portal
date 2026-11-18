@@ -59,7 +59,7 @@ export const NO_HAND_SECTION_HEADING = {
  */
 export const DIALOG_FORM = {
   selector:
-    "JSXElement[openingElement.name.name='DialogContent'] JSXOpeningElement[name.name='form']",
+    "JSXElement[openingElement.name.name=/^(Alert)?DialogContent$/] JSXOpeningElement[name.name='form']",
   message:
     "page-form.md (docs/design-system/components): a form inside a dialog is `DialogForm` from @/components/ui/dialog-form, which keeps its submit from reaching the page's or sheet's form.",
 }
