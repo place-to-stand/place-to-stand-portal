@@ -2,7 +2,7 @@ import type { McpCapability } from '@/lib/auth/capabilities'
 
 /**
  * The capability each MCP tool requires, by tool name. `defineTool` refuses a
- * call when the caller's role lacks it, and Help → Roles & permissions
+ * call when the caller's role lacks it, and Reference → Roles & permissions
  * lists the tools under it, so the two can't drift. Client-safe.
  */
 export const MCP_TOOL_CAPABILITIES = {

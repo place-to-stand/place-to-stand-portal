@@ -6,20 +6,22 @@ import { PageShell } from '@/components/layout/page-shell'
 import { buildPdfTemplateCatalog } from '@/lib/pdf/catalog'
 
 import { PdfsGallery } from '../_components/pdfs-gallery'
-import { helpCrumbs, helpTabsFor } from '@/lib/navigation/help-tabs'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
+
+import { TEMPLATES_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
-  title: 'PDF templates | Help',
+  title: 'PDF templates | Reference',
 }
 
 export default async function PdfTemplatesPage() {
-  const user = await requirePage('settings.templates')
+  await requirePage('settings.templates')
   const entries = buildPdfTemplateCatalog()
 
   return (
     <PageShell
-      breadcrumbs={helpCrumbs('pdfs')}
-      tabs={helpTabsFor(user.role)}
+      breadcrumbs={crumbsForNav('/reference/templates/emails')}
+      tabs={TEMPLATES_TABS}
       activeTab='pdfs'
       count={{ label: 'templates', total: entries.length }}
     >

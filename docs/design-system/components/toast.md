@@ -1,6 +1,6 @@
 # Toast
 
-A short note that something just happened, in the bottom corner (bottom centre on a phone). It goes away by itself after 4 seconds, or with its close button. From `apps/internal/components/ui/use-toast`: `toast({ title, description?, variant?, link? })`. The look is `ToastCard` (`components/ui/toast-card.tsx`); it is shown on `/help/design-system#feedback`, with every kind visible.
+A short note that something just happened, in the bottom corner (bottom centre on a phone). It goes away by itself after 4 seconds, or with its close button. From `apps/internal/components/ui/use-toast`: `toast({ title, description?, variant?, link? })`. The look is `ToastCard` (`components/ui/toast-card.tsx`); it is shown on `/reference/design-system#feedback`, with every kind visible.
 
 **Kinds:**
 

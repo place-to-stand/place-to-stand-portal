@@ -7,20 +7,22 @@ import { getEmailSender } from '@/lib/business/identity'
 import { buildEmailTemplateCatalog } from '@/lib/email/catalog'
 
 import { EmailsGallery } from '../_components/emails-gallery'
-import { helpCrumbs, helpTabsFor } from '@/lib/navigation/help-tabs'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
+
+import { TEMPLATES_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
-  title: 'Email templates | Help',
+  title: 'Email templates | Reference',
 }
 
 export default async function EmailTemplatesPage() {
-  const user = await requirePage('settings.templates')
+  await requirePage('settings.templates')
   const entries = buildEmailTemplateCatalog(await getEmailSender())
 
   return (
     <PageShell
-      breadcrumbs={helpCrumbs('emails')}
-      tabs={helpTabsFor(user.role)}
+      breadcrumbs={crumbsForNav('/reference/templates/emails')}
+      tabs={TEMPLATES_TABS}
       activeTab='emails'
       count={{ label: 'templates', total: entries.length }}
     >

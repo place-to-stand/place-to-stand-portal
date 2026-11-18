@@ -4,7 +4,7 @@ import { LIST_PAGES, expectHealthy } from './helpers'
 
 for (const path of [
   ...LIST_PAGES,
-  '/help/design-system',
+  '/reference/design-system',
   '/my/home',
   '/leads',
 ]) {

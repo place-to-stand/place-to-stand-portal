@@ -6,7 +6,7 @@ import { expect, test } from '@playwright/test'
 test('a combobox opens on its selection, and a scrolled-to option can be picked', async ({
   page,
 }) => {
-  await page.goto('/help/design-system?tab=components')
+  await page.goto('/reference/design-system?tab=components')
   const trigger = page.locator('button[aria-label="Person"]').first()
   await trigger.scrollIntoViewIfNeeded()
   await expect(trigger).toContainText('Radia Perlman')

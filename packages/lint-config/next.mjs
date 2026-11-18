@@ -75,7 +75,7 @@ const CLASS_NAME_EXCEPTIONS = {
   'raw-colour': [
     ...RAW_COLOUR_EXCEPTIONS,
     'components/layout/sidebar.tsx',
-    'app/(dashboard)/help/templates/_components/**',
+    'app/(dashboard)/reference/templates/_components/**',
     '**/opengraph-image.tsx',
   ],
   // README → Type: the shared invoice is a brand-ground page with its own
@@ -262,7 +262,7 @@ export function nextApp({
     {
       // One-of-a-kind pages: the sign-in forms and the design system's section anchors
       // (its page nav links to them).
-      files: ['app/(auth)/**', 'app/(dashboard)/help/design-system/**'],
+      files: ['app/(auth)/**', 'app/(dashboard)/reference/design-system/**'],
       rules: { 'pts/use-id-not-fixed-id': 'off' },
     },
     {

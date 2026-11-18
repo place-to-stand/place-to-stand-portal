@@ -6,20 +6,22 @@ import { PageShell } from '@/components/layout/page-shell'
 import { buildNotificationCatalog } from '@/lib/notifications/catalog'
 
 import { NotificationsGallery } from '../_components/notifications-gallery'
-import { helpCrumbs, helpTabsFor } from '@/lib/navigation/help-tabs'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
+
+import { TEMPLATES_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
-  title: 'Notification templates | Help',
+  title: 'Notification templates | Reference',
 }
 
 export default async function NotificationTemplatesPage() {
-  const user = await requirePage('settings.templates')
+  await requirePage('settings.templates')
   const entries = buildNotificationCatalog()
 
   return (
     <PageShell
-      breadcrumbs={helpCrumbs('notifications')}
-      tabs={helpTabsFor(user.role)}
+      breadcrumbs={crumbsForNav('/reference/templates/emails')}
+      tabs={TEMPLATES_TABS}
       activeTab='notifications'
       count={{ label: 'templates', total: entries.length }}
     >

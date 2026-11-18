@@ -244,7 +244,7 @@ function CommandPalette() {
               return (
                 <CommandItem
                   key={tab.href}
-                  value={`Help ${tab.label}${tab.href.includes('/templates/') ? ' templates' : ''}`}
+                  value={`Help ${tab.label}`}
                   onSelect={() => navigate(tab.href)}
                 >
                   <Icon className='size-4' />

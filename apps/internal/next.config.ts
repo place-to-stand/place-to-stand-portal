@@ -44,7 +44,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: '/(.*)', headers: securityHeaders },
-      // The Help → Templates page frames its own PDF previews. Later
+      // The Reference → Templates page frames its own PDF previews. Later
       // entries override earlier ones for the same header key, so this route
       // alone may be framed, and only by this origin.
       {
@@ -77,12 +77,12 @@ const nextConfig: NextConfig = {
       to('/my/tasks', '/my/tasks/board'),
       to('/reports', '/reports/monthly-close'),
       to('/settings', '/settings/business'),
-      to('/help/templates', '/help/templates/emails'),
-      // Reference pages moved from Admin to Help.
-      to('/settings/permissions', '/help/permissions'),
-      to('/settings/templates', '/help/templates/emails'),
-      to('/settings/templates/:path*', '/help/templates/:path*'),
-      to('/design', '/help/design-system'),
+      to('/reference/templates', '/reference/templates/emails'),
+      // Reference pages, once under Admin.
+      to('/settings/permissions', '/reference/permissions'),
+      to('/settings/templates', '/reference/templates/emails'),
+      to('/settings/templates/:path*', '/reference/templates/:path*'),
+      to('/design', '/reference/design-system'),
       // Products, tax rates and the profit share live on Settings → Billing.
       to('/invoices/settings', '/settings/billing'),
       // Contacts are called People.

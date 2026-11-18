@@ -2,7 +2,9 @@ import { expect, test } from '@playwright/test'
 
 import { expectHealthy } from './helpers'
 
-test('admin sidebar: Admin holds only Settings', async ({ page }) => {
+test('admin sidebar: Admin holds Settings, Reference the rest', async ({
+  page,
+}) => {
   await page.goto('/my/home')
   const admin = page
     .locator('[data-sidebar="group"]')
@@ -10,6 +12,15 @@ test('admin sidebar: Admin holds only Settings', async ({ page }) => {
   const items = admin.locator('[data-sidebar="menu-button"]')
   await expect(items).toHaveCount(1)
   await expect(items.first()).toContainText('Settings')
+  const reference = page
+    .locator('[data-sidebar="group"]')
+    .filter({ hasText: 'Reference' })
+    .locator('[data-sidebar="menu-button"]')
+  await expect(reference).toHaveText([
+    'Roles & permissions',
+    'Templates',
+    'Design system',
+  ])
 })
 
 test('Settings is one tabbed page; /settings lands on Business', async ({
@@ -28,12 +39,22 @@ test('Settings is one tabbed page; /settings lands on Business', async ({
   await expect(item).toHaveAttribute('data-active', 'true')
 })
 
-test('Help opens from the header and keeps its tabs', async ({ page }) => {
+test('Help opens from the header', async ({ page }) => {
   await page.goto('/my/home')
   await page.locator('header').getByRole('link', { name: 'Help' }).click()
   await expect(page).toHaveURL(/\/help$/)
-  await page.getByRole('tab', { name: 'Design system' }).click()
-  await expect(page).toHaveURL(/\/help\/design-system$/)
+  await expect(page.getByRole('link', { name: 'Book a call' })).toBeVisible()
+})
+
+test('Templates stays active across its tabs', async ({ page }) => {
+  await page.goto('/reference/templates/emails')
+  const item = page.locator('[data-sidebar="menu-button"]', {
+    hasText: 'Templates',
+  })
+  await expect(item).toHaveAttribute('data-active', 'true')
+  await page.getByRole('tab', { name: 'PDFs' }).click()
+  await expect(page).toHaveURL(/\/reference\/templates\/pdfs$/)
+  await expect(item).toHaveAttribute('data-active', 'true')
 })
 
 test('hour blocks and time logs have different sidebar icons', async ({

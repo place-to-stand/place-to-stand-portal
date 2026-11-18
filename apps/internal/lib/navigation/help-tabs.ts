@@ -1,9 +1,8 @@
 import type { LucideIcon } from 'lucide-react'
-import { LifeBuoy, Palette, ShieldCheck } from 'lucide-react'
+import { LifeBuoy } from 'lucide-react'
 
 import type { TabsNavTab } from '@/components/layout/tabs-nav'
 import { roleCan, type Capability, type Role } from '@/lib/auth/capabilities'
-import { ENTITY_ICONS } from '@/lib/entity-accents'
 import type { Crumb } from '@/lib/navigation/breadcrumbs'
 
 type HelpTabDefinition = TabsNavTab & {
@@ -14,9 +13,10 @@ type HelpTabDefinition = TabsNavTab & {
 }
 
 /**
- * Help, opened from the page header: a tab per reference page. Unlike
- * Settings, the tabs differ by role: everyone signed in gets Get help, and
- * each other tab shows only to roles its page lets in.
+ * Help, opened from the page header: getting help from the people who built
+ * the portal (What's new and Feedback join later). Each tab names the
+ * capability its page guards with, so the strip shows a role only its own.
+ * How the portal is set up lives in the sidebar's Reference group instead.
  */
 export const HELP_TABS = [
   {
@@ -25,41 +25,6 @@ export const HELP_TABS = [
     icon: LifeBuoy,
     href: '/help',
     capability: 'portal.sign_in',
-  },
-  {
-    label: 'Roles & permissions',
-    value: 'permissions',
-    icon: ShieldCheck,
-    href: '/help/permissions',
-    capability: 'settings.permissions',
-  },
-  {
-    label: 'Emails',
-    value: 'emails',
-    icon: ENTITY_ICONS.template,
-    href: '/help/templates/emails',
-    capability: 'settings.templates',
-  },
-  {
-    label: 'PDFs',
-    value: 'pdfs',
-    icon: ENTITY_ICONS.template,
-    href: '/help/templates/pdfs',
-    capability: 'settings.templates',
-  },
-  {
-    label: 'Notifications',
-    value: 'notifications',
-    icon: ENTITY_ICONS.template,
-    href: '/help/templates/notifications',
-    capability: 'settings.templates',
-  },
-  {
-    label: 'Design system',
-    value: 'design-system',
-    icon: Palette,
-    href: '/help/design-system',
-    capability: 'settings.design',
   },
 ] as const satisfies readonly HelpTabDefinition[]
 

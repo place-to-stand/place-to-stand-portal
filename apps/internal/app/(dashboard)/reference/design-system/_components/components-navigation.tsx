@@ -24,9 +24,9 @@ import { DesignSection, Example, Specimen } from './specimen'
 
 /** Inert route tabs: every href points back at this page. */
 const ROUTE_TABS: readonly TabsNavTab[] = [
-  { value: 'projects', label: 'Projects', href: '/help/design-system' },
-  { value: 'archive', label: 'Archive', href: '/help/design-system' },
-  { value: 'activity', label: 'Activity', href: '/help/design-system' },
+  { value: 'projects', label: 'Projects', href: '/reference/design-system' },
+  { value: 'archive', label: 'Archive', href: '/reference/design-system' },
+  { value: 'activity', label: 'Activity', href: '/reference/design-system' },
 ]
 
 export function ComponentsTabs() {
@@ -94,7 +94,7 @@ export function ComponentsTabs() {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink href='/help/design-system'>
+                <BreadcrumbLink href='/reference/design-system'>
                   Projects
                 </BreadcrumbLink>
               </BreadcrumbItem>
@@ -124,7 +124,7 @@ export function ComponentsTextLinks() {
         <Example caption='Task card: company and project'>
           <div className='text-muted-foreground flex w-56 flex-col items-start gap-2 text-xs'>
             <MetaLink
-              href='/help/design-system'
+              href='/reference/design-system'
               icon={
                 <ENTITY_ICONS.company
                   className='h-3.5 w-3.5 shrink-0'
@@ -135,7 +135,7 @@ export function ComponentsTextLinks() {
               Heatonist
             </MetaLink>
             <MetaLink
-              href='/help/design-system'
+              href='/reference/design-system'
               icon={
                 <ENTITY_ICONS.project
                   className='h-3.5 w-3.5 shrink-0'

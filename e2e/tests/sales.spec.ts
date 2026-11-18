@@ -16,6 +16,9 @@ test('sales sees the CRM and member projects only', async ({ page }) => {
     'Time logs',
     'Monthly close',
     'Settings',
+    'Roles & permissions',
+    'Templates',
+    'Design system',
   ]) {
     await expect(nav.filter({ hasText: hidden })).toHaveCount(0)
   }
@@ -25,7 +28,7 @@ test('sales is sent back from admin pages', async ({ page }) => {
   for (const path of [
     '/invoices',
     '/hour-blocks',
-    '/help/design-system',
+    '/reference/design-system',
     '/reports/monthly-close',
   ]) {
     await page.goto(path)

@@ -4,7 +4,9 @@ import type { Capability } from '@/lib/auth/capabilities'
 import {
   FileText,
   Home as HomeIcon,
+  Palette,
   Settings as SettingsIcon,
+  ShieldCheck,
 } from 'lucide-react'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
@@ -132,6 +134,31 @@ export const NAV_GROUPS: NavGroup[] = [
           '/settings/billing',
           '/settings/integrations',
         ],
+      },
+    ],
+  },
+  {
+    // Pages that show how the portal is set up; nothing on them changes it.
+    title: 'Reference',
+    items: [
+      {
+        href: '/reference/permissions',
+        capability: 'settings.permissions',
+        label: 'Roles & permissions',
+        icon: ShieldCheck,
+      },
+      {
+        href: '/reference/templates/emails',
+        capability: 'settings.templates',
+        label: 'Templates',
+        icon: ENTITY_ICONS.template,
+        matchHrefs: ['/reference/templates'],
+      },
+      {
+        href: '/reference/design-system',
+        capability: 'settings.design',
+        label: 'Design system',
+        icon: Palette,
       },
     ],
   },
