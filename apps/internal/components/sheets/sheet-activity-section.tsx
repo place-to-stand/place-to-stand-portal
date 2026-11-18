@@ -70,7 +70,7 @@ export function SheetActivitySection({
 /**
  * The collapsed shell on its own: the "Activity (n)" toggle and a region that
  * mounts its children only while open. `SheetActivitySection` fills it with
- * the feed; the /design specimen fills it with sample rows.
+ * the feed; the design system specimen fills it with sample rows.
  */
 export function SheetActivityDisclosure({
   total,

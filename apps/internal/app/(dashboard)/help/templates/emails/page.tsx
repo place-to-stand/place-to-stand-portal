@@ -7,7 +7,7 @@ import { getEmailSender } from '@/lib/business/identity'
 import { buildEmailTemplateCatalog } from '@/lib/email/catalog'
 
 import { EmailsGallery } from '../_components/emails-gallery'
-import { helpCrumbs, helpTabsFor } from '../../_lib/tabs'
+import { helpCrumbs, helpTabsFor } from '@/lib/navigation/help-tabs'
 
 export const metadata: Metadata = {
   title: 'Email templates | Help',

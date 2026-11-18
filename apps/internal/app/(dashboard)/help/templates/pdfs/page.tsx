@@ -6,7 +6,7 @@ import { PageShell } from '@/components/layout/page-shell'
 import { buildPdfTemplateCatalog } from '@/lib/pdf/catalog'
 
 import { PdfsGallery } from '../_components/pdfs-gallery'
-import { helpCrumbs, helpTabsFor } from '../../_lib/tabs'
+import { helpCrumbs, helpTabsFor } from '@/lib/navigation/help-tabs'
 
 export const metadata: Metadata = {
   title: 'PDF templates | Help',

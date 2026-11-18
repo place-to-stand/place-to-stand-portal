@@ -50,7 +50,7 @@ export function toastLinkLabel(entity: SheetEntityKey) {
 }
 
 /**
- * The look of a toast's record link, shared by the live link and /design.
+ * The look of a toast's record link, shared by the live link and the design system page.
  */
 export function ToastRecordLinkContent({
   entity,

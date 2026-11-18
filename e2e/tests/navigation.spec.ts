@@ -2,16 +2,14 @@ import { expect, test } from '@playwright/test'
 
 import { expectHealthy } from './helpers'
 
-test('admin sidebar: Admin starts with Settings and ends with Design system', async ({
-  page,
-}) => {
+test('admin sidebar: Admin holds only Settings', async ({ page }) => {
   await page.goto('/my/home')
   const admin = page
     .locator('[data-sidebar="group"]')
     .filter({ hasText: 'Admin' })
   const items = admin.locator('[data-sidebar="menu-button"]')
+  await expect(items).toHaveCount(1)
   await expect(items.first()).toContainText('Settings')
-  await expect(items.last()).toContainText('Design system')
 })
 
 test('Settings is one tabbed page; /settings lands on Business', async ({

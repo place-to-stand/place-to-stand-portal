@@ -6,7 +6,7 @@ import { PageShell } from '@/components/layout/page-shell'
 import { buildNotificationCatalog } from '@/lib/notifications/catalog'
 
 import { NotificationsGallery } from '../_components/notifications-gallery'
-import { helpCrumbs, helpTabsFor } from '../../_lib/tabs'
+import { helpCrumbs, helpTabsFor } from '@/lib/navigation/help-tabs'
 
 export const metadata: Metadata = {
   title: 'Notification templates | Help',

@@ -48,7 +48,7 @@ import {
 import { GuideShell } from './_components/guide-shell'
 import { PatternsCopy, PatternsHouseRules } from './_components/patterns'
 
-import { helpCrumbs, helpTabsFor } from '../_lib/tabs'
+import { helpCrumbs, helpTabsFor } from '@/lib/navigation/help-tabs'
 
 export const metadata: Metadata = {
   title: 'Design system | Help',

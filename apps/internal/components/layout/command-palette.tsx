@@ -25,6 +25,7 @@ import { NAV_GROUPS } from '@/components/layout/navigation-config'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'
 import { filterNavGroupsForRole } from '@/lib/auth/roles'
+import { helpTabEntriesFor } from '@/lib/navigation/help-tabs'
 import type { PaletteSearchResult } from '@/lib/command-palette/types'
 import { CommandPaletteRecords } from '@/components/layout/command-palette-records'
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
@@ -132,6 +133,15 @@ function CommandPalette() {
     () => (role ? filterNavGroupsForRole(NAV_GROUPS, role) : []),
     [role]
   )
+  // Help's reference tabs, one keystroke away as they were in the sidebar.
+  // Get help is the Help entry itself.
+  const helpTabs = useMemo(
+    () =>
+      role
+        ? helpTabEntriesFor(role).filter(tab => tab.value !== 'get-help')
+        : [],
+    [role]
+  )
   const router = useRouter()
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query.trim(), DEBOUNCE_MS)
@@ -234,6 +244,23 @@ function CommandPalette() {
             })}
           </CommandGroup>
         ))}
+        {helpTabs.length > 0 ? (
+          <CommandGroup heading='Help'>
+            {helpTabs.map(tab => {
+              const Icon = tab.icon
+              return (
+                <CommandItem
+                  key={tab.href}
+                  value={`Help ${tab.label}${tab.href.includes('/templates/') ? ' templates' : ''}`}
+                  onSelect={() => navigate(tab.href)}
+                >
+                  <Icon className='size-4' />
+                  <span>{tab.label}</span>
+                </CommandItem>
+              )
+            })}
+          </CommandGroup>
+        ) : null}
         <CommandPaletteRecords
           records={recordSearchEnabled ? (records ?? null) : null}
           onSelect={navigate}

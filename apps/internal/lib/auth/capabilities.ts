@@ -26,6 +26,7 @@ export type CapabilityArea =
   | 'Directory'
   | 'Billing & reports'
   | 'Settings'
+  | 'Help'
   | 'Integrations'
 
 type CapabilityDefinition = {
@@ -290,7 +291,8 @@ export const CAPABILITIES = {
     surfaces: ['app'],
   },
 
-  // Settings
+  // Settings (the reference pages' capabilities keep their names but sit
+  // under Help)
   'settings.business': {
     area: 'Settings',
     label: 'Business settings',
@@ -307,21 +309,21 @@ export const CAPABILITIES = {
     surfaces: ['app'],
   },
   'settings.templates': {
-    area: 'Settings',
+    area: 'Help',
     label: 'Email and notification templates',
     description: 'Preview everything the portal sends.',
     roles: ADMIN_ONLY,
     surfaces: ['app'],
   },
   'settings.design': {
-    area: 'Settings',
+    area: 'Help',
     label: 'Design system',
     description: 'Colours, components and patterns used across the portal.',
     roles: ADMIN_ONLY,
     surfaces: ['app'],
   },
   'settings.permissions': {
-    area: 'Settings',
+    area: 'Help',
     label: 'View roles & permissions',
     description: 'This page.',
     roles: ADMIN_ONLY,
@@ -391,6 +393,7 @@ export const CAPABILITY_AREAS: readonly CapabilityArea[] = [
   'Directory',
   'Billing & reports',
   'Settings',
+  'Help',
   'Integrations',
 ]
 

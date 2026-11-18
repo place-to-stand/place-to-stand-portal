@@ -1,14 +1,15 @@
 import type { Metadata } from 'next'
-import { ArrowUpRight, Mail } from 'lucide-react'
+import { Mail } from 'lucide-react'
 
 import { BrandLogo } from '@pts/ui/brand'
 import { Button } from '@pts/ui/button'
 import { PagePanel } from '@/components/layout/page-panel'
 import { PageShell } from '@/components/layout/page-shell'
+import { SiteMark } from '@/components/ui/site-mark'
 import { requirePage } from '@/lib/auth/session'
 import { PTS_CONTACT } from '@/lib/help/pts-contact'
 
-import { helpCrumbs, helpTabsFor } from './_lib/tabs'
+import { helpCrumbs, helpTabsFor } from '@/lib/navigation/help-tabs'
 
 export const metadata: Metadata = {
   title: 'Get help | Help',
@@ -33,7 +34,7 @@ export default async function GetHelpPage() {
         <BrandLogo size='lg' />
         <div className='flex flex-col gap-2'>
           <h1 className='text-lg font-semibold'>Built by {PTS_CONTACT.name}</h1>
-          <p className='text-muted-foreground text-base'>
+          <p className='text-muted-foreground text-sm'>
             We build the systems behind your business and the stores in front of
             it. Want something in this portal changed, added or set up? Talk to
             the engineers who built it.
@@ -42,8 +43,8 @@ export default async function GetHelpPage() {
         <div className='flex flex-wrap gap-3'>
           <Button asChild>
             <a href={PTS_CONTACT.bookingUrl} target='_blank' rel='noreferrer'>
+              <SiteMark href={PTS_CONTACT.bookingUrl} />
               Book a call
-              <ArrowUpRight aria-hidden />
             </a>
           </Button>
           <Button asChild variant='outline'>
@@ -54,8 +55,8 @@ export default async function GetHelpPage() {
           </Button>
           <Button asChild variant='outline'>
             <a href={PTS_CONTACT.website} target='_blank' rel='noreferrer'>
+              <SiteMark href={PTS_CONTACT.website} />
               {host}
-              <ArrowUpRight aria-hidden />
             </a>
           </Button>
         </div>

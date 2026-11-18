@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils'
 import { EndpointList } from './_components/endpoint-list'
 import { PagePanel, pagePanelClass } from '@/components/layout/page-panel'
 
-import { helpCrumbs, helpTabsFor } from '../_lib/tabs'
+import { helpCrumbs, helpTabsFor } from '@/lib/navigation/help-tabs'
 
 export const metadata: Metadata = {
   title: 'Roles & permissions | Help',
