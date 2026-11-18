@@ -1,14 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import {
-  Keyboard,
-  Loader2,
-  LogOut,
-  Moon,
-  Sun,
-  CircleUserRound,
-} from 'lucide-react'
+import { Keyboard, Loader2, LogOut, Moon, Sun } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import {
@@ -28,7 +21,11 @@ import { useTheme } from '@/components/providers/theme-provider'
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { openAccountSheet } from '@/lib/account/use-account-sheet'
+
+// Account is your sign-in: the registry's user icon.
+const UserIcon = ENTITY_ICONS.user
 
 type Props = {
   user: AppUser
@@ -111,7 +108,7 @@ export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
               }}
               className='flex items-center gap-2'
             >
-              <CircleUserRound className='h-4 w-4' />
+              <UserIcon className='h-4 w-4' />
               <span>Account</span>
             </DropdownMenuItem>
             <DropdownMenuItem
