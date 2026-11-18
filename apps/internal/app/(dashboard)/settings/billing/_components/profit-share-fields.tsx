@@ -11,6 +11,10 @@ import {
   EffectiveMonthPicker,
   type EffectiveMonthOption,
 } from '@/components/billing/effective-month-select'
+import {
+  FORM_FIELD_WIDE_CLASS,
+  FormSection,
+} from '@/components/forms/form-section'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import { usePendingRemovals } from '@/components/sheets/use-pending-removals'
@@ -27,10 +31,12 @@ import {
   currentMonthStartUtc,
   monthLabel,
 } from '@/lib/billing/months'
-import type { ProfitShareStaff } from '@/lib/business/settings-query'
+import type {
+  ProfitShareSettingsInput,
+  ProfitShareSettingsValues,
+} from '@/lib/billing/profit-share-form'
+import type { ProfitShareStaff } from '@/lib/billing/profit-share-query'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
-
-import type { TextInput, TextOutput } from './business-form-fields'
 
 /** The select's value for "no start month" (a select item can't be ''). */
 const OFF = 'off'
@@ -46,73 +52,66 @@ export function ProfitShareFields({
   savedPartnerIds,
   disabled,
 }: {
-  control: Control<TextInput, unknown, TextOutput>
+  control: Control<ProfitShareSettingsInput, unknown, ProfitShareSettingsValues>
   staff: ProfitShareStaff[]
   /** The partners as saved, so a removed one shows as Pending removal. */
   savedPartnerIds: string[]
   disabled: boolean
 }) {
   return (
-    <section className='grid gap-4'>
-      <div className='grid gap-1'>
-        <h2 className='text-lg font-semibold'>Profit share</h2>
-        <p className='text-muted-foreground text-sm'>
-          The monthly close splits the month-end bank balance, less partner
-          payouts and the minimum, between the people below. Off until you pick
-          a start month and at least one person.
-        </p>
-      </div>
-      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-        <FormField
-          control={control}
-          name='profitShareStartMonth'
-          render={({ field }) => (
-            <StartMonthField
-              value={field.value}
-              onChange={field.onChange}
-              disabled={disabled}
-            />
-          )}
-        />
-        <FormField
-          control={control}
-          name='profitShareMinimumBalance'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel optional>Minimum balance</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  inputMode='decimal'
-                  placeholder='0'
-                  disabled={disabled}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name='profitSharePartnerIds'
-          render={({ field }) => (
-            <FormItem className='sm:col-span-2'>
-              <PartnerList
-                // A save keeps this page mounted: start a fresh list from
-                // what was saved, so a saved removal stops reading as pending.
-                key={savedPartnerIds.join()}
-                value={field.value}
-                onChange={field.onChange}
-                staff={staff}
-                savedIds={savedPartnerIds}
+    <FormSection
+      title='Profit share'
+      description='The monthly close splits the month-end bank balance, less partner payouts and the minimum, between the people below. Off until you pick a start month and at least one person.'
+    >
+      <FormField
+        control={control}
+        name='profitShareStartMonth'
+        render={({ field }) => (
+          <StartMonthField
+            value={field.value}
+            onChange={field.onChange}
+            disabled={disabled}
+          />
+        )}
+      />
+      <FormField
+        control={control}
+        name='profitShareMinimumBalance'
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel optional>Minimum balance</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                inputMode='decimal'
+                placeholder='0'
                 disabled={disabled}
               />
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-    </section>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={control}
+        name='profitSharePartnerIds'
+        render={({ field }) => (
+          <FormItem className={FORM_FIELD_WIDE_CLASS}>
+            <PartnerList
+              // A save keeps this page mounted: start a fresh list from
+              // what was saved, so a saved removal stops reading as pending.
+              key={savedPartnerIds.join()}
+              value={field.value}
+              onChange={field.onChange}
+              staff={staff}
+              savedIds={savedPartnerIds}
+              disabled={disabled}
+            />
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </FormSection>
   )
 }
 

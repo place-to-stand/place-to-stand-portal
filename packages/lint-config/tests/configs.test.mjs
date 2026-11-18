@@ -15,6 +15,7 @@ import { ruleIdOf } from '../bin/lint.mjs'
 import {
   API_ROUTE_GUARD,
   NO_ALIGN_START,
+  NO_HAND_SECTION_HEADING,
   NO_TITLE_TOOLTIP,
   QUERY_LAYER_PATTERNS,
   TOOLTIP_OFF,
@@ -117,6 +118,25 @@ test("RowActionButton's tooltip is off only under a Tooltip or trigger", () => {
       `<DropdownMenuTrigger asChild>${button}</DropdownMenuTrigger>`,
       "<RowActionButton label='More' />",
     ].map(code => ({ code, fires: [] })),
+  ])
+})
+
+test('a page form section is FormSection, not a hand-written h2', () => {
+  const config = [
+    { rules: { 'no-restricted-syntax': ['error', NO_HAND_SECTION_HEADING] } },
+  ]
+  expectFired(config, [
+    {
+      code: "<h2 className='text-lg font-semibold'>Tax rates</h2>",
+      fires: ['pts/restricted-syntax'],
+    },
+    {
+      code: "<h2 className='font-semibold text-lg tracking-tight'>Dates</h2>",
+      fires: ['pts/restricted-syntax'],
+    },
+    { code: "<h2 className='text-sm font-semibold'>Notes</h2>", fires: [] },
+    { code: "<h3 className='text-lg font-semibold'>Board</h3>", fires: [] },
+    { code: '<h2 className={TITLE_CLASS}>Title</h2>', fires: [] },
   ])
 })
 

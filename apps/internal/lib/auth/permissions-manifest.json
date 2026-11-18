@@ -316,34 +316,6 @@
   },
   {
     "type": "action",
-    "name": "saveProductCatalogItem",
-    "file": "apps/internal/app/(dashboard)/invoices/settings/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "saveTaxRate",
-    "file": "apps/internal/app/(dashboard)/invoices/settings/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "toggleTaxRateActiveAction",
-    "file": "apps/internal/app/(dashboard)/invoices/settings/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "page",
-    "name": "/invoices/settings",
-    "file": "apps/internal/app/(dashboard)/invoices/settings/page.tsx",
-    "kind": "capability",
-    "capability": "billing.manage"
-  },
-  {
-    "type": "action",
     "name": "archiveLead",
     "file": "apps/internal/app/(dashboard)/leads/_actions/archive-lead.ts",
     "kind": "capability",
@@ -705,6 +677,41 @@
     "file": "apps/internal/app/(dashboard)/reports/monthly-close/page.tsx",
     "kind": "capability",
     "capability": "reports.view"
+  },
+  {
+    "type": "action",
+    "name": "saveProductCatalogItem",
+    "file": "apps/internal/app/(dashboard)/settings/billing/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "saveTaxRate",
+    "file": "apps/internal/app/(dashboard)/settings/billing/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "toggleTaxRateActiveAction",
+    "file": "apps/internal/app/(dashboard)/settings/billing/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "page",
+    "name": "/settings/billing",
+    "file": "apps/internal/app/(dashboard)/settings/billing/page.tsx",
+    "kind": "capability",
+    "capability": "billing.manage"
+  },
+  {
+    "type": "action",
+    "name": "saveProfitShareSettings",
+    "file": "apps/internal/app/(dashboard)/settings/billing/profit-share-actions.ts",
+    "kind": "capability",
+    "capability": "billing.manage"
   },
   {
     "type": "action",

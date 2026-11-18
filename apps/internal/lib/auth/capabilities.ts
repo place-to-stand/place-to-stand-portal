@@ -277,7 +277,8 @@ export const CAPABILITIES = {
   'billing.manage': {
     area: 'Billing & reports',
     label: 'Manage billing',
-    description: 'Invoices, hour blocks and time logs.',
+    description:
+      'Invoices, hour blocks and time logs; Settings → Billing (products, tax rates, profit share).',
     roles: ADMIN_ONLY,
     surfaces: ['app', 'mcp', 'cli'],
   },

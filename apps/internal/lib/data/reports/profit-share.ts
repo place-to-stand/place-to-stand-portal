@@ -88,7 +88,7 @@ export const loadMonthEndBalance = cache(
   }
 )
 
-/** The profit share set on Settings → Business, or null while it is off. */
+/** The profit share set on Settings → Billing, or null while it is off. */
 export const getProfitSharePolicy = cache(
   (): Promise<ProfitSharePolicy | null> => readProfitSharePolicy(db)
 )
@@ -133,7 +133,7 @@ export async function buildProfitShare(params: {
   addedAfterCloseAt?: string | null
   /**
    * The terms a closed month froze. Drift compares against these, so a later
-   * change on Settings → Business never reads as drift in an old month.
+   * change on Settings → Billing never reads as drift in an old month.
    */
   terms?: Pick<ProfitShareData, 'minimumBalance' | 'partners'>
 }): Promise<ProfitShareData> {

@@ -4,7 +4,7 @@
 
 ## Your business details
 
-- After the first sign-in, an admin fills in **Settings → Business**: name, address, phone, inbox email, sending email, booking link, time zone and, if you use it, the partner profit share on the monthly close. A new install starts blank, and a banner asks for these until they are saved. Emails, invoices and the client portal read them from there.
+- After the first sign-in, an admin fills in **Settings → Business**: name, address, phone, inbox email, sending email, booking link and time zone. If you use the partner profit share on the monthly close, set it on **Settings → Billing**, beside the invoice products and tax rates. A new install starts blank, and a banner asks for these until they are saved. Emails, invoices and the client portal read them from there.
 - Replies to portal email go to the **inbox email**, or to the sending address when it is blank.
 
 ## Sending email (Resend)

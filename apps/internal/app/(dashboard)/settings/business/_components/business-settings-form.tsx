@@ -9,6 +9,12 @@ import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
 
 import {
+  FORM_FIELD_WIDE_CLASS,
+  FORM_SECTIONS_CLASS,
+  FormSection,
+} from '@/components/forms/form-section'
+
+import {
   Form,
   FormControl,
   FormField,
@@ -21,6 +27,7 @@ import { useToast } from '@/components/ui/use-toast'
 import type { BusinessImageChange } from '@/lib/business/settings-form'
 import type { BusinessSettingsFormData } from '@/lib/business/settings-query'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
+import { cn } from '@/lib/utils'
 
 import { saveBusinessSettings } from '../actions'
 import {
@@ -30,7 +37,6 @@ import {
   type TextOutput,
 } from './business-form-fields'
 import { BusinessImageField } from './business-image-field'
-import { ProfitShareFields } from './profit-share-fields'
 import { timeZoneOptions } from './time-zone-options'
 
 const KEEP: BusinessImageChange = { kind: 'keep' }
@@ -51,9 +57,6 @@ function textDefaults(initial: BusinessSettingsFormData): TextInput {
     sendingEmail: initial.sendingEmail,
     bookingUrl: initial.bookingUrl,
     timeZone: initial.timeZone,
-    profitShareStartMonth: initial.profitShareStartMonth,
-    profitShareMinimumBalance: initial.profitShareMinimumBalance,
-    profitSharePartnerIds: initial.profitSharePartnerIds,
   }
 }
 
@@ -119,97 +122,85 @@ export function BusinessSettingsForm({
     <Form {...form}>
       <form
         onSubmit={event => void form.handleSubmit(onSubmit)(event)}
-        className='grid max-w-3xl gap-8'
+        className={cn(FORM_SECTIONS_CLASS, 'max-w-3xl')}
       >
         {SECTIONS.map((section, index) => (
-          <section key={section.title} className='grid gap-4'>
-            <h2 className='text-lg font-semibold'>{section.title}</h2>
-            <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-              {section.fields.map(field => (
-                <FormField
-                  key={field.name}
-                  control={form.control}
-                  name={field.name}
-                  render={({ field: control }) => (
-                    <FormItem
-                      className={field.wide ? 'sm:col-span-2' : undefined}
-                    >
-                      <FormLabel optional={field.optional}>
-                        {field.label}
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          {...control}
-                          value={control.value ?? ''}
-                          type={field.type ?? 'text'}
-                          autoComplete={field.autoComplete}
-                          disabled={isPending}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+          <FormSection key={section.title} title={section.title}>
+            {section.fields.map(field => (
+              <FormField
+                key={field.name}
+                control={form.control}
+                name={field.name}
+                render={({ field: control }) => (
+                  <FormItem
+                    className={field.wide ? FORM_FIELD_WIDE_CLASS : undefined}
+                  >
+                    <FormLabel optional={field.optional}>
+                      {field.label}
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...control}
+                        value={control.value ?? ''}
+                        type={field.type ?? 'text'}
+                        autoComplete={field.autoComplete}
+                        disabled={isPending}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ))}
+            {index === 0 ? (
+              <>
+                <BusinessImageField
+                  label='Logo'
+                  shape='wide'
+                  hint='Wide image up to 256 KB. PNG, JPEG, WEBP, or SVG.'
+                  currentSrc={initial.logoSrc}
+                  change={logo}
+                  onChange={setLogo}
+                  error={imageErrors.logo}
+                  disabled={isPending}
                 />
-              ))}
-              {index === 0 ? (
-                <>
-                  <BusinessImageField
-                    label='Logo'
-                    shape='wide'
-                    hint='Wide image up to 256 KB. PNG, JPEG, WEBP, or SVG.'
-                    currentSrc={initial.logoSrc}
-                    change={logo}
-                    onChange={setLogo}
-                    error={imageErrors.logo}
-                    disabled={isPending}
-                  />
-                  <BusinessImageField
-                    label='Icon'
-                    shape='square'
-                    hint='Square image up to 256 KB. PNG, JPEG, WEBP, or SVG.'
-                    currentSrc={initial.iconSrc}
-                    change={icon}
-                    onChange={setIcon}
-                    error={imageErrors.icon}
-                    disabled={isPending}
-                  />
-                </>
-              ) : null}
-            </div>
-          </section>
+                <BusinessImageField
+                  label='Icon'
+                  shape='square'
+                  hint='Square image up to 256 KB. PNG, JPEG, WEBP, or SVG.'
+                  currentSrc={initial.iconSrc}
+                  change={icon}
+                  onChange={setIcon}
+                  error={imageErrors.icon}
+                  disabled={isPending}
+                />
+              </>
+            ) : null}
+          </FormSection>
         ))}
-        <section className='grid gap-4'>
-          <h2 className='text-lg font-semibold'>Dates</h2>
-          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-            <FormField
-              control={form.control}
-              name='timeZone'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Time zone</FormLabel>
-                  <FormControl>
-                    <SearchableCombobox
-                      items={zones}
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      searchPlaceholder='Search time zones...'
-                      disabled={isPending}
-                      ariaLabel='Time zone'
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </section>
-        <ProfitShareFields
-          control={form.control}
-          staff={initial.staff}
-          savedPartnerIds={initial.profitSharePartnerIds}
-          disabled={isPending}
-        />
+        <FormSection title='Dates'>
+          <FormField
+            control={form.control}
+            name='timeZone'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Time zone</FormLabel>
+                <FormControl>
+                  <SearchableCombobox
+                    items={zones}
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    searchPlaceholder='Search time zones...'
+                    disabled={isPending}
+                    ariaLabel='Time zone'
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </FormSection>
         <div>
           <Button type='submit' disabled={isPending}>
             {isPending ? 'Saving...' : 'Save'}

@@ -1,10 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 
 import { isValidTimeZone } from '@pts/db/business'
-import { businessSettings, companies, users } from '@pts/db/schema'
+import { businessSettings, companies } from '@pts/db/schema'
 
 import { businessSettingsUpdatedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
@@ -20,7 +20,6 @@ import {
   type BusinessSettingsValues,
 } from '@/lib/business/settings-form'
 import { db } from '@/lib/db'
-import { eligiblePartner } from '@/lib/queries/reports/profit-share-partners'
 
 export type SaveBusinessSettingsResult =
   | { ok: true }
@@ -79,16 +78,6 @@ export async function saveBusinessSettings(
     }
   }
 
-  if (!(await partnersAreStaff(values.profitSharePartnerIds))) {
-    return {
-      ok: false,
-      error: 'Check the highlighted fields.',
-      fieldErrors: {
-        profitSharePartnerIds: 'Pick partners from the list.',
-      },
-    }
-  }
-
   const before = await readCurrent()
 
   if (values.sendingEmail && values.sendingEmail !== before.sendingEmail) {
@@ -108,14 +97,6 @@ export async function saveBusinessSettings(
       values[key],
     ])
   ) as Record<TextField, string | null>
-
-  const profitShareAfter = {
-    startsOn: values.profitShareStartMonth
-      ? `${values.profitShareStartMonth}-01`
-      : null,
-    minimumBalance: Number(values.profitShareMinimumBalance || 0),
-    partnerIds: values.profitSharePartnerIds,
-  }
 
   await db.transaction(async tx => {
     if (before.staffCompanyId) {
@@ -145,9 +126,6 @@ export async function saveBusinessSettings(
       sendingEmail: values.sendingEmail,
       bookingUrl: values.bookingUrl,
       timeZone: values.timeZone,
-      profitShareStartsOn: profitShareAfter.startsOn,
-      profitShareMinimumBalance: profitShareAfter.minimumBalance.toFixed(2),
-      profitSharePartnerIds: profitShareAfter.partnerIds,
       ...imageColumn('logoDataUrl', values.logo),
       ...imageColumn('iconDataUrl', values.icon),
       confirmedAt: sql`coalesce(${businessSettings.confirmedAt}, now())`,
@@ -164,25 +142,14 @@ export async function saveBusinessSettings(
   const changedFields = (Object.keys(BUSINESS_FIELD_LABELS) as TextField[])
     .filter(key => (before.values[key] ?? null) !== textValues[key])
     .map(key => BUSINESS_FIELD_LABELS[key])
-  if (before.profitShare.startsOn !== profitShareAfter.startsOn) {
-    changedFields.push('profit share start month')
-  }
-  if (before.profitShare.minimumBalance !== profitShareAfter.minimumBalance) {
-    changedFields.push('profit share minimum balance')
-  }
-  if (
-    before.profitShare.partnerIds.join() !== profitShareAfter.partnerIds.join()
-  ) {
-    changedFields.push('profit share partners')
-  }
   if (values.logo.kind !== 'keep') changedFields.push('logo')
   if (values.icon.kind !== 'keep') changedFields.push('icon')
 
   const event = businessSettingsUpdatedEvent({
     changedFields,
     details: {
-      before: { ...before.values, profitShare: before.profitShare },
-      after: { ...textValues, profitShare: profitShareAfter },
+      before: before.values,
+      after: textValues,
     },
   })
   await logActivity({
@@ -234,9 +201,6 @@ async function readCurrent() {
         sendingEmail: businessSettings.sendingEmail,
         bookingUrl: businessSettings.bookingUrl,
         timeZone: businessSettings.timeZone,
-        profitShareStartsOn: businessSettings.profitShareStartsOn,
-        profitShareMinimumBalance: businessSettings.profitShareMinimumBalance,
-        profitSharePartnerIds: businessSettings.profitSharePartnerIds,
       })
       .from(businessSettings)
       .limit(1),
@@ -263,11 +227,6 @@ async function readCurrent() {
     staffCompanyId: staff?.id ?? null,
     sendingEmail: values.sendingEmail,
     values,
-    profitShare: {
-      startsOn: settings?.profitShareStartsOn ?? null,
-      minimumBalance: Number(settings?.profitShareMinimumBalance ?? 0),
-      partnerIds: settings?.profitSharePartnerIds ?? [],
-    },
   }
 }
 
@@ -282,16 +241,4 @@ async function databaseKnowsTimeZone(timeZone: string): Promise<boolean> {
   } catch {
     return false
   }
-}
-
-/** Every partner can split the profit share (`eligiblePartner`). */
-async function partnersAreStaff(ids: string[]): Promise<boolean> {
-  const unique = [...new Set(ids)]
-  if (unique.length !== ids.length) return false
-  if (unique.length === 0) return true
-  const rows = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(and(inArray(users.id, unique), eligiblePartner))
-  return rows.length === unique.length
 }

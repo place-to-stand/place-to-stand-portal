@@ -21,6 +21,7 @@ export const DESIGN_SECTION_GROUPS = [
       { id: 'buttons', label: 'Buttons' },
       { id: 'badges', label: 'Badges' },
       { id: 'inputs', label: 'Inputs' },
+      { id: 'form-sections', label: 'Form sections' },
       { id: 'pickers', label: 'Select and pickers' },
       { id: 'toggles', label: 'Switch, checkbox, segmented' },
       { id: 'dates', label: 'Dates and numbers' },

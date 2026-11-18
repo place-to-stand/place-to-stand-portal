@@ -7,6 +7,8 @@ import { z } from 'zod'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+
+import { FormSection } from '@/components/forms/form-section'
 import { EmptyState } from '@pts/ui/empty-state'
 import { Checkbox } from '@pts/ui/checkbox'
 import {
@@ -352,15 +354,16 @@ export function ProductCatalogSection({
   )
 
   return (
-    <section className='space-y-4'>
-      <div className='flex items-center justify-between'>
-        <h2 className='text-lg font-semibold'>Product catalog</h2>
+    <FormSection
+      title='Product catalog'
+      layout='block'
+      action={
         <Button size='sm' onClick={openAddDialog}>
           <Plus />
           Create product
         </Button>
-      </div>
-
+      }
+    >
       <div className='rounded-lg border'>
         <Table
           density='compact'
@@ -539,6 +542,6 @@ export function ProductCatalogSection({
       </Dialog>
 
       {discardDialog}
-    </section>
+    </FormSection>
   )
 }

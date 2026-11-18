@@ -7,6 +7,8 @@ import { z } from 'zod'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+
+import { FormSection } from '@/components/forms/form-section'
 import { EmptyState } from '@pts/ui/empty-state'
 import {
   Dialog,
@@ -253,15 +255,16 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
   )
 
   return (
-    <section className='space-y-4'>
-      <div className='flex items-center justify-between'>
-        <h2 className='text-lg font-semibold'>Tax rates</h2>
+    <FormSection
+      title='Tax rates'
+      layout='block'
+      action={
         <Button size='sm' onClick={openAddDialog}>
           <Plus />
           Create tax rate
         </Button>
-      </div>
-
+      }
+    >
       <div className='rounded-lg border'>
         <Table density='compact' layout='fixed' stack>
           <TableHeader>
@@ -418,6 +421,6 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
       </Dialog>
 
       {discardDialog}
-    </section>
+    </FormSection>
   )
 }

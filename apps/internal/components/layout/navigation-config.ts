@@ -2,8 +2,9 @@ import type { LucideIcon } from 'lucide-react'
 
 import type { Capability } from '@/lib/auth/capabilities'
 import {
-  IdCard,
   FileText,
+  IdCard,
+  Landmark,
   Home as HomeIcon,
   Palette,
   Plug,
@@ -123,6 +124,8 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     title: 'Settings',
+    // By domain: who the business is, how it bills, who can do what, what
+    // it sends, what it connects to; the design system last.
     items: [
       {
         href: '/settings/business',
@@ -131,10 +134,10 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: IdCard,
       },
       {
-        href: '/settings/integrations',
-        capability: 'integrations.manage',
-        label: 'Integrations',
-        icon: Plug,
+        href: '/settings/billing',
+        capability: 'billing.manage',
+        label: 'Billing',
+        icon: Landmark,
       },
       {
         href: '/settings/permissions',
@@ -148,6 +151,12 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'Templates',
         icon: ENTITY_ICONS.template,
         matchHrefs: ['/settings/templates'],
+      },
+      {
+        href: '/settings/integrations',
+        capability: 'integrations.manage',
+        label: 'Integrations',
+        icon: Plug,
       },
       {
         href: '/design',

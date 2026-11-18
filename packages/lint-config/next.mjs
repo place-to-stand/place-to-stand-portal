@@ -112,6 +112,17 @@ export const NO_ALIGN_START = {
     "House rule 4 (docs/design-system/README.md): popups open left-aligned by default. Drop align='start'.",
 }
 
+/**
+ * form-section.md: a page form's section heading is `FormSection`, never a
+ * hand-written h2 with the heading classes.
+ */
+export const NO_HAND_SECTION_HEADING = {
+  selector:
+    "JSXOpeningElement[name.name='h2'] > JSXAttribute[name.name='className'][value.value=/\\btext-lg\\b/][value.value=/\\bfont-semibold\\b/]",
+  message:
+    "form-section.md (docs/design-system/components): a page form's section is `FormSection` from @/components/forms/form-section (title, description, action, the field grid), not a hand-written h2.",
+}
+
 /** What every app file is checked for with no-restricted-syntax. */
 const RESTRICTED_SYNTAX = [NO_TITLE_TOOLTIP, TOOLTIP_OFF, NO_ALIGN_START]
 
@@ -243,7 +254,12 @@ export function nextApp({
       settings: { next: { rootDir: dir } },
       rules: {
         'no-restricted-imports': restrictedImports(restrictedPaths),
-        'no-restricted-syntax': ['error', ...RESTRICTED_SYNTAX],
+        // FormSection lives in the internal app (the one with sheets).
+        'no-restricted-syntax': [
+          'error',
+          ...RESTRICTED_SYNTAX,
+          ...(sheetRegistry ? [NO_HAND_SECTION_HEADING] : []),
+        ],
         // CLAUDE.md "Soft deletes": archive, never hard delete a record.
         'pts/no-hard-delete': ['error', { allow: HARD_DELETE_ALLOW }],
         // Env vars go through the zod schema (lib/env.server.ts), so an empty
@@ -364,6 +380,7 @@ export function nextApp({
               'no-restricted-syntax': [
                 'error',
                 ...RESTRICTED_SYNTAX,
+                ...(sheetRegistry ? [NO_HAND_SECTION_HEADING] : []),
                 API_ROUTE_GUARD,
               ],
             },

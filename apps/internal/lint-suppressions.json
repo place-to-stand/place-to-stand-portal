@@ -139,7 +139,7 @@
       "count": 1
     }
   },
-  "app/(dashboard)/invoices/settings/_components/product-catalog-section.tsx": {
+  "app/(dashboard)/settings/billing/_components/product-catalog-section.tsx": {
     "max-lines": {
       "count": 1
     },
@@ -150,7 +150,7 @@
       "count": 1
     }
   },
-  "app/(dashboard)/invoices/settings/_components/tax-rates-section.tsx": {
+  "app/(dashboard)/settings/billing/_components/tax-rates-section.tsx": {
     "max-lines": {
       "count": 1
     },
@@ -161,7 +161,7 @@
       "count": 1
     }
   },
-  "app/(dashboard)/invoices/settings/actions.ts": {
+  "app/(dashboard)/settings/billing/actions.ts": {
     "typescript/no-deprecated": {
       "count": 2
     }

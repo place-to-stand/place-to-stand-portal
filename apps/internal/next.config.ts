@@ -78,6 +78,8 @@ const nextConfig: NextConfig = {
       to('/reports', '/reports/monthly-close'),
       to('/settings', '/settings/permissions'),
       to('/settings/templates', '/settings/templates/emails'),
+      // Products, tax rates and the profit share live on Settings → Billing.
+      to('/invoices/settings', '/settings/billing'),
       // Contacts are called People.
       to('/contacts', '/people'),
       to('/contacts/:path*', '/people/:path*'),

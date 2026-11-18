@@ -194,7 +194,7 @@ export async function saveProductCatalogItem(
       )
     }
 
-    revalidatePath('/invoices/settings')
+    revalidatePath('/settings/billing')
     return { ok: true }
   } catch (error) {
     console.error('Failed to save product catalog item:', error)
@@ -265,7 +265,7 @@ export async function saveTaxRate(
       )
     }
 
-    revalidatePath('/invoices/settings')
+    revalidatePath('/settings/billing')
     return { ok: true }
   } catch (error) {
     console.error('Failed to save tax rate:', error)
@@ -303,7 +303,7 @@ export async function toggleTaxRateActiveAction(
       )
     }
 
-    revalidatePath('/invoices/settings')
+    revalidatePath('/settings/billing')
     return { ok: true }
   } catch (error) {
     console.error('Failed to toggle tax rate:', error)

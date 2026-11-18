@@ -34,6 +34,7 @@ import {
   ComponentsTextLinks,
 } from './_components/components-navigation'
 import { ComponentsSheets } from './_components/components-sheet'
+import { ComponentsFormSections } from './_components/components-form-section'
 import { ComponentsStats } from './_components/components-stats'
 import { ComponentsAccess } from './_components/components-access'
 import { FoundationsColour } from './_components/foundations-colour'
@@ -72,6 +73,7 @@ export default async function DesignPage() {
         <ComponentsButtons />
         <ComponentsBadges />
         <ComponentsInputs />
+        <ComponentsFormSections />
         <ComponentsPickers />
         <ComponentsToggles />
         <ComponentsDates />
