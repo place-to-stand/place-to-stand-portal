@@ -133,15 +133,8 @@ function CommandPalette() {
     () => (role ? filterNavGroupsForRole(NAV_GROUPS, role) : []),
     [role]
   )
-  // Help's reference tabs, one keystroke away as they were in the sidebar.
-  // Get help is the Help entry itself.
-  const helpTabs = useMemo(
-    () =>
-      role
-        ? helpTabEntriesFor(role).filter(tab => tab.value !== 'get-help')
-        : [],
-    [role]
-  )
+  // Help lives in the page header, so its tabs are listed here.
+  const helpTabs = useMemo(() => (role ? helpTabEntriesFor(role) : []), [role])
   const router = useRouter()
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query.trim(), DEBOUNCE_MS)

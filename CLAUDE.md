@@ -118,7 +118,7 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 │   ├── my/           # Current user's pages (home, tasks)
 │   ├── projects/     # Project workspace (tabbed, see below; archive, activity)
 │   ├── reports/      # Reports (monthly-close)
-│   ├── help/         # Sidebar "Help", tabs filtered by role: Get help (the fixed Place To Stand card, everyone), roles & permissions, email/PDF/notification templates, design system (admins)
+│   ├── help/         # Help (header button beside Notifications), tabs filtered by role: Get help (the fixed Place To Stand card, everyone), roles & permissions, email/PDF/notification templates, design system (admins)
 │   ├── settings/     # Sidebar "Admin": Settings (tabs: business, billing (products, tax rates, profit share), integrations (the agency's services)). A person's own settings are the Account sheet, not here
 │   └── submissions/  # Website form submissions
 ├── (public)/         # Publicly shared pages (e.g. share/invoices/[token])

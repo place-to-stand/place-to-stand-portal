@@ -4,7 +4,7 @@ import { LifeBuoy, Palette, ShieldCheck } from 'lucide-react'
 import type { TabsNavTab } from '@/components/layout/tabs-nav'
 import { roleCan, type Capability, type Role } from '@/lib/auth/capabilities'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
-import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
+import type { Crumb } from '@/lib/navigation/breadcrumbs'
 
 type HelpTabDefinition = TabsNavTab & {
   /** The capability the tab's page guards with; the strip hides the rest. */
@@ -14,7 +14,7 @@ type HelpTabDefinition = TabsNavTab & {
 }
 
 /**
- * Portal → Help: one sidebar entry, a tab per reference page. Unlike
+ * Help, opened from the page header: a tab per reference page. Unlike
  * Settings, the tabs differ by role: everyone signed in gets Get help, and
  * each other tab shows only to roles its page lets in.
  */
@@ -79,8 +79,8 @@ export function helpTabsFor(role: Role): TabsNavTab[] {
   }))
 }
 
-/** "Portal / Help / Emails": the nav entry, then the tab. */
-export function helpCrumbs(tab: HelpTab) {
+/** "Help / Emails": Help, then the tab. */
+export function helpCrumbs(tab: HelpTab): Crumb[] {
   const label = HELP_TABS.find(item => item.value === tab)?.label ?? ''
-  return [...crumbsForNav('/help'), { label }]
+  return [{ label: 'Help', href: '/help' }, { label }]
 }
