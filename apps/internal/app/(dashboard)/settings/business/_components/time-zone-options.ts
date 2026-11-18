@@ -38,7 +38,14 @@ export function timeZoneOptions(
         keywords.push(zone.offsetLabel, zone.offsetLabel.replace('−', '-'))
       }
       return {
-        item: { value: name, label, description, keywords },
+        item: {
+          value: name,
+          label,
+          description,
+          // Picked, the field says all of it: "Chicago · Central Time · GMT−6".
+          selectedLabel: description ? `${label} · ${description}` : label,
+          keywords,
+        },
         offset: zone?.offsetMinutes ?? 0,
       }
     })

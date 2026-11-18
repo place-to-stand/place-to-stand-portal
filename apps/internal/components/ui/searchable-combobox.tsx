@@ -53,6 +53,12 @@ export type SearchableComboboxItem = {
    * picked (a status badge). Search still matches `label`.
    */
   render?: React.ReactNode
+  /**
+   * What the trigger says once this option is picked, when the label alone
+   * isn't enough there (a time zone: "Chicago · Central Time · GMT−6", where
+   * the list shows the city with the rest on its second line).
+   */
+  selectedLabel?: string
 }
 
 export type SearchableComboboxGroup = {
@@ -364,6 +370,7 @@ export const SearchableCombobox = React.forwardRef<
                   clearable={showClear}
                   className={triggerClassName}
                   labelTitle={
+                    selectedItem?.selectedLabel ??
                     selectedItem?.label ??
                     (unmatched ? 'Not in this list' : resolvedPlaceholder)
                   }
@@ -372,7 +379,9 @@ export const SearchableCombobox = React.forwardRef<
                   }
                   label={
                     selectedItem
-                      ? (selectedItem.render ?? selectedItem.label)
+                      ? (selectedItem.render ??
+                        selectedItem.selectedLabel ??
+                        selectedItem.label)
                       : unmatched
                         ? 'Not in this list'
                         : resolvedPlaceholder
