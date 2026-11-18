@@ -159,13 +159,13 @@ export function AvatarUploadField({
     }
 
     if (value && contactId) {
-      return `/api/storage/person-avatar/${contactId}?v=${cacheBuster}`
+      return `/api/storage/person-avatar/${contactId}?v=${cacheBuster}&size=lg`
     }
 
     const resolvedUserId = existingUserId ?? targetUserId
 
     if (value && resolvedUserId) {
-      return `/api/storage/user-avatar/${resolvedUserId}?v=${cacheBuster}`
+      return `/api/storage/user-avatar/${resolvedUserId}?v=${cacheBuster}&size=lg`
     }
 
     return null
