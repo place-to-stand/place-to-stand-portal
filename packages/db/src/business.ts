@@ -35,6 +35,8 @@ export type BusinessIdentity = {
   /** The website without scheme or trailing slash, for printing. */
   websiteLabel: string | null
   address: BusinessAddress
+  /** The address as printed lines (`formatAddressLines`); empty when none. */
+  addressLines: string[]
   phone: string | null
   /** Where replies and notifications go. Null: use the env fallback. */
   inboxEmail: string | null
@@ -97,6 +99,7 @@ function fallbackIdentity(name: string): BusinessIdentity {
       postalCode: null,
       country: null,
     },
+    addressLines: [],
     phone: null,
     inboxEmail: null,
     sendingEmail: null,
@@ -141,19 +144,21 @@ export async function readBusinessIdentity(
 
   const website = blank(row.website)
   const timeZone = blank(row.timeZone)
+  const address: BusinessAddress = {
+    line1: blank(row.addressLine1),
+    line2: blank(row.addressLine2),
+    city: blank(row.city),
+    region: blank(row.region),
+    postalCode: blank(row.postalCode),
+    country: blank(row.country),
+  }
   return {
     name,
     legalName: blank(row.legalName) ?? name,
     website,
     websiteLabel: websiteLabel(website),
-    address: {
-      line1: blank(row.addressLine1),
-      line2: blank(row.addressLine2),
-      city: blank(row.city),
-      region: blank(row.region),
-      postalCode: blank(row.postalCode),
-      country: blank(row.country),
-    },
+    address,
+    addressLines: formatAddressLines(address),
     phone: blank(row.phone),
     inboxEmail: blank(row.inboxEmail),
     sendingEmail: blank(row.sendingEmail),

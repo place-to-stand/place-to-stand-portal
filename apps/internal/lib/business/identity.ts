@@ -5,7 +5,7 @@ import { connection } from 'next/server'
 
 import { readBusinessIdentity, type BusinessIdentity } from '@pts/db/business'
 import { emailBrandFor, formatSender } from '@pts/email'
-import { invoiceIssuerFor } from '@pts/pdf'
+import { invoiceIssuerFor, issuerFromLines } from '@pts/pdf'
 import { setCompanyTimeZone } from '@pts/ui/dates'
 
 import { db } from '@/lib/db'
@@ -96,4 +96,4 @@ export async function getBusinessIdentityOrDefaults(): Promise<BusinessIdentity 
 }
 
 // One shape for every app, built in @pts/email and @pts/pdf.
-export { emailBrandFor, invoiceIssuerFor }
+export { emailBrandFor, invoiceIssuerFor, issuerFromLines }
