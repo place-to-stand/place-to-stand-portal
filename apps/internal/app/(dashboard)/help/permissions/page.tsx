@@ -17,14 +17,15 @@ import {
 } from '@/lib/auth/permissions-registry'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import { requirePage } from '@/lib/auth/session'
-import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { cn } from '@/lib/utils'
 
 import { EndpointList } from './_components/endpoint-list'
 import { PagePanel, pagePanelClass } from '@/components/layout/page-panel'
 
+import { helpCrumbs, helpTabsFor } from '../_lib/tabs'
+
 export const metadata: Metadata = {
-  title: 'Roles & permissions | Settings',
+  title: 'Roles & permissions | Help',
 }
 
 const SURFACE_LABELS: Record<CapabilitySurface, string> = {
@@ -37,13 +38,13 @@ const GRID =
   'grid grid-cols-[minmax(0,1fr)_5.5rem_5.5rem] items-center gap-3 sm:grid-cols-[minmax(0,1fr)_7rem_7rem_9rem]'
 
 /**
- * Settings → Roles & permissions, generated from the registry: what each
+ * Help → Roles & permissions, generated from the registry: what each
  * role can do (`lib/auth/capabilities.ts`) and every endpoint that enforces
  * it (`permissions-manifest.json`, built from the code and checked by
  * `npm run lint`). Changing a permission is a code change; this page follows.
  */
 export default async function PermissionsPage() {
-  await requirePage('settings.permissions')
+  const user = await requirePage('settings.permissions')
   const registry = buildPermissionsRegistry()
   const roleTotals = PERMISSION_ROLES.map(role => ({
     role,
@@ -54,7 +55,11 @@ export default async function PermissionsPage() {
   const capabilityCount = Object.keys(CAPABILITIES).length
 
   return (
-    <PageShell breadcrumbs={crumbsForNav('/settings/permissions')}>
+    <PageShell
+      breadcrumbs={helpCrumbs('permissions')}
+      tabs={helpTabsFor(user.role)}
+      activeTab='permissions'
+    >
       <div className='w-full space-y-6'>
         <section className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
           {roleTotals.map(({ role, count }) => (

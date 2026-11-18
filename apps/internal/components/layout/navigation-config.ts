@@ -4,9 +4,8 @@ import type { Capability } from '@/lib/auth/capabilities'
 import {
   FileText,
   Home as HomeIcon,
-  Palette,
+  LifeBuoy,
   Settings as SettingsIcon,
-  ShieldCheck,
 } from 'lucide-react'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
@@ -40,6 +39,13 @@ export const NAV_GROUPS: NavGroup[] = [
         label: 'Tasks',
         icon: ENTITY_ICONS.task,
         matchHrefs: ['/my/tasks', '/my/tasks/calendar'],
+      },
+      {
+        // Get help, then the reference pages each role may read, as tabs.
+        href: '/help',
+        capability: 'portal.sign_in',
+        label: 'Help',
+        icon: LifeBuoy,
       },
     ],
   },
@@ -134,25 +140,6 @@ export const NAV_GROUPS: NavGroup[] = [
           '/settings/billing',
           '/settings/integrations',
         ],
-      },
-      {
-        href: '/settings/permissions',
-        capability: 'settings.permissions',
-        label: 'Roles & permissions',
-        icon: ShieldCheck,
-      },
-      {
-        href: '/settings/templates/emails',
-        capability: 'settings.templates',
-        label: 'Templates',
-        icon: ENTITY_ICONS.template,
-        matchHrefs: ['/settings/templates'],
-      },
-      {
-        href: '/design',
-        capability: 'settings.design',
-        label: 'Design system',
-        icon: Palette,
       },
     ],
   },

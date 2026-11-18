@@ -28,7 +28,7 @@ export const archiveConfirm = {
   },
   create(context) {
     const file = context.filename ?? context.getFilename()
-    if (/archive-confirm-dialog\.tsx$|\/design\//.test(file)) return {}
+    if (/archive-confirm-dialog\.tsx$|\/design-system\//.test(file)) return {}
     return {
       JSXOpeningElement(node) {
         if (jsxName(node.name) !== 'ConfirmDialog') return

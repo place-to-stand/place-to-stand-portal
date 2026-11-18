@@ -22,11 +22,11 @@ import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { SampleProjectList } from './components-data'
 import { DesignSection, Example, Specimen } from './specimen'
 
-/** Inert route tabs: every href points back at /design. */
+/** Inert route tabs: every href points back at this page. */
 const ROUTE_TABS: readonly TabsNavTab[] = [
-  { value: 'projects', label: 'Projects', href: '/design' },
-  { value: 'archive', label: 'Archive', href: '/design' },
-  { value: 'activity', label: 'Activity', href: '/design' },
+  { value: 'projects', label: 'Projects', href: '/help/design-system' },
+  { value: 'archive', label: 'Archive', href: '/help/design-system' },
+  { value: 'activity', label: 'Activity', href: '/help/design-system' },
 ]
 
 export function ComponentsTabs() {
@@ -94,7 +94,9 @@ export function ComponentsTabs() {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink href='/design'>Projects</BreadcrumbLink>
+                <BreadcrumbLink href='/help/design-system'>
+                  Projects
+                </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
@@ -122,7 +124,7 @@ export function ComponentsTextLinks() {
         <Example caption='Task card: company and project'>
           <div className='text-muted-foreground flex w-56 flex-col items-start gap-2 text-xs'>
             <MetaLink
-              href='/design'
+              href='/help/design-system'
               icon={
                 <ENTITY_ICONS.company
                   className='h-3.5 w-3.5 shrink-0'
@@ -133,7 +135,7 @@ export function ComponentsTextLinks() {
               Heatonist
             </MetaLink>
             <MetaLink
-              href='/design'
+              href='/help/design-system'
               icon={
                 <ENTITY_ICONS.project
                   className='h-3.5 w-3.5 shrink-0'

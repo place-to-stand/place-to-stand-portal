@@ -1,6 +1,6 @@
 # Bulk select
 
-Tick rows in a list, then act on them together. From `components/table/bulk-select`: `useRowSelection`, `RowSelectionProvider`, `SelectAllHead`, `SelectRowCell`, `BulkActionBar`. Shown on `/design#bulk-select`.
+Tick rows in a list, then act on them together. From `components/table/bulk-select`: `useRowSelection`, `RowSelectionProvider`, `SelectAllHead`, `SelectRowCell`, `BulkActionBar`. Shown on `/help/design-system#bulk-select`.
 
 **Look:** a 32px leading column (`w-8 pl-2`): 8px from the table edge to the box, like every cell's left padding on every list whose rows can be archived. Each row's 16px `Checkbox` stays hidden until the row is hovered or focused; the header box always shows, centred in the header row. Once one row is ticked every box shows, ticked rows take the shared selected tint (`data-selected`, `bg-muted`), and the bulk bar rises at the bottom centre: "3 companies selected", then the list's own actions (outline, e.g. Submissions' Acknowledge), then Archive (destructive) on an active list or Restore (outline) on an Archive tab, then a clear ×. Phones have no hover and little room, so below `md` the column is hidden and an unread row keeps its tint.
 

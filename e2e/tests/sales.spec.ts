@@ -15,7 +15,6 @@ test('sales sees the CRM and member projects only', async ({ page }) => {
     'Hour blocks',
     'Time logs',
     'Monthly close',
-    'Design system',
     'Settings',
   ]) {
     await expect(nav.filter({ hasText: hidden })).toHaveCount(0)
@@ -26,12 +25,23 @@ test('sales is sent back from admin pages', async ({ page }) => {
   for (const path of [
     '/invoices',
     '/hour-blocks',
-    '/design',
+    '/help/design-system',
     '/reports/monthly-close',
   ]) {
     await page.goto(path)
     await expect(page).not.toHaveURL(new RegExp(`${path}$`))
   }
+})
+
+// Help is everyone's; its reference tabs follow each page's capability.
+test('sales gets Help with only the Get help tab', async ({ page }) => {
+  await page.goto('/help')
+  await expectHealthy(page)
+  await expect(page.getByRole('tab')).toHaveText(['Get help'])
+  await expect(page.getByRole('link', { name: 'Book a call' })).toHaveAttribute(
+    'href',
+    /placetostandagency\.com\/contact/
+  )
 })
 
 // Account → Integrations is everyone's: their own connections, all of them.

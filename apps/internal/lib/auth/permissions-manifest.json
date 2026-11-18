@@ -190,10 +190,45 @@
   },
   {
     "type": "page",
-    "name": "/design",
-    "file": "apps/internal/app/(dashboard)/design/page.tsx",
+    "name": "/help/design-system",
+    "file": "apps/internal/app/(dashboard)/help/design-system/page.tsx",
     "kind": "capability",
     "capability": "settings.design"
+  },
+  {
+    "type": "page",
+    "name": "/help",
+    "file": "apps/internal/app/(dashboard)/help/page.tsx",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "page",
+    "name": "/help/permissions",
+    "file": "apps/internal/app/(dashboard)/help/permissions/page.tsx",
+    "kind": "capability",
+    "capability": "settings.permissions"
+  },
+  {
+    "type": "page",
+    "name": "/help/templates/emails",
+    "file": "apps/internal/app/(dashboard)/help/templates/emails/page.tsx",
+    "kind": "capability",
+    "capability": "settings.templates"
+  },
+  {
+    "type": "page",
+    "name": "/help/templates/notifications",
+    "file": "apps/internal/app/(dashboard)/help/templates/notifications/page.tsx",
+    "kind": "capability",
+    "capability": "settings.templates"
+  },
+  {
+    "type": "page",
+    "name": "/help/templates/pdfs",
+    "file": "apps/internal/app/(dashboard)/help/templates/pdfs/page.tsx",
+    "kind": "capability",
+    "capability": "settings.templates"
   },
   {
     "type": "action",
@@ -712,34 +747,6 @@
     "file": "apps/internal/app/(dashboard)/settings/integrations/page.tsx",
     "kind": "capability",
     "capability": "integrations.manage"
-  },
-  {
-    "type": "page",
-    "name": "/settings/permissions",
-    "file": "apps/internal/app/(dashboard)/settings/permissions/page.tsx",
-    "kind": "capability",
-    "capability": "settings.permissions"
-  },
-  {
-    "type": "page",
-    "name": "/settings/templates/emails",
-    "file": "apps/internal/app/(dashboard)/settings/templates/emails/page.tsx",
-    "kind": "capability",
-    "capability": "settings.templates"
-  },
-  {
-    "type": "page",
-    "name": "/settings/templates/notifications",
-    "file": "apps/internal/app/(dashboard)/settings/templates/notifications/page.tsx",
-    "kind": "capability",
-    "capability": "settings.templates"
-  },
-  {
-    "type": "page",
-    "name": "/settings/templates/pdfs",
-    "file": "apps/internal/app/(dashboard)/settings/templates/pdfs/page.tsx",
-    "kind": "capability",
-    "capability": "settings.templates"
   },
   {
     "type": "page",

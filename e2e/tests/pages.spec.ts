@@ -53,7 +53,7 @@ for (const path of LIST_PAGES) {
 test('the design system page renders every entity with passing contrast', async ({
   page,
 }) => {
-  await page.goto('/design#entities')
+  await page.goto('/help/design-system#entities')
   await expectHealthy(page)
   const section = page.locator('#entities')
   // One row per registry entity, each with a light and a dark contrast badge.
@@ -71,7 +71,7 @@ test('the design system page renders every entity with passing contrast', async 
 })
 
 test('the design system page shows the Alert variants', async ({ page }) => {
-  await page.goto('/design#feedback')
+  await page.goto('/help/design-system#feedback')
   // Info, warning, destructive, and the save side-effect caution.
   await expect(
     page.locator('#feedback [data-slot="alert"]').first()

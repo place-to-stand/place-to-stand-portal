@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import type { DesignSectionId } from './sections'
 
 /**
- * Framing for the /design style guide. Everything inside a specimen is a real
+ * Framing for the design system page. Everything inside a specimen is a real
  * component; these helpers only lay the page out.
  */
 

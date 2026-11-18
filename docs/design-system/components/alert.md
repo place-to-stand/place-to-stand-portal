@@ -1,6 +1,6 @@
 # Alert
 
-A notice that stays on the page or in a sheet while its cause does. From `@pts/ui/alert`: `Alert`, `AlertContent` (the text column), `AlertTitle`, `AlertDescription`, `AlertAction` (buttons after the text, right-aligned, wrapping under it on a phone). Shown on `/design#feedback`.
+A notice that stays on the page or in a sheet while its cause does. From `@pts/ui/alert`: `Alert`, `AlertContent` (the text column), `AlertTitle`, `AlertDescription`, `AlertAction` (buttons after the text, right-aligned, wrapping under it on a phone). Shown on `/help/design-system#feedback`.
 
 **Variants:** `default` (card, muted icon: neutral information), `warning` (the `warning` token: worth a look, never blocks saving), `destructive` (something is broken).
 

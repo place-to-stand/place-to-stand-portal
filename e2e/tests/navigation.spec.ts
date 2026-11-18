@@ -30,11 +30,14 @@ test('Settings is one tabbed page; /settings lands on Business', async ({
   await expect(item).toHaveAttribute('data-active', 'true')
 })
 
-test('the Design system item is active on /design', async ({ page }) => {
-  await page.goto('/design')
+test('Help stays active across its tabs', async ({ page }) => {
+  await page.goto('/help')
   const item = page.locator('[data-sidebar="menu-button"]', {
-    hasText: 'Design system',
+    hasText: 'Help',
   })
+  await expect(item).toHaveAttribute('data-active', 'true')
+  await page.getByRole('tab', { name: 'Design system' }).click()
+  await expect(page).toHaveURL(/\/help\/design-system$/)
   await expect(item).toHaveAttribute('data-active', 'true')
 })
 

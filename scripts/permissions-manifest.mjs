@@ -5,7 +5,7 @@
  * `apps/internal/lib/auth/capabilities.ts` says what each role may do. This
  * script finds where that is enforced: every API route handler, server action
  * and page in `apps/internal/app`, and the guard each one calls. The result is
- * `apps/internal/lib/auth/permissions-manifest.json`, which Settings → Roles &
+ * `apps/internal/lib/auth/permissions-manifest.json`, which Help → Roles &
  * permissions renders, so the screen can't drift from the code.
  *
  *   node scripts/permissions-manifest.mjs          # write the manifest

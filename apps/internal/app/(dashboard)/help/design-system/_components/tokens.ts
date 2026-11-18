@@ -4,7 +4,7 @@
  * (`npm run design-tokens`, checked by lint), so the swatches and scales on
  * this page show exactly what the theme ships, with the usage notes beside.
  */
-import tokensJson from '../../../../../../docs/design-system/tokens.json'
+import tokensJson from '../../../../../../../docs/design-system/tokens.json'
 
 export type ThemedValue = string | { light: string; dark: string }
 

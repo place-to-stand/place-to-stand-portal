@@ -3,7 +3,7 @@ import type { userRole } from '@pts/db/schema'
 /**
  * The single list of what each role may do. Server guards, nav filtering,
  * dashboard widgets, the MCP server and the CLI all read from here, and
- * Settings → Roles & permissions renders it, so adding a capability (or
+ * Help → Roles & permissions renders it, so adding a capability (or
  * moving one between roles) happens in exactly one place.
  *
  * Client-safe on purpose: no server-only imports, so UI can ask the same
