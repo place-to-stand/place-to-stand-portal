@@ -26,7 +26,14 @@ export const SECTIONS: { title: string; fields: Field[] }[] = [
     fields: [
       { name: 'name', label: 'Name', autoComplete: 'organization' },
       { name: 'legalName', label: 'Legal name', optional: true },
-      { name: 'website', label: 'Website', optional: true, type: 'url' },
+      // Wide, so the logo and icon that follow share a row.
+      {
+        name: 'website',
+        label: 'Website',
+        optional: true,
+        type: 'url',
+        wide: true,
+      },
     ],
   },
   {
