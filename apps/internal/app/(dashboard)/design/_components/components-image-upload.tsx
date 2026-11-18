@@ -67,7 +67,7 @@ export function ImageUploadSpecimen() {
           initial={null}
         />
       </Example>
-      <Example caption='square · with an image: hover to replace, × removes'>
+      <Example caption='square · with an image: click to replace, the pencil opens Replace… and Remove'>
         <DemoField
           shape='square'
           noun='icon'
