@@ -4,11 +4,12 @@ import { PagePanel } from '@/components/layout/page-panel'
 import { PageShell } from '@/components/layout/page-shell'
 import { requirePage } from '@/lib/auth/session'
 import { loadProfitShareForm } from '@/lib/billing/profit-share-query'
-import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { listAllProductCatalogItems } from '@/lib/queries/product-catalog'
 import { listTaxRates } from '@/lib/queries/tax-rates'
 
 import { BillingSettingsForm } from './_components/billing-settings-form'
+
+import { SETTINGS_TABS, settingsCrumbs } from '../_lib/tabs'
 
 export const metadata: Metadata = {
   title: 'Billing | Settings',
@@ -28,7 +29,11 @@ export default async function BillingSettingsPage() {
   ])
 
   return (
-    <PageShell breadcrumbs={crumbsForNav('/settings/billing')}>
+    <PageShell
+      breadcrumbs={settingsCrumbs('billing')}
+      tabs={SETTINGS_TABS}
+      activeTab='billing'
+    >
       <PagePanel>
         <BillingSettingsForm
           products={products}

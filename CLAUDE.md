@@ -113,12 +113,12 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 │   ├── companies/    # Companies and their billing (archive, activity); /clients/* redirects here
 │   ├── people/       # People and their sign-ins (archive, activity); /contacts/* redirects here
 │   ├── hour-blocks/  # Prepaid hour block management (archive, activity)
-│   ├── invoices/     # Invoicing (settings, archive, activity)
+│   ├── invoices/     # Invoicing (archive, activity); products and tax rates are Settings → Billing
 │   ├── leads/        # Lead kanban board (board, archive, activity)
 │   ├── my/           # Current user's pages (home, tasks)
 │   ├── projects/     # Project workspace (tabbed, see below; archive, activity)
 │   ├── reports/      # Reports (monthly-close)
-│   ├── settings/     # By domain: business, billing (products, tax rates, profit share), roles & permissions, templates, integrations
+│   ├── settings/     # Sidebar "Admin": Settings (tabs: business, billing (products, tax rates, profit share), integrations), roles & permissions, templates
 │   └── submissions/  # Website form submissions
 ├── (public)/         # Publicly shared pages (e.g. share/invoices/[token])
 ├── api/              # API routes: v1/, cli/v1/, tasks/, task-comments/, my-tasks/,

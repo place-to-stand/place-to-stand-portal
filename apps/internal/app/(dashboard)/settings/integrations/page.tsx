@@ -3,9 +3,10 @@ import type { Metadata } from 'next'
 import { requirePage } from '@/lib/auth/session'
 
 import { PageShell } from '@/components/layout/page-shell'
-import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 
 import { IntegrationsPanel } from './integrations-panel'
+
+import { SETTINGS_TABS, settingsCrumbs } from '../_lib/tabs'
 
 export const metadata: Metadata = {
   title: 'Integrations | Settings',
@@ -14,7 +15,11 @@ export const metadata: Metadata = {
 export default async function IntegrationsSettingsPage() {
   await requirePage('integrations.manage')
   return (
-    <PageShell breadcrumbs={crumbsForNav('/settings/integrations')}>
+    <PageShell
+      breadcrumbs={settingsCrumbs('integrations')}
+      tabs={SETTINGS_TABS}
+      activeTab='integrations'
+    >
       <IntegrationsPanel />
     </PageShell>
   )
