@@ -63,11 +63,11 @@ export function ImageUploadSpecimen() {
         <DemoField
           shape='circle'
           noun='photo'
-          hint='Square image up to 2MB.'
+          hint='Image up to 2 MB, shown in a circle.'
           initial={null}
         />
       </Example>
-      <Example caption='square · with an image: hover for Replace, × removes'>
+      <Example caption='square · with an image: hover to replace, × removes'>
         <DemoField
           shape='square'
           noun='icon'

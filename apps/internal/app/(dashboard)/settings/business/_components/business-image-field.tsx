@@ -67,9 +67,8 @@ export function BusinessImageField({
   }
 
   return (
-    // A row each: a wide logo beside the icon pushed its buttons onto two
-    // lines, so the two fields never lined up.
-    <div className='grid gap-2 sm:col-span-2'>
+    // Logo then icon, side by side: both tiles are 64px tall, so they line up.
+    <div className='grid content-start gap-2'>
       <Label htmlFor={inputId}>
         {label}
         <OptionalMarker />

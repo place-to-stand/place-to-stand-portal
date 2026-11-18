@@ -34,10 +34,30 @@ type ImageUploadControlsProps = {
   inputId?: string
 }
 
+/** Every tile is 64px tall, so a photo, an icon and a logo read as one family. */
 const SHAPE_CLASSES: Record<ImageUploadShape, string> = {
   square: 'size-16 rounded-md',
   circle: 'size-16 rounded-full',
-  wide: 'h-16 w-40 rounded-md',
+  wide: 'h-16 w-48 rounded-md',
+}
+
+/** A logo or icon sits contained, with the same inset; a photo fills its circle. */
+const FILLED_CLASSES: Record<ImageUploadShape, string> = {
+  square: 'bg-muted/40 p-2',
+  wide: 'bg-muted/40 p-2',
+  circle: '',
+}
+
+/**
+ * Where the remove badge sits: on the top-right corner of a rectangle, and on the edge of a circle at 45° (14.6% / 85.4% of the box,
+ * less half the 20px badge), so it never floats off the photo.
+ */
+const REMOVE_POSITION: Record<ImageUploadShape, string> = {
+  // Centred on the right edge, 6px above the top, so it stays clear of the
+  // field label 8px above.
+  square: '-top-1.5 right-0 translate-x-1/2',
+  wide: '-top-1.5 right-0 translate-x-1/2',
+  circle: 'top-[calc(14.64%-0.625rem)] left-[calc(85.36%-0.625rem)]',
 }
 
 /** True while the drag carries files (not text or a link). */
@@ -49,7 +69,8 @@ function draggingFiles(event: DragEvent) {
  * The one shape for every image field (a person's photo, the business logo
  * and icon): the preview tile is the control. Click it (or Enter/Space) to
  * pick a file, or drop one on it; with an image, hovering or focusing it
- * shows "Replace", and a round × in its corner removes it. Where the file
+ * lays a dark layer with the image icon over it (its name says "Replace"),
+ * and a round × on its corner removes it. Where the file
  * goes is the caller's job.
  */
 export function ImageUploadControls({
@@ -100,6 +121,8 @@ export function ImageUploadControls({
 
   return (
     <div className='flex flex-col items-start gap-2'>
+      {/* Room above a rectangle for the half of the badge over its corner,
+          so it never rides into the field's label. */}
       <div className='relative'>
         <DisabledFieldTooltip disabled={locked} reason={reason}>
           <button
@@ -120,38 +143,24 @@ export function ImageUploadControls({
               disabled && !isUploading ? 'disabled:opacity-50' : null,
               SHAPE_CLASSES[shape],
               hasImage
-                ? 'bg-muted/40'
-                : 'text-muted-foreground hover:border-primary hover:text-foreground border-dashed',
-              hasImage && shape === 'wide' ? 'px-2' : null,
+                ? FILLED_CLASSES[shape]
+                : 'border-muted-foreground/40 text-muted-foreground hover:border-primary hover:text-foreground border-dashed bg-transparent',
               isDragOver
                 ? 'border-primary text-foreground ring-primary/30 border-solid ring-[3px]'
                 : null
             )}
           >
-            {hasImage ? (
-              image
-            ) : (
-              <span
-                className={cn(
-                  'flex items-center gap-1 text-xs font-medium',
-                  shape === 'wide' ? 'flex-row' : 'flex-col'
-                )}
-              >
-                <ImagePlus className='size-4' aria-hidden />
-                {shape === 'wide' ? `Upload ${noun}` : 'Upload'}
-              </span>
-            )}
+            {hasImage ? image : <ImagePlus className='size-5' aria-hidden />}
             {hasImage && !isUploading ? (
               <span
                 aria-hidden
                 className={cn(
-                  'absolute inset-0 flex flex-col items-center justify-center gap-0.5 bg-black/55 text-xs font-medium text-white opacity-0 transition-opacity',
+                  'absolute inset-0 flex items-center justify-center bg-black/55 text-white opacity-0 transition-opacity',
                   'group-hover:opacity-100 group-focus-visible:opacity-100',
                   isDragOver ? 'opacity-100' : null
                 )}
               >
-                <ImagePlus className='size-4' />
-                Replace
+                <ImagePlus className='size-5' />
               </span>
             ) : null}
             {isUploading ? (
@@ -171,11 +180,14 @@ export function ImageUploadControls({
             label={`Remove ${noun}`}
             icon={<X />}
             variant='outline'
+            size='icon-xs'
             onClick={onRemove}
             className={cn(
-              'bg-background absolute size-6 rounded-full shadow-sm [&_svg]:size-3',
-              // On a circle the corner sits off the image; tuck it in.
-              shape === 'circle' ? '-top-1 -right-1' : '-top-2 -right-2'
+              // A solid badge in both themes (the outline variant is
+              // see-through in dark), red on hover or keyboard focus.
+              'text-foreground bg-background dark:bg-background border-border dark:border-border absolute z-10 rounded-full shadow-sm',
+              'hover:bg-destructive hover:border-destructive dark:hover:bg-destructive focus-visible:bg-destructive focus-visible:border-destructive hover:text-white focus-visible:text-white',
+              REMOVE_POSITION[shape]
             )}
           />
         ) : null}

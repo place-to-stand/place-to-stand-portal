@@ -33,6 +33,10 @@ const buttonVariants = cva(
         // Row action buttons: a 16px glyph reads heavy in a 32px square.
         'icon-sm': 'size-7 [&_svg]:size-3.5',
         'icon-lg': 'size-10',
+        // A badge on a corner (an image field's remove ×): 20px to look at,
+        // with an invisible 28px hit area around it for touch.
+        'icon-xs':
+          "relative size-5 [&_svg]:size-3 before:absolute before:-inset-1 before:content-['']",
       },
     },
     defaultVariants: {
@@ -43,7 +47,7 @@ const buttonVariants = cva(
 )
 
 /** Icon-only sizes belong to RowActionButton, which carries the label. */
-type IconSize = 'icon' | 'icon-sm' | 'icon-lg'
+type IconSize = 'icon' | 'icon-sm' | 'icon-lg' | 'icon-xs'
 type ButtonSize = Exclude<VariantProps<typeof buttonVariants>['size'], IconSize>
 
 /**

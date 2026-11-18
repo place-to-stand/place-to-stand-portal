@@ -218,7 +218,7 @@ export function AvatarUploadField({
         ) : null
       }
       noun='photo'
-      hint='Square image up to 2MB. PNG, JPEG, WEBP, or GIF.'
+      hint='Image up to 2 MB, shown in a circle. PNG, JPEG, WEBP or GIF.'
       accept='image/png,image/jpeg,image/webp,image/gif'
       onFile={file => void handleFile(file)}
       onRemove={removeAvatar}

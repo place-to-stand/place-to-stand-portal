@@ -4,7 +4,7 @@ An icon-only action in a table row or toolbar. From `@pts/ui/row-action-button`.
 
 **Look:** `Button` at `size='icon-sm'` (28px, 14px glyph), `ghost` by default (pass `variant='destructive'` for archive and delete), wrapped in a real `Tooltip`. An action with a keyboard shortcut passes `shortcut` (in the internal portal, `{...rowActionShortcut(SHORTCUTS.<id>)}`), which adds the keys after the label in the tooltip and sets `aria-keyshortcuts`.
 
-**Props:** `label` ("Archive client") becomes both the tooltip and the accessible name; `icon` is the lucide glyph; `size='icon'` (36px) only where it sits beside default-height controls (a month stepper, a toolbar group); everything else passes to Button.
+**Props:** `label` ("Archive client") becomes both the tooltip and the accessible name; `icon` is the lucide glyph; `size='icon'` (36px) only where it sits beside default-height controls (a month stepper, a toolbar group); `size='icon-xs'` (20px, 12px glyph, a 28px invisible hit area) only for a badge pinned to a corner (the image field's remove ×); everything else passes to Button.
 
 **Rules:** never `title=` on a Button as a tooltip (it's delayed, unstyled, and absent on touch). Labels are verb-first, sentence case. (guard: types; lint `no-restricted-syntax`)
 
