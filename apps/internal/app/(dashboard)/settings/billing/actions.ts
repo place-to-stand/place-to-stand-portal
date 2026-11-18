@@ -19,12 +19,15 @@ import { db } from '@/lib/db'
 import {
   createProductCatalogItem,
   getProductCatalogItemById,
+  listAllProductCatalogItems,
   updateProductCatalogItem,
   type ProductCatalogItemRow,
 } from '@/lib/queries/product-catalog'
 import {
   createTaxRate,
   getTaxRateById,
+  listTaxRates,
+  type TaxRateRow,
   updateTaxRate,
 } from '@/lib/queries/tax-rates'
 
@@ -59,7 +62,15 @@ async function logSettingsEvent(
 // ---------------------------------------------------------------------------
 
 export type SaveBillingSettingsResult =
-  | { ok: true }
+  | {
+      ok: true
+      /**
+       * The rows as saved, new ones with their real ids: the form starts
+       * again from them at once, so a second Save can't re-create a row.
+       */
+      products: ProductCatalogItemRow[]
+      taxRates: TaxRateRow[]
+    }
   | {
       ok: false
       error: string
@@ -208,7 +219,11 @@ export async function saveBillingSettings(
 
   revalidatePath('/settings/billing')
   revalidatePath('/reports/monthly-close')
-  return { ok: true }
+  const [products, taxRates] = await Promise.all([
+    listAllProductCatalogItems(),
+    listTaxRates(),
+  ])
+  return { ok: true, products, taxRates }
 }
 
 function toProductRow(

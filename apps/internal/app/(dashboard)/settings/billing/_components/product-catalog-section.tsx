@@ -70,11 +70,20 @@ const DISCARD_DESCRIPTION =
 const productFormSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(100),
   description: z.string().trim().max(500).optional().or(z.literal('')),
-  unitPrice: z.string().min(1, 'Unit price is required'),
+  // The same rules Save checks (billingProductRowSchema), so a row the
+  // dialog accepts never blocks the page's Save.
+  unitPrice: z
+    .string()
+    .trim()
+    .regex(/^\d{1,10}(\.\d{1,2})?$/, 'Enter a unit price, like 200.00'),
   unitLabel: z.string().trim().min(1, 'Unit label is required').max(50),
   createsHourBlockDefault: z.boolean(),
   isActive: z.boolean(),
-  minQuantity: z.string().optional().or(z.literal('')),
+  minQuantity: z
+    .string()
+    .trim()
+    .regex(/^\d{0,9}$/, 'Enter a whole number, or leave it empty')
+    .optional(),
 })
 
 type ProductFormValues = z.infer<typeof productFormSchema>
@@ -485,6 +494,11 @@ export function ProductCatalogSection({
                 placeholder='e.g., 10'
                 {...form.register('minQuantity')}
               />
+              {form.formState.errors.minQuantity && (
+                <p className='text-destructive text-sm'>
+                  {form.formState.errors.minQuantity.message}
+                </p>
+              )}
             </div>
 
             <div className='flex items-start gap-3'>

@@ -68,7 +68,15 @@ const DISCARD_DESCRIPTION =
 
 const taxRateFormSchema = z.object({
   state: z.string().trim().min(1, 'State is required').max(50),
-  rate: z.string().min(1, 'Rate is required'),
+  // In percent here; Save stores it as a fraction under 1 (billingTaxRateRowSchema).
+  rate: z
+    .string()
+    .trim()
+    .refine(value => {
+      // Stored as numeric(5,4): two decimals in percent ("8.25").
+      if (!/^\d{1,2}(\.\d{1,2})?$/.test(value)) return false
+      return Number(value) < 100
+    }, 'Enter a rate between 0 and 100, like 8.25'),
   label: z.string().trim().min(1, 'Label is required').max(100),
   isActive: z.boolean(),
 })

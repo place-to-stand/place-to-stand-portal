@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -60,22 +60,35 @@ export function BillingSettingsForm(props: BillingSettingsFormProps) {
   const taxRates = useWatch({ control: form.control, name: 'taxRates' })
   const disabled = form.formState.isSubmitting
 
-  // After a save the page reloads its rows (new ones now have real ids):
-  // start the form again from them.
-  const {
-    products: savedProducts,
-    taxRates: savedTaxRates,
+  // The rows as last saved: the "New" / "Edited" marks compare against them.
+  // A save sets them from its result; fresh server data sets them only while
+  // there are no unsaved edits, so a refresh never wipes work in progress.
+  const [saved, setSaved] = useState(() => ({
+    products: props.products,
+    taxRates: props.taxRates,
+  }))
+  const { profitShare } = props
+  const serverKey = JSON.stringify([
+    props.products,
+    props.taxRates,
     profitShare,
-  } = props
+  ])
+  // New server data (after a save, or another refresh): adopt it as the
+  // saved rows, unless there are unsaved edits it would overwrite.
+  const [seenKey, setSeenKey] = useState(serverKey)
+  if (seenKey !== serverKey) {
+    setSeenKey(serverKey)
+    if (!form.formState.isDirty) {
+      setSaved({ products: props.products, taxRates: props.taxRates })
+    }
+  }
+  const resetKey = useRef(serverKey)
   useEffect(() => {
-    form.reset(
-      defaultsFrom({
-        products: savedProducts,
-        taxRates: savedTaxRates,
-        profitShare,
-      })
-    )
-  }, [form, savedProducts, savedTaxRates, profitShare])
+    if (resetKey.current === serverKey) return
+    resetKey.current = serverKey
+    if (form.formState.isDirty) return
+    form.reset(defaultsFrom(props))
+  }, [form, props, serverKey])
 
   const onSave = async (values: BillingSettingsValues) => {
     const result = await saveBillingSettings(values)
@@ -90,7 +103,12 @@ export function BillingSettingsForm(props: BillingSettingsFormProps) {
       })
       return false
     }
-    form.reset(form.getValues())
+    setSaved({ products: result.products, taxRates: result.taxRates })
+    form.reset({
+      ...form.getValues(),
+      products: result.products,
+      taxRates: result.taxRates,
+    })
     router.refresh()
     return true
   }
@@ -100,7 +118,7 @@ export function BillingSettingsForm(props: BillingSettingsFormProps) {
       <div className={FORM_SECTIONS_CLASS}>
         <ProductCatalogSection
           items={products}
-          savedItems={savedProducts}
+          savedItems={saved.products}
           onItemsChange={next =>
             form.setValue('products', next, { shouldDirty: true })
           }
@@ -108,7 +126,7 @@ export function BillingSettingsForm(props: BillingSettingsFormProps) {
         />
         <TaxRatesSection
           rates={taxRates}
-          savedRates={savedTaxRates}
+          savedRates={saved.taxRates}
           onRatesChange={next =>
             form.setValue('taxRates', next, { shouldDirty: true })
           }

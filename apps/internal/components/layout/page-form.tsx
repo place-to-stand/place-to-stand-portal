@@ -19,6 +19,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { FormFooterBar } from '@/components/sheets/sheet-form-footer'
 import { Form } from '@/components/ui/form'
+import { useToast } from '@/components/ui/use-toast'
 import { useConfirmLeavingPage } from '@/lib/hooks/use-confirm-leaving-page'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
@@ -71,6 +72,7 @@ export function PageForm<TIn extends FieldValues, TOut>({
 }: PageFormProps<TIn, TOut>) {
   // Awaited inside handleSubmit, so react-hook-form's isSubmitting is the
   // one pending flag: fields read it too (form.formState.isSubmitting).
+  const { toast } = useToast()
   const isPending = form.formState.isSubmitting
   const [savedCount, setSavedCount] = useState(0)
   const [justSaved, setJustSaved] = useState(false)
@@ -81,13 +83,31 @@ export function PageForm<TIn extends FieldValues, TOut>({
   const historyForm = form as unknown as UseFormReturn<TIn>
 
   const submit = useCallback(() => {
-    void form.handleSubmit(async values => {
-      if (await onSave(values)) {
-        setJustSaved(true)
-        setSavedCount(count => count + 1)
-      }
-    })()
-  }, [form, onSave])
+    // ⌘S with a dialog open over the page (a product's) belongs to that
+    // dialog, not to the page behind it.
+    const active = document.activeElement
+    if (
+      active?.closest('[role="dialog"], [role="alertdialog"]') &&
+      !active.closest('[data-slot="sheet-content"]')
+    ) {
+      return
+    }
+    void form.handleSubmit(
+      async values => {
+        if (await onSave(values)) {
+          setJustSaved(true)
+          setSavedCount(count => count + 1)
+        }
+      },
+      // A value no field shows (a table row) must not fail silently.
+      () =>
+        toast({
+          variant: 'destructive',
+          title: 'Unable to save changes',
+          description: 'Check the highlighted fields.',
+        })
+    )()
+  }, [form, onSave, toast])
 
   const controls = useSheetFormControls<TIn>({
     form: historyForm,

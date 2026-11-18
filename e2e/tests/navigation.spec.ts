@@ -2,16 +2,32 @@ import { expect, test } from '@playwright/test'
 
 import { expectHealthy } from './helpers'
 
-test('admin sidebar: Settings starts with Integrations and ends with Design system', async ({
+test('admin sidebar: Admin starts with Settings and ends with Design system', async ({
   page,
 }) => {
   await page.goto('/my/home')
-  const settings = page
+  const admin = page
     .locator('[data-sidebar="group"]')
-    .filter({ hasText: 'Settings' })
-  const items = settings.locator('[data-sidebar="menu-button"]')
-  await expect(items.first()).toContainText('Integrations')
+    .filter({ hasText: 'Admin' })
+  const items = admin.locator('[data-sidebar="menu-button"]')
+  await expect(items.first()).toContainText('Settings')
   await expect(items.last()).toContainText('Design system')
+})
+
+test('Settings is one tabbed page; /settings lands on Business', async ({
+  page,
+}) => {
+  await page.goto('/settings')
+  await expect(page).toHaveURL(/\/settings\/business$/)
+  for (const tab of ['Business', 'Billing', 'Integrations']) {
+    await expect(page.getByRole('tab', { name: tab })).toBeVisible()
+  }
+  const item = page.locator('[data-sidebar="menu-button"]', {
+    hasText: 'Settings',
+  })
+  await page.getByRole('tab', { name: 'Billing' }).click()
+  await expect(page).toHaveURL(/\/settings\/billing$/)
+  await expect(item).toHaveAttribute('data-active', 'true')
 })
 
 test('the Design system item is active on /design', async ({ page }) => {
