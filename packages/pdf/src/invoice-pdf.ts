@@ -43,12 +43,17 @@ export type InvoiceIssuer = {
   name: string
   legalName: string
   websiteLabel: string | null
+  /** Printed lines of the postal address; empty for none. */
+  addressLines: readonly string[]
+  phone: string | null
 }
 
 export const DEFAULT_INVOICE_ISSUER: InvoiceIssuer = {
   name: 'Place To Stand',
   legalName: 'Place To Stand',
   websiteLabel: null,
+  addressLines: [],
+  phone: null,
 }
 
 /** The invoice issuer for a business (Settings → Business). */
@@ -56,12 +61,27 @@ export function invoiceIssuerFor(business: {
   name: string
   legalName: string
   websiteLabel: string | null
+  addressLines?: readonly string[]
+  phone?: string | null
 }): InvoiceIssuer {
   return {
     name: business.name,
     legalName: business.legalName,
     websiteLabel: business.websiteLabel,
+    addressLines: business.addressLines ?? [],
+    phone: business.phone ?? null,
   }
+}
+
+/**
+ * The "From" block: legal name, address, phone. Only when there's an address
+ * or phone to show; the legal name alone already prints in the footer.
+ */
+export function issuerFromLines(issuer: InvoiceIssuer): string[] | null {
+  const contact = [...issuer.addressLines, issuer.phone].filter(
+    (line): line is string => Boolean(line)
+  )
+  return contact.length ? [issuer.legalName, ...contact] : null
 }
 
 export async function generateInvoicePdf(
@@ -129,16 +149,33 @@ export async function generateInvoicePdf(
   // Billed to / Issued
   // ---------------------------------------------------------------------------
 
+  const fromLines = issuerFromLines(issuer)
+  const issued = formatDate(invoice.issued_date)
   const fields = [
-    { label: 'Billed to', value: invoice.client?.name ?? null },
-    { label: 'Issued', value: formatDate(invoice.issued_date) },
-  ].filter((field): field is { label: string; value: string } =>
-    Boolean(field.value)
+    { label: 'From', lines: fromLines },
+    {
+      label: 'Billed to',
+      lines: invoice.client?.name ? [invoice.client.name] : null,
+    },
+    { label: 'Issued', lines: issued ? [issued] : null },
+  ].filter((field): field is { label: string; lines: string[] } =>
+    Boolean(field.lines)
   )
   const columnGap = 24 * PX
-  const columnWidth = (contentWidth - columnGap) / 2
+  // Two columns as before; three once the From block shows.
+  const columns = Math.max(fields.length, 2)
+  const columnWidth = (contentWidth - columnGap * (columns - 1)) / columns
+  const fieldLineHeight = 16 * 1.35 * PX
+  // Long names wrap inside their column rather than run into the next one.
+  setType(doc, FONTS.body, 16, COLORS.ink)
+  const wrapped = fields.map(field => ({
+    label: field.label,
+    lines: field.lines.flatMap(
+      line => doc.splitTextToSize(line, columnWidth) as string[]
+    ),
+  }))
 
-  fields.forEach((field, index) => {
+  wrapped.forEach((field, index) => {
     const x = MARGIN_X + index * (columnWidth + columnGap)
     doc.setLineWidth(1.5 * PX)
     doc.setDrawColor(COLORS.ink)
@@ -149,14 +186,13 @@ export async function generateInvoicePdf(
     drawLabel(doc, field.label, x, labelBaseline)
 
     setType(doc, FONTS.body, 16, COLORS.ink)
-    drawText(
-      doc,
-      field.value,
-      x,
-      labelBaseline + 6 * PX + capHeight(doc) + 2 * PX
-    )
+    const firstBaseline = labelBaseline + 6 * PX + capHeight(doc) + 2 * PX
+    field.lines.forEach((line, lineIndex) => {
+      drawText(doc, line, x, firstBaseline + lineIndex * fieldLineHeight)
+    })
   })
-  y += (12 + 11 + 6 + 20) * PX
+  const tallest = Math.max(...wrapped.map(field => field.lines.length), 1)
+  y += (12 + 11 + 6 + 20) * PX + (tallest - 1) * fieldLineHeight
 
   // ---------------------------------------------------------------------------
   // Line items

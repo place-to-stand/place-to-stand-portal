@@ -3,7 +3,12 @@ import { Download } from 'lucide-react'
 import { authSecondaryButtonClass } from '@pts/ui/auth-shell'
 import { BlueprintCorners } from '@pts/ui/brand'
 
-import { getBusinessIdentity, replyToFor } from '@/lib/business/identity'
+import {
+  getBusinessIdentity,
+  invoiceIssuerFor,
+  issuerFromLines,
+  replyToFor,
+} from '@/lib/business/identity'
 import type { InvoiceWithLineItems } from '@/lib/invoices/invoice-form'
 import { cn } from '@/lib/utils'
 
@@ -71,6 +76,7 @@ export async function PublicInvoice({
             issuerLine={[business.legalName, business.websiteLabel]
               .filter(Boolean)
               .join(' · ')}
+            fromLines={issuerFromLines(invoiceIssuerFor(business))}
           />
 
           {/* Panel and download stick together as one column on desktop. */}

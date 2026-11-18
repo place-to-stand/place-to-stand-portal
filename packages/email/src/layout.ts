@@ -23,12 +23,15 @@ export type EmailBrand = {
   siteUrl: string | null
   /** The URL as printed, without scheme. */
   siteLabel: string | null
+  /** The postal address on one line, under the site line; null for none. */
+  addressLine: string | null
 }
 
 export const DEFAULT_EMAIL_BRAND: EmailBrand = {
   name: 'Place To Stand',
   siteUrl: null,
   siteLabel: null,
+  addressLine: null,
 }
 
 /** The email brand for a business (Settings → Business). */
@@ -36,11 +39,15 @@ export function emailBrandFor(business: {
   name: string
   website: string | null
   websiteLabel: string | null
+  /** Printed lines of the postal address (Settings → Business). */
+  addressLines?: readonly string[]
 }): EmailBrand {
+  const addressLine = (business.addressLines ?? []).join(', ')
   return {
     name: business.name,
     siteUrl: business.website,
     siteLabel: business.websiteLabel,
+    addressLine: addressLine || null,
   }
 }
 
@@ -385,7 +392,14 @@ function renderShell({
           </table>
           <p style="margin:20px 0 0;font-family:${F.mono};font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:${C.faint};">
             ${renderSiteLine(brand)}
-          </p>
+          </p>${
+            brand.addressLine
+              ? `
+          <p style="margin:6px 0 0;font-family:${F.mono};font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:${C.faint};">
+            ${escapeHtml(brand.addressLine)}
+          </p>`
+              : ''
+          }
         </td>
       </tr>
     </table>
