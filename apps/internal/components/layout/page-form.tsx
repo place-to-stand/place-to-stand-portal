@@ -10,7 +10,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { rowActionShortcut } from '@/components/keyboard/shortcut-tooltip'
-import { SheetFooterBar } from '@/components/sheets/sheet-form-footer'
 import { Form } from '@/components/ui/form'
 import { useConfirmLeavingPage } from '@/lib/hooks/use-confirm-leaving-page'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
@@ -39,8 +38,6 @@ type PageFormProps<TIn extends FieldValues, TOut> = {
   applyExternalState?: (state: unknown) => void
   /** Discard: put the outside state back to what was saved. */
   onDiscard?: () => void
-  /** Keep the save bar up with nothing changed (confirming first-run values). */
-  alwaysShowBar?: boolean
   className?: string
   children: ReactNode
 }
@@ -48,8 +45,9 @@ type PageFormProps<TIn extends FieldValues, TOut> = {
 /**
  * A form that is part of a page (Settings → Business, Billing's profit
  * share): it owns the unsaved-changes warning (reload, tab close, in-app
- * links), ⌘S, undo and redo (the sheets' history), and a save bar pinned to
- * the bottom of the page column while there is something to save. Sheets and
+ * links, Back and Forward, the Ctrl K palette), ⌘S, undo and redo (the
+ * sheets' history), and a save bar always pinned to the bottom of the page
+ * column, as a sheet's footer is. Sheets and
  * dialogs keep their own footers.
  */
 export function PageForm<TIn extends FieldValues, TOut>({
@@ -60,7 +58,6 @@ export function PageForm<TIn extends FieldValues, TOut>({
   getExternalState,
   applyExternalState,
   onDiscard,
-  alwaysShowBar = false,
   className,
   children,
 }: PageFormProps<TIn, TOut>) {
@@ -115,7 +112,6 @@ export function PageForm<TIn extends FieldValues, TOut>({
     rebaseline()
   }
 
-  const showBar = alwaysShowBar || isDirty || isPending || justSaved
   const saveLabel = isPending ? (
     'Saving...'
   ) : justSaved && !isDirty ? (
@@ -137,68 +133,66 @@ export function PageForm<TIn extends FieldValues, TOut>({
         className={cn('flex flex-col', className)}
       >
         {children}
-        {showBar ? (
-          // Pinned to the bottom of the page column while the form is taller
-          // than the window; under the last section when it isn't.
-          <div className='sticky bottom-0 z-10 -mx-4 mt-6 -mb-4 overflow-hidden rounded-b-xl'>
-            <SheetFooterBar>
-              <div className='flex items-center gap-1.5'>
-                <RowActionButton
-                  type='button'
-                  variant='outline'
-                  onClick={controls.undo}
-                  disabled={!controls.canUndo}
-                  label='Undo'
-                  {...rowActionShortcut(SHORTCUTS.undo)}
-                  icon={<Undo2 />}
-                />
-                <RowActionButton
-                  type='button'
-                  variant='outline'
-                  onClick={controls.redo}
-                  disabled={!controls.canRedo}
-                  label='Redo'
-                  {...rowActionShortcut(SHORTCUTS.redo)}
-                  icon={<Redo2 />}
-                />
-              </div>
-              <div className='flex items-center gap-1.5'>
-                <span className='sr-only' aria-live='polite'>
-                  {justSaved ? 'Saved' : ''}
-                </span>
-                {isDirty ? (
-                  <Button
-                    type='button'
-                    variant='secondary'
-                    size='xs'
-                    disabled={isPending}
-                    onClick={discard}
-                  >
-                    Discard
-                  </Button>
-                ) : null}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type='submit'
-                      size='xs'
-                      disabled={isPending}
-                      aria-keyshortcuts={ariaKeyShortcuts(SHORTCUTS.save)}
-                    >
-                      {saveLabel}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Save
-                    <span className='ml-2'>
-                      <ShortcutKeys shortcut={SHORTCUTS.save} />
-                    </span>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            </SheetFooterBar>
+        {/* The panel's own footer, always there like a sheet's: sticky to the
+            bottom of the window while the form scrolls (the negative bottom
+            cancels <main>'s padding, so nothing shows through below it),
+            flush with the panel's edges and bottom radius, on the panel's
+            surface, with one top border as the only divider. In flow, so
+            the last field always ends above it. */}
+        <div className='bg-background sticky -bottom-3 z-10 -mx-4 mt-6 -mb-4 flex items-center justify-between gap-2 rounded-b-xl border-t px-4 py-2.5 sm:-bottom-4'>
+          <div className='flex items-center gap-1.5'>
+            <RowActionButton
+              type='button'
+              variant='outline'
+              onClick={controls.undo}
+              disabled={!controls.canUndo}
+              label='Undo'
+              {...rowActionShortcut(SHORTCUTS.undo)}
+              icon={<Undo2 />}
+            />
+            <RowActionButton
+              type='button'
+              variant='outline'
+              onClick={controls.redo}
+              disabled={!controls.canRedo}
+              label='Redo'
+              {...rowActionShortcut(SHORTCUTS.redo)}
+              icon={<Redo2 />}
+            />
           </div>
-        ) : null}
+          <div className='flex items-center gap-1.5'>
+            <span className='sr-only' aria-live='polite'>
+              {justSaved ? 'Saved' : ''}
+            </span>
+            <Button
+              type='button'
+              variant='secondary'
+              size='xs'
+              disabled={isPending || !isDirty}
+              onClick={discard}
+            >
+              Discard
+            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type='submit'
+                  size='xs'
+                  disabled={isPending}
+                  aria-keyshortcuts={ariaKeyShortcuts(SHORTCUTS.save)}
+                >
+                  {saveLabel}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Save
+                <span className='ml-2'>
+                  <ShortcutKeys shortcut={SHORTCUTS.save} />
+                </span>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
       </form>
       {dialog}
     </Form>

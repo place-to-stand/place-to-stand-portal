@@ -30,7 +30,10 @@ import { CommandPaletteRecords } from '@/components/layout/command-palette-recor
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { matchesShortcut } from '@/lib/keyboard/match'
-import { confirmDiscardAll } from '@/lib/sheets/discard-guards'
+import {
+  confirmDiscardAll,
+  PAGE_FORM_GUARD_ID,
+} from '@/lib/sheets/discard-guards'
 import { parseSheetStack } from '@/lib/sheets/stack'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
@@ -159,9 +162,13 @@ function CommandPalette() {
       // Leaving drops the open sheets: each with unsaved changes asks first,
       // top sheet first, as going back in the stack does. "Stay" brings the
       // palette back as it was.
-      const ids = parseSheetStack(new URLSearchParams(window.location.search))
-        .map(item => item.id)
-        .reverse()
+      // Then the page's own form (Settings → Business), if it has changes.
+      const ids = [
+        ...parseSheetStack(new URLSearchParams(window.location.search))
+          .map(item => item.id)
+          .reverse(),
+        PAGE_FORM_GUARD_ID,
+      ]
       confirmDiscardAll(
         ids,
         () => {

@@ -130,8 +130,6 @@ export function BusinessSettingsForm({
         setIcon(KEEP)
         setImageErrors({})
       }}
-      // Until the details are confirmed once, Save shows with nothing changed.
-      alwaysShowBar={!initial.confirmedAt}
     >
       <div className={`${FORM_SECTIONS_CLASS} max-w-3xl`}>
         {SECTIONS.map((section, index) => (
