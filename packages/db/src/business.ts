@@ -215,14 +215,17 @@ export async function readBusinessImage(
   }
 }
 
-/** Postgres 42P01: undefined table. Drizzle wraps it, so check the cause. */
+/**
+ * Postgres 42P01 (undefined table) or 42703 (undefined column): a database
+ * not yet migrated. Drizzle wraps it, so check the cause.
+ */
 function isMissingRelation(error: unknown): boolean {
   for (let current: unknown = error; current;) {
     if (
       typeof current === 'object' &&
       current !== null &&
       'code' in current &&
-      (current as { code?: unknown }).code === '42P01'
+      ['42P01', '42703'].includes(String((current as { code?: unknown }).code))
     ) {
       return true
     }

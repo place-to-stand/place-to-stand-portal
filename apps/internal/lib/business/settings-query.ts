@@ -1,12 +1,13 @@
 import 'server-only'
 
-import { and, eq, isNull, ne, sql } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import { DEFAULT_TIME_ZONE } from '@pts/db/business'
 import { personNameSql } from '@pts/db/names'
 import { businessSettings, companies, users } from '@pts/db/schema'
 
 import { db } from '@/lib/db'
+import { eligiblePartner } from '@/lib/queries/reports/profit-share-partners'
 
 import { businessImageSrc } from './images'
 
@@ -74,7 +75,7 @@ export async function loadBusinessSettingsForm(): Promise<BusinessSettingsFormDa
     db
       .select({ id: users.id, name: staffName })
       .from(users)
-      .where(and(isNull(users.deletedAt), ne(users.role, 'CLIENT')))
+      .where(eligiblePartner)
       .orderBy(staffName),
   ])
 

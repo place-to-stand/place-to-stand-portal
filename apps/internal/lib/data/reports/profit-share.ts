@@ -131,13 +131,19 @@ export async function buildProfitShare(params: {
   balance: Extract<MonthEndBalanceResult, { ok: true }>
   payouts: number
   addedAfterCloseAt?: string | null
+  /**
+   * The terms a closed month froze. Drift compares against these, so a later
+   * change on Settings → Business never reads as drift in an old month.
+   */
+  terms?: Pick<ProfitShareData, 'minimumBalance' | 'partners'>
 }): Promise<ProfitShareData> {
-  const [partners, policy] = await Promise.all([
-    fetchProfitSharePartners(),
-    getProfitSharePolicy(),
-  ])
+  const [livePartners, policy] = params.terms
+    ? [null, null]
+    : await Promise.all([fetchProfitSharePartners(), getProfitSharePolicy()])
+  // Frozen partners keep their amount field; computeProfitShare recomputes it.
+  const partners = params.terms?.partners ?? livePartners ?? []
   return computeProfitShare({
-    minimumBalance: policy?.minimumBalance ?? 0,
+    minimumBalance: params.terms?.minimumBalance ?? policy?.minimumBalance ?? 0,
     asOfDate: lastDayOfMonth(params.year, params.month),
     monthComplete: params.balance.monthComplete,
     balance: params.balance.value.balance,

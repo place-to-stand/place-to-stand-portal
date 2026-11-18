@@ -1,7 +1,7 @@
 import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
-import { and, inArray, isNull } from 'drizzle-orm'
+import { and, inArray, isNull, ne } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
@@ -29,5 +29,16 @@ export async function fetchUsersByIds(
       updatedAt: users.updatedAt,
     })
     .from(users)
-    .where(and(inArray(users.id, [...ids]), isNull(users.deletedAt)))
+    .where(and(inArray(users.id, [...ids]), eligiblePartner))
 }
+
+/**
+ * Who can split the profit share: a live staff sign-in (not archived, not
+ * switched off, not a client). The Business page lists, saves and the close
+ * pays only these, so all three always agree.
+ */
+export const eligiblePartner = and(
+  isNull(users.deletedAt),
+  isNull(users.disabledAt),
+  ne(users.role, 'CLIENT')
+)

@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { and, eq, inArray, isNull, ne, sql } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 
 import { isValidTimeZone } from '@pts/db/business'
 import { businessSettings, companies, users } from '@pts/db/schema'
@@ -20,6 +20,7 @@ import {
   type BusinessSettingsValues,
 } from '@/lib/business/settings-form'
 import { db } from '@/lib/db'
+import { eligiblePartner } from '@/lib/queries/reports/profit-share-partners'
 
 export type SaveBusinessSettingsResult =
   | { ok: true }
@@ -283,7 +284,7 @@ async function databaseKnowsTimeZone(timeZone: string): Promise<boolean> {
   }
 }
 
-/** Every partner is a live staff sign-in (not a client, not archived). */
+/** Every partner can split the profit share (`eligiblePartner`). */
 async function partnersAreStaff(ids: string[]): Promise<boolean> {
   const unique = [...new Set(ids)]
   if (unique.length !== ids.length) return false
@@ -291,12 +292,6 @@ async function partnersAreStaff(ids: string[]): Promise<boolean> {
   const rows = await db
     .select({ id: users.id })
     .from(users)
-    .where(
-      and(
-        inArray(users.id, unique),
-        isNull(users.deletedAt),
-        ne(users.role, 'CLIENT')
-      )
-    )
+    .where(and(inArray(users.id, unique), eligiblePartner))
   return rows.length === unique.length
 }

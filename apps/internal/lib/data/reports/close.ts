@@ -787,7 +787,13 @@ async function liveProfitShareForDrift(
             fetchedAt: frozen.fetchedAt,
           },
         }
-  return buildProfitShare({ year, month, balance: usable, payouts })
+  return buildProfitShare({
+    year,
+    month,
+    balance: usable,
+    payouts,
+    terms: frozen,
+  })
 }
 
 async function computeDrift(
