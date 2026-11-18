@@ -23,7 +23,7 @@ type BusinessImageFieldProps = {
   disabled?: boolean
   /** The icon previews square; the logo keeps its shape. */
   shape: 'square' | 'wide'
-  /** Size and types allowed, under the buttons. */
+  /** Size and types allowed, under the tile. */
   hint: string
 }
 
@@ -66,8 +66,6 @@ export function BusinessImageField({
     reader.readAsDataURL(file)
   }
 
-  const shown = localError ?? error
-
   return (
     // A row each: a wide logo beside the icon pushed its buttons onto two
     // lines, so the two fields never lined up.
@@ -78,29 +76,20 @@ export function BusinessImageField({
       </Label>
       <ImageUploadControls
         inputId={inputId}
-        preview={
-          <div
-            className={
-              shape === 'square'
-                ? 'bg-muted/40 flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md border'
-                : 'bg-muted/40 flex h-12 w-40 shrink-0 items-center justify-center overflow-hidden rounded-md border px-2'
-            }
-          >
-            {previewSrc ? (
-              // oxlint-disable-next-line next-js/no-img-element -- a data URL or our own route; next/image adds nothing
-              <img
-                src={previewSrc}
-                alt={`${label} preview`}
-                className='max-h-full max-w-full object-contain'
-              />
-            ) : (
-              <span className='text-muted-foreground text-xs'>None</span>
-            )}
-          </div>
+        shape={shape}
+        image={
+          previewSrc ? (
+            // oxlint-disable-next-line next-js/no-img-element -- a data URL or our own route; next/image adds nothing
+            <img
+              src={previewSrc}
+              alt={`${label} preview`}
+              className='max-h-full max-w-full object-contain'
+            />
+          ) : null
         }
-        hasImage={Boolean(previewSrc)}
         noun={label.toLowerCase()}
         hint={hint}
+        error={localError ?? error}
         accept={BUSINESS_IMAGE_TYPES.join(',')}
         onFile={handleFile}
         onRemove={() => {
@@ -109,7 +98,6 @@ export function BusinessImageField({
         }}
         disabled={disabled}
       />
-      {shown ? <p className='text-destructive text-sm'>{shown}</p> : null}
     </div>
   )
 }
