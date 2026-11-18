@@ -43,6 +43,7 @@ import { parseSortParam } from '@/lib/pagination/sort'
 import { sortRows } from '@/lib/table/sort-rows'
 
 import { newRowId, RowChangeBadge, rowChange } from './row-change'
+import { DialogForm } from '@/components/ui/dialog-form'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -421,13 +422,9 @@ export function ProductCatalogSection({
             </DialogDescription>
           </DialogHeader>
 
-          {/* Inside the page's form in React's tree (the dialog is only
-              portalled in the DOM), so its submit must not reach the page. */}
-          <form
-            onSubmit={event => {
-              event.stopPropagation()
-              void form.handleSubmit(onSubmit)(event)
-            }}
+          {/* DialogForm keeps the submit from reaching the page's form. */}
+          <DialogForm
+            onSubmit={event => void form.handleSubmit(onSubmit)(event)}
             className='space-y-4'
           >
             <div className='flex items-center gap-3'>
@@ -551,7 +548,7 @@ export function ProductCatalogSection({
                 {editingItem ? 'Update product' : 'Add product'}
               </Button>
             </DialogFooter>
-          </form>
+          </DialogForm>
         </DialogContent>
       </Dialog>
 

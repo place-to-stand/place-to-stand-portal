@@ -49,6 +49,7 @@ import { sortRows } from '@/lib/table/sort-rows'
 import { US_STATES } from '@/lib/companies/billing/us-states'
 
 import { newRowId, RowChangeBadge, rowChange } from './row-change'
+import { DialogForm } from '@/components/ui/dialog-form'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -365,13 +366,9 @@ export function TaxRatesSection({
             </DialogDescription>
           </DialogHeader>
 
-          {/* Inside the page's form in React's tree (the dialog is only
-              portalled in the DOM), so its submit must not reach the page. */}
-          <form
-            onSubmit={event => {
-              event.stopPropagation()
-              void form.handleSubmit(onSubmit)(event)
-            }}
+          {/* DialogForm keeps the submit from reaching the page's form. */}
+          <DialogForm
+            onSubmit={event => void form.handleSubmit(onSubmit)(event)}
             className='space-y-4'
           >
             <div className='flex items-center gap-3'>
@@ -456,7 +453,7 @@ export function TaxRatesSection({
                 {editingRate ? 'Update tax rate' : 'Add tax rate'}
               </Button>
             </DialogFooter>
-          </form>
+          </DialogForm>
         </DialogContent>
       </Dialog>
 

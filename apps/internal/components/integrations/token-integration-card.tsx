@@ -30,6 +30,7 @@ import {
   INTEGRATION_PROVIDERS,
   type IntegrationProvider,
 } from '@/lib/types/integrations'
+import { DialogForm } from '@/components/ui/dialog-form'
 
 type StatusResponse = {
   connected: boolean
@@ -204,7 +205,7 @@ export function TokenIntegrationCard({
               your {config.label} account belongs to, and is stored encrypted.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className='space-y-4 pt-2'>
+          <DialogForm onSubmit={handleSubmit} className='space-y-4 pt-2'>
             <div className='space-y-2'>
               <label
                 htmlFor={`${config.slug}-token`}
@@ -248,7 +249,7 @@ export function TokenIntegrationCard({
                 {connect.isPending ? 'Verifying...' : 'Connect'}
               </Button>
             </div>
-          </form>
+          </DialogForm>
         </DialogContent>
       </Dialog>
     </>

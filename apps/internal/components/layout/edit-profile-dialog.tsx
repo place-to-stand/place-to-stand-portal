@@ -32,6 +32,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { AppUser } from '@/lib/auth/session'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
+import { DialogForm } from '@/components/ui/dialog-form'
 
 function deriveInitials(fullName?: string | null, email?: string | null) {
   const trimmed = fullName?.trim()
@@ -200,7 +201,10 @@ export function EditProfileDialog({ open, onOpenChange, user }: Props) {
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-5'>
+            <DialogForm
+              onSubmit={form.handleSubmit(onSubmit)}
+              className='space-y-5'
+            >
               <FormField
                 control={form.control}
                 name='avatarPath'
@@ -361,7 +365,7 @@ export function EditProfileDialog({ open, onOpenChange, user }: Props) {
                   </Button>
                 </DisabledFieldTooltip>
               </DialogFooter>
-            </form>
+            </DialogForm>
           </Form>
         </DialogContent>
       </Dialog>

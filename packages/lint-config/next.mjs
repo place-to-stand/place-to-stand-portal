@@ -34,6 +34,29 @@ import {
   typed,
 } from './base.mjs'
 
+import {
+  API_ROUTE_GUARD,
+  DIALOG_FORM,
+  IMAGE_FILE_INPUT,
+  NO_ALIGN_START,
+  NO_HAND_SECTION_HEADING,
+  NO_TITLE_TOOLTIP,
+  SETTINGS_SUBMIT,
+  TOOLTIP_OFF,
+} from './syntax-rules.mjs'
+import { appRestrictedPaths } from './app-imports.mjs'
+
+export {
+  API_ROUTE_GUARD,
+  DIALOG_FORM,
+  IMAGE_FILE_INPUT,
+  NO_ALIGN_START,
+  NO_HAND_SECTION_HEADING,
+  NO_TITLE_TOOLTIP,
+  SETTINGS_SUBMIT,
+  TOOLTIP_OFF,
+}
+
 export const HOUSE_RULES = {
   'pts/save-not-gated-on-dirty': 'error', // rule 6
   'pts/archive-confirm': 'error', // one archive confirmation
@@ -82,57 +105,8 @@ const COPY_EXCEPTIONS = {
   ],
 }
 
-/**
- * House rule 11: a button takes a Tooltip, never title=. (RecordRowButton's
- * `title` is its row text, so only these names.)
- */
-export const NO_TITLE_TOOLTIP = {
-  selector:
-    "JSXOpeningElement[name.name=/^(?:button|Button|\\w*IconButton|\\w*ActionButton)$/] > JSXAttribute[name.name='title']",
-  message:
-    'House rule 11 (docs/design-system/README.md): "Never title= as a tooltip." Use RowActionButton (label = tooltip + accessible name) or wrap the button in a Tooltip; use aria-label for the name.',
-}
-
-/**
- * House rule 11: RowActionButton's tooltip is off only where something else
- * explains the button: a menu or popover trigger, or its own Tooltip.
- */
-export const TOOLTIP_OFF = {
-  selector:
-    "JSXOpeningElement[name.name='RowActionButton']:not(JSXElement[openingElement.name.name=/^(?:Tooltip|\\w*Trigger)$/] JSXOpeningElement) > JSXAttribute[name.name='tooltip'][value.expression.value=false]",
-  message:
-    'House rule 11 (docs/design-system/README.md): an icon-only button shows its label as a tooltip. tooltip={false} only on a menu or popover trigger, or inside its own Tooltip.',
-}
-
-/** House rule 4: popups are left-aligned by default, so align='start' is noise. */
-export const NO_ALIGN_START = {
-  selector:
-    "JSXOpeningElement[name.name=/(?:Content|Positioner)$/] > JSXAttribute[name.name='align'][value.value='start']",
-  message:
-    "House rule 4 (docs/design-system/README.md): popups open left-aligned by default. Drop align='start'.",
-}
-
-/**
- * form-section.md: a page form's section heading is `FormSection`, never a
- * hand-written h2 with the heading classes.
- */
-export const NO_HAND_SECTION_HEADING = {
-  selector:
-    "JSXOpeningElement[name.name='h2'] > JSXAttribute[name.name='className'][value.value=/\\btext-lg\\b/][value.value=/\\bfont-semibold\\b/]",
-  message:
-    "form-section.md (docs/design-system/components): a page form's section is `FormSection` from @/components/forms/form-section (title, description, action, the field grid), not a hand-written h2.",
-}
-
 /** What every app file is checked for with no-restricted-syntax. */
 const RESTRICTED_SYNTAX = [NO_TITLE_TOOLTIP, TOOLTIP_OFF, NO_ALIGN_START]
-
-/** API routes answer fetch callers, so they never call a redirecting guard. */
-export const API_ROUTE_GUARD = {
-  selector:
-    'CallExpression[callee.name=/^(requirePage|requireUser|requireCrmUser)$/]',
-  message:
-    "This guard redirects, and an API route answers fetch calls: use `const { user, denied } = await authorizeRoute('<capability>'); if (denied) return denied` from @/lib/auth/guard. (OAuth navigations under app/api/auth may redirect.)",
-}
 
 /** lib/queries is "direct Drizzle queries, minimal business logic". */
 export const QUERY_LAYER_PATTERNS = [
@@ -184,14 +158,6 @@ function sheetParamNames(dir, registry) {
   return [...block.matchAll(/^ {2}'?([a-z][a-z-]*)'?: \{/gm)].map(m => m[1])
 }
 
-function entityIconNames(dir, registry) {
-  return [
-    ...readFileSync(join(dir, registry), 'utf8').matchAll(
-      /(?:iconName|retiredIcon): '(\w+)'/g
-    ),
-  ].map(match => match[1])
-}
-
 export function nextApp({
   dir,
   portal,
@@ -201,39 +167,14 @@ export function nextApp({
   queryLayerAllowlist,
   apiRouteGuard = false,
 } = {}) {
-  const restrictedPaths = [...RESTRICTED_IMPORTS.paths]
-  if (entityRegistry) {
-    // Entity icons belong to the registry: read the list from it so a new
-    // entity's icon is guarded the moment it is added.
-    restrictedPaths.push({
-      name: 'lucide-react',
-      importNames: entityIconNames(dir, entityRegistry),
-      message:
-        'Entity icons come from the registry: ENTITIES.<entity>.icon / ENTITY_ICONS in @/lib/entity-accents. A client or sign-in is ENTITY_ICONS.client / .user (the company or person icon with its state dot), never Briefcase or UserRound. For a non-entity meaning pick another glyph (e.g. CalendarClock for a timestamp).',
-    })
-    // A sheet's related-records list (heading, +, empty state, cards) is
-    // always EntityList, which imports the + by relative path.
-    restrictedPaths.push({
-      name: '@/components/sheets/section-add-button',
-      message:
-        'A section +, its list and its clickable empty state come together: use EntityList (@/components/sheets/entity-list). See docs/design-system/components/entity-list.md.',
-    })
-    // Every sheet shares one header and one footer, so none drifts from the
-    // rest (the Filters sheet once did). The shared parts import these by
-    // relative path.
-    restrictedPaths.push({
-      name: '@/components/ui/sheet',
-      importNames: [
-        'SheetHeader',
-        'SheetTitle',
-        'SheetDescription',
-        'SheetClose',
-        'SheetFooter',
-      ],
-      message:
-        'Sheets share their chrome: use SheetFormHeader (@/components/sheets/sheet-form-header; leave out `entity` for a sheet that is not a record) and SheetFormFooter or SheetFooterBar (@/components/sheets/sheet-form-footer). See docs/design-system/components/sheet.md.',
-    })
-  }
+  const restrictedPaths = appRestrictedPaths({
+    dir,
+    entityRegistry,
+    sheetRegistry,
+  })
+  const internalSyntax = sheetRegistry
+    ? [NO_HAND_SECTION_HEADING, DIALOG_FORM, IMAGE_FILE_INPUT]
+    : []
   const restrictedImports = (paths, patterns = []) => [
     'error',
     { paths, patterns: [...RESTRICTED_IMPORTS.patterns, ...patterns] },
@@ -254,11 +195,12 @@ export function nextApp({
       settings: { next: { rootDir: dir } },
       rules: {
         'no-restricted-imports': restrictedImports(restrictedPaths),
-        // FormSection lives in the internal app (the one with sheets).
+        // FormSection, PageForm and DialogForm live in the internal app
+        // (the one with sheets).
         'no-restricted-syntax': [
           'error',
           ...RESTRICTED_SYNTAX,
-          ...(sheetRegistry ? [NO_HAND_SECTION_HEADING] : []),
+          ...internalSyntax,
         ],
         // CLAUDE.md "Soft deletes": archive, never hard delete a record.
         'pts/no-hard-delete': ['error', { allow: HARD_DELETE_ALLOW }],
@@ -380,8 +322,24 @@ export function nextApp({
               'no-restricted-syntax': [
                 'error',
                 ...RESTRICTED_SYNTAX,
-                ...(sheetRegistry ? [NO_HAND_SECTION_HEADING] : []),
+                ...internalSyntax,
                 API_ROUTE_GUARD,
+              ],
+            },
+          },
+        ]
+      : []),
+    ...(sheetRegistry
+      ? [
+          {
+            // Settings pages save through PageForm's bar.
+            files: ['app/(dashboard)/settings/**'],
+            rules: {
+              'no-restricted-syntax': [
+                'error',
+                ...RESTRICTED_SYNTAX,
+                ...internalSyntax,
+                SETTINGS_SUBMIT,
               ],
             },
           },
