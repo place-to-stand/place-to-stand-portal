@@ -43,13 +43,15 @@ test('sales has the Account sheet with every personal integration', async ({
   const sheet = page.getByRole('dialog', { name: 'Account' })
   await expect(sheet).toBeVisible()
   for (const card of [
-    'Google',
+    'Google Workspace',
     'GitHub',
     'Vercel',
     'Supabase',
     'Connected apps',
   ]) {
-    await expect(sheet.getByText(card, { exact: true }).first()).toBeVisible()
+    await expect(
+      sheet.locator('[data-slot="card-title"]', { hasText: card })
+    ).toBeVisible()
   }
   // Their own status loads (403 would show an error, not a Connect button).
   await expect(
