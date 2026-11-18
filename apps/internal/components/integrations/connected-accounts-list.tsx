@@ -10,6 +10,8 @@ import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 
+import { INTEGRATION_ROW_CLASS } from './integration-card'
+
 const PROVIDER_NAMES = {
   google: 'Google',
   github: 'GitHub',
@@ -118,23 +120,20 @@ export function ConnectedAccountsList({
 
   return (
     <>
-      <div className='divide-y'>
+      <div>
         {activeAccounts.map(account => {
           const isCurrentlyDisconnecting =
             disconnectingId === account.id || isDisconnecting === account.id
 
           return (
-            <div
-              key={account.id}
-              className='flex items-center justify-between gap-3 px-4 py-2'
-            >
-              <div className='flex min-w-0 items-center gap-3'>
-                <Avatar size='sm'>
+            <div key={account.id} className={INTEGRATION_ROW_CLASS}>
+              <div className='flex min-w-0 items-center gap-2'>
+                <Avatar size='xs'>
                   <AvatarImage src={getAvatarUrl(account)} />
                   <AvatarFallback>{getInitials(account)}</AvatarFallback>
                 </Avatar>
-                <div className='flex min-w-0 flex-col'>
-                  <span className='truncate text-sm'>
+                <div className='flex min-w-0 items-baseline gap-2'>
+                  <span className='shrink-0 text-sm'>
                     {getDisplayLabel(account)}
                   </span>
                   <span className='text-muted-foreground truncate text-xs'>

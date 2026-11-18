@@ -39,10 +39,19 @@ export function IntegrationCard({
         </div>
         {action ? <div className='shrink-0'>{action}</div> : null}
       </div>
-      {children ? <div className='divide-y border-t'>{children}</div> : null}
+      {/* Children of the integration: under its name, not beside its icon. */}
+      {children ? <div className='-mt-1 pb-2'>{children}</div> : null}
     </div>
   )
 }
+
+/**
+ * One connected account or app under a card's header: indented to the
+ * title's text (16px padding + 20px icon + 12px gap) so it reads as the
+ * integration's child, with its actions on the right.
+ */
+export const INTEGRATION_ROW_CLASS =
+  'flex items-center justify-between gap-3 py-1.5 pr-4 pl-12'
 
 /** The right-hand slot while a card's status loads or when it fails. */
 export function IntegrationStatus({ children }: { children: ReactNode }) {

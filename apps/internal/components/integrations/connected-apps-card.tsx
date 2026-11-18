@@ -4,7 +4,11 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bot, Loader2, Unplug } from 'lucide-react'
 
-import { IntegrationCard, IntegrationStatus } from './integration-card'
+import {
+  INTEGRATION_ROW_CLASS,
+  IntegrationCard,
+  IntegrationStatus,
+} from './integration-card'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { RowActionButton } from '@pts/ui/row-action-button'
@@ -86,13 +90,10 @@ export function ConnectedAppsCard() {
               const isRevoking =
                 revoke.isPending && revoke.variables?.clientId === app.clientId
               return (
-                <div
-                  key={app.clientId}
-                  className='flex items-center justify-between gap-3 px-4 py-2'
-                >
-                  <div className='flex min-w-0 flex-col'>
-                    <span className='truncate text-sm'>{app.name}</span>
-                    <span className='text-muted-foreground text-xs'>
+                <div key={app.clientId} className={INTEGRATION_ROW_CLASS}>
+                  <div className='flex min-w-0 items-baseline gap-2'>
+                    <span className='shrink-0 text-sm'>{app.name}</span>
+                    <span className='text-muted-foreground truncate text-xs'>
                       Connected {formatCalendarDate(app.grantedAt) ?? '—'}
                     </span>
                   </div>
