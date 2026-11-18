@@ -31,7 +31,7 @@ export function AccountPreferences() {
         description={
           <span className='inline-flex items-center gap-1.5'>
             Press
-            <ShortcutKeys shortcut={SHORTCUTS.showShortcuts} size='xs' />
+            <ShortcutKeys shortcut={SHORTCUTS.showShortcuts} size='sm' />
             anywhere
           </span>
         }
