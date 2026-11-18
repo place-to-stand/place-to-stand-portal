@@ -4,18 +4,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { toast } from '@/components/ui/use-toast'
-import { Button } from '@pts/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@pts/ui/card'
 import {
   ConnectedAccountsList,
   type ConnectedAccount,
 } from '@/components/integrations/connected-accounts-list'
+import {
+  IntegrationCard,
+  IntegrationConnectButton,
+  IntegrationStatus,
+} from '@/components/integrations/integration-card'
 import { ConnectedAppsCard } from '@/components/integrations/connected-apps-card'
 import { TokenIntegrationCard } from '@/components/integrations/token-integration-card'
 
@@ -204,107 +201,66 @@ export function PersonalIntegrations() {
   const githubAccounts = transformAccounts(githubData?.accounts)
 
   return (
-    // One column: the sheet is narrower than the old page.
-    <div className='grid grid-cols-1 gap-4'>
-      {/* Google Card */}
-      <Card>
-        <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-          <div className='flex flex-col space-y-1.5'>
-            <CardTitle className='flex items-center gap-2'>
-              <GoogleIcon className='h-5 w-5' />
-              Google Workspace
-            </CardTitle>
-            <CardDescription>
-              Connect your Google Workspace accounts to sync email.
-            </CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {googleLoading ? (
-            <div className='text-muted-foreground text-sm'>
-              Checking status...
-            </div>
-          ) : googleAccounts.length > 0 ? (
-            <ConnectedAccountsList
-              provider='google'
-              accounts={googleAccounts}
-              onDisconnect={async id => disconnectGoogle.mutateAsync(id)}
-              onAddAccount={handleConnectGoogle}
-              onUpdatePermissions={handleConnectGoogle}
+    <div className='flex flex-col gap-3'>
+      <IntegrationCard
+        icon={<GoogleIcon />}
+        title='Google Workspace'
+        description='Mail with leads and people, in their sheets.'
+        action={
+          googleLoading ? (
+            <IntegrationStatus>Checking...</IntegrationStatus>
+          ) : googleAccounts.length === 0 ? (
+            <IntegrationConnectButton
+              pending={isRedirectingGoogle}
+              onClick={handleConnectGoogle}
             />
-          ) : (
-            <div className='flex items-center justify-between'>
-              <span className='text-muted-foreground text-sm'>
-                Not connected
-              </span>
-              <Button
-                variant='outline'
-                disabled={isRedirectingGoogle}
-                onClick={handleConnectGoogle}
-              >
-                {isRedirectingGoogle
-                  ? 'Connecting...'
-                  : 'Connect Google account'}
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          ) : null
+        }
+      >
+        {googleAccounts.length > 0 ? (
+          <ConnectedAccountsList
+            provider='google'
+            accounts={googleAccounts}
+            onDisconnect={async id => disconnectGoogle.mutateAsync(id)}
+            onAddAccount={handleConnectGoogle}
+            onUpdatePermissions={handleConnectGoogle}
+          />
+        ) : null}
+      </IntegrationCard>
 
-      {/* GitHub Card */}
-      <Card>
-        <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-          <div className='flex flex-col space-y-1.5'>
-            <CardTitle className='flex items-center gap-2'>
-              <GitHubIcon className='h-5 w-5' />
-              GitHub
-            </CardTitle>
-            <CardDescription>
-              Connect your GitHub accounts to sync repositories and create PRs.
-            </CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {githubLoading ? (
-            <div className='text-muted-foreground text-sm'>
-              Checking status...
-            </div>
-          ) : githubAccounts.length > 0 ? (
-            <ConnectedAccountsList
-              provider='github'
-              accounts={githubAccounts}
-              onDisconnect={async id => disconnectGitHub.mutateAsync(id)}
-              onAddAccount={handleConnectGitHub}
+      <IntegrationCard
+        icon={<GitHubIcon />}
+        title='GitHub'
+        description='Link repositories to projects and open PRs.'
+        action={
+          githubLoading ? (
+            <IntegrationStatus>Checking...</IntegrationStatus>
+          ) : githubAccounts.length === 0 ? (
+            <IntegrationConnectButton
+              pending={isRedirectingGitHub}
+              onClick={handleConnectGitHub}
             />
-          ) : (
-            <div className='flex items-center justify-between'>
-              <span className='text-muted-foreground text-sm'>
-                Not connected
-              </span>
-              <Button
-                variant='outline'
-                disabled={isRedirectingGitHub}
-                onClick={handleConnectGitHub}
-              >
-                {isRedirectingGitHub
-                  ? 'Connecting...'
-                  : 'Connect GitHub account'}
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          ) : null
+        }
+      >
+        {githubAccounts.length > 0 ? (
+          <ConnectedAccountsList
+            provider='github'
+            accounts={githubAccounts}
+            onDisconnect={async id => disconnectGitHub.mutateAsync(id)}
+            onAddAccount={handleConnectGitHub}
+          />
+        ) : null}
+      </IntegrationCard>
 
       <TokenIntegrationCard
         provider='VERCEL'
-        description='Connect your Vercel account to link deployments to projects.'
+        description='Link deployments to projects.'
       />
-
       <TokenIntegrationCard
         provider='SUPABASE'
-        description='Connect your Supabase account to link databases to projects.'
+        description='Link databases to projects.'
       />
-
       <ConnectedAppsCard />
     </div>
   )

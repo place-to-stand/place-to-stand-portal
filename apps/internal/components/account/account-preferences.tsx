@@ -21,7 +21,7 @@ export function AccountPreferences() {
   return (
     <div className='divide-border flex flex-col divide-y rounded-lg border'>
       <PreferenceRow label='Appearance' description={isDark ? 'Dark' : 'Light'}>
-        <Button type='button' variant='outline' size='sm' onClick={toggleTheme}>
+        <Button type='button' variant='outline' size='xs' onClick={toggleTheme}>
           {isDark ? <Sun aria-hidden /> : <Moon aria-hidden />}
           {isDark ? 'Use light mode' : 'Use dark mode'}
         </Button>
@@ -31,7 +31,7 @@ export function AccountPreferences() {
         description={
           <span className='inline-flex items-center gap-1.5'>
             Press
-            <ShortcutKeys shortcut={SHORTCUTS.showShortcuts} size='sm' />
+            <ShortcutKeys shortcut={SHORTCUTS.showShortcuts} size='xs' />
             anywhere
           </span>
         }
@@ -39,7 +39,7 @@ export function AccountPreferences() {
         <Button
           type='button'
           variant='outline'
-          size='sm'
+          size='xs'
           onClick={() => setShortcutsOpen(true)}
         >
           <Keyboard aria-hidden />

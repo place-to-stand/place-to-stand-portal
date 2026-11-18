@@ -12,19 +12,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@pts/ui/dialog'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@pts/ui/card'
 import { Input } from '@pts/ui/input'
 import { toast } from '@/components/ui/use-toast'
 import {
   ConnectedAccountsList,
   type ConnectedAccount,
 } from '@/components/integrations/connected-accounts-list'
+import {
+  IntegrationCard,
+  IntegrationConnectButton,
+  IntegrationStatus,
+} from '@/components/integrations/integration-card'
 import { IntegrationProviderIcon } from '@/components/integrations/provider-icon'
 import {
   INTEGRATION_PROVIDERS,
@@ -158,43 +156,27 @@ export function TokenIntegrationCard({
 
   return (
     <>
-      <Card>
-        <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-          <div className='flex flex-col space-y-1.5'>
-            <CardTitle className='flex items-center gap-2'>
-              <IntegrationProviderIcon
-                provider={provider}
-                className='h-5 w-5'
-              />
-              {config.label}
-            </CardTitle>
-            <CardDescription>{description}</CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className='text-muted-foreground text-sm'>
-              Checking status...
-            </div>
-          ) : accounts.length > 0 ? (
-            <ConnectedAccountsList
-              provider={config.slug as 'vercel' | 'supabase'}
-              accounts={accounts}
-              onDisconnect={async id => disconnect.mutateAsync(id)}
-              onAddAccount={openDialog}
-            />
-          ) : (
-            <div className='flex items-center justify-between'>
-              <span className='text-muted-foreground text-sm'>
-                Not connected
-              </span>
-              <Button variant='outline' onClick={openDialog}>
-                Connect {config.label} account
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <IntegrationCard
+        icon={<IntegrationProviderIcon provider={provider} />}
+        title={config.label}
+        description={description}
+        action={
+          isLoading ? (
+            <IntegrationStatus>Checking...</IntegrationStatus>
+          ) : accounts.length === 0 ? (
+            <IntegrationConnectButton onClick={openDialog} />
+          ) : null
+        }
+      >
+        {accounts.length > 0 ? (
+          <ConnectedAccountsList
+            provider={config.slug as 'vercel' | 'supabase'}
+            accounts={accounts}
+            onDisconnect={async id => disconnect.mutateAsync(id)}
+            onAddAccount={openDialog}
+          />
+        ) : null}
+      </IntegrationCard>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>

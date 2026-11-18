@@ -55,7 +55,7 @@ test('sales has the Account sheet with every personal integration', async ({
   }
   // Their own status loads (403 would show an error, not a Connect button).
   await expect(
-    sheet.getByRole('button', { name: /Connect (Google|GitHub)/ }).first()
+    sheet.getByRole('button', { name: 'Connect', exact: true }).first()
   ).toBeVisible()
   // The agency's services stay admin-only.
   await page.goto('/settings/integrations')
