@@ -36,28 +36,30 @@ type ImageUploadControlsProps = {
 
 /** Every tile is 64px tall, so a photo, an icon and a logo read as one family. */
 const SHAPE_CLASSES: Record<ImageUploadShape, string> = {
-  square: 'size-16 rounded-md',
+  square: 'size-16 rounded-lg',
   circle: 'size-16 rounded-full',
-  wide: 'h-16 w-48 rounded-md',
+  wide: 'h-16 w-48 rounded-lg',
 }
 
-/** A logo or icon sits contained, with the same inset; a photo fills its circle. */
-const FILLED_CLASSES: Record<ImageUploadShape, string> = {
+/**
+ * The one frame for a logo or icon, empty or filled: a muted box with an 8px
+ * inset, the image contained in it. A photo is a plain circle it fills.
+ */
+const FRAME_CLASSES: Record<ImageUploadShape, string> = {
   square: 'bg-muted/40 p-2',
   wide: 'bg-muted/40 p-2',
   circle: '',
 }
 
 /**
- * Where the remove badge sits: on the top-right corner of a rectangle, and on the edge of a circle at 45° (14.6% / 85.4% of the box,
- * less half the 20px badge), so it never floats off the photo.
+ * Where the remove badge sits: inside the frame's top-right corner, 4px in,
+ * and inside a photo's 64px box on the circle's edge, so it never pokes out
+ * of the field (or into the label above it).
  */
 const REMOVE_POSITION: Record<ImageUploadShape, string> = {
-  // Centred on the right edge, 6px above the top, so it stays clear of the
-  // field label 8px above.
-  square: '-top-1.5 right-0 translate-x-1/2',
-  wide: '-top-1.5 right-0 translate-x-1/2',
-  circle: 'top-[calc(14.64%-0.625rem)] left-[calc(85.36%-0.625rem)]',
+  square: 'top-1 right-1',
+  wide: 'top-1 right-1',
+  circle: 'top-0 right-0',
 }
 
 /** True while the drag carries files (not text or a link). */
@@ -142,9 +144,10 @@ export function ImageUploadControls({
               'disabled:cursor-not-allowed',
               disabled && !isUploading ? 'disabled:opacity-50' : null,
               SHAPE_CLASSES[shape],
+              FRAME_CLASSES[shape],
               hasImage
-                ? FILLED_CLASSES[shape]
-                : 'border-muted-foreground/40 text-muted-foreground hover:border-primary hover:text-foreground border-dashed bg-transparent',
+                ? null
+                : 'border-muted-foreground/40 text-muted-foreground hover:border-primary hover:text-foreground border-dashed',
               isDragOver
                 ? 'border-primary text-foreground ring-primary/30 border-solid ring-[3px]'
                 : null
@@ -155,12 +158,16 @@ export function ImageUploadControls({
               <span
                 aria-hidden
                 className={cn(
-                  'absolute inset-0 flex items-center justify-center bg-black/55 text-white opacity-0 transition-opacity',
+                  // Strong enough to read over any image: a dark scrim and the
+                  // icon in a solid white disc.
+                  'absolute inset-0 flex items-center justify-center bg-black/65 opacity-0 transition-opacity',
                   'group-hover:opacity-100 group-focus-visible:opacity-100',
                   isDragOver ? 'opacity-100' : null
                 )}
               >
-                <ImagePlus className='size-5' />
+                <span className='flex size-7 items-center justify-center rounded-full bg-white text-black shadow-sm'>
+                  <ImagePlus className='size-4' />
+                </span>
               </span>
             ) : null}
             {isUploading ? (
