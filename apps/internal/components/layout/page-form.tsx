@@ -117,6 +117,7 @@ export function PageForm<TIn extends FieldValues, TOut>({
   const showBar = isDirty || isPending || justSaved || controls.canRedo
   const barRef = useRef<HTMLDivElement>(null)
   const columnStyle = usePageColumn(barRef)
+  useReserveBelowPage(barRef, showBar)
 
   const { dialog, requestConfirmation } = useUnsavedChangesWarning({ isDirty })
   useConfirmLeavingPage(isDirty, requestConfirmation)
@@ -148,9 +149,6 @@ export function PageForm<TIn extends FieldValues, TOut>({
         className={cn('flex flex-col', className)}
       >
         {children}
-        {/* Reserve the bar's height while it shows, so the last field can
-            scroll above it. */}
-        {showBar ? <div aria-hidden className='h-16 shrink-0' /> : null}
         <div
           ref={barRef}
           style={columnStyle}
@@ -234,4 +232,26 @@ function usePageColumn(ref: RefObject<HTMLElement | null>): CSSProperties {
     }
   }, [ref])
   return box ? { left: box.left, width: box.width } : { left: 0, right: 0 }
+}
+
+/**
+ * While the bar shows, the page column (`<main>`) gets the bar's height
+ * added below its own padding, so the whole panel, its bottom edge and
+ * corners included, scrolls up above the bar.
+ */
+function useReserveBelowPage(
+  ref: RefObject<HTMLElement | null>,
+  active: boolean
+) {
+  useLayoutEffect(() => {
+    const bar = ref.current
+    const main = bar?.closest('main')
+    if (!bar || !main || !active) return
+    const before = main.style.paddingBottom
+    const base = parseFloat(getComputedStyle(main).paddingBottom) || 0
+    main.style.paddingBottom = `${base + bar.offsetHeight}px`
+    return () => {
+      main.style.paddingBottom = before
+    }
+  }, [ref, active])
 }
