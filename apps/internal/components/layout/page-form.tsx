@@ -111,9 +111,10 @@ export function PageForm<TIn extends FieldValues, TOut>({
     return () => clearTimeout(timer)
   }, [justSaved, savedCount])
 
-  // Slides up on the first edit; stays while dirty, saving or showing
-  // "Saved", then slides away.
-  const showBar = isDirty || isPending || justSaved
+  // Slides up on the first edit; stays while dirty, saving, showing "Saved",
+  // or while there is something to redo (undoing back to the saved values
+  // keeps it up), then slides away.
+  const showBar = isDirty || isPending || justSaved || controls.canRedo
   const barRef = useRef<HTMLDivElement>(null)
   const columnStyle = usePageColumn(barRef)
 
