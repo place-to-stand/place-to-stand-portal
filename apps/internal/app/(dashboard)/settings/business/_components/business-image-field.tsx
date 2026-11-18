@@ -69,7 +69,9 @@ export function BusinessImageField({
   const shown = localError ?? error
 
   return (
-    <div className='grid gap-2'>
+    // A row each: a wide logo beside the icon pushed its buttons onto two
+    // lines, so the two fields never lined up.
+    <div className='grid gap-2 sm:col-span-2'>
       <Label htmlFor={inputId}>
         {label}
         <OptionalMarker />

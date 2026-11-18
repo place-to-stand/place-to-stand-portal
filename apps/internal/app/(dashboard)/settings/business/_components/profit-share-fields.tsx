@@ -191,6 +191,13 @@ function PartnerList({
     savedKeys
   )
   const available = staff.filter(person => !value.includes(person.id))
+  const rank = (id: string) => {
+    const index = savedIds.indexOf(id)
+    return index === -1 ? Number.POSITIVE_INFINITY : index
+  }
+  // Saved people first, in saved order; new picks keep their order after.
+  const inSavedOrder = (ids: string[]) =>
+    [...ids].sort((a, b) => rank(a) - rank(b))
 
   return (
     <EntityList
@@ -235,7 +242,8 @@ function PartnerList({
             pending
               ? {
                   disabled,
-                  onUndo: () => onChange([...value, person.id]),
+                  // Back where it was saved, not at the end.
+                  onUndo: () => onChange(inSavedOrder([...value, person.id])),
                 }
               : undefined
           }
