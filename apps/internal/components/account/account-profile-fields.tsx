@@ -66,9 +66,6 @@ export function AccountProfileFields({
                 existingUserId={user.id}
               />
             </FormControl>
-            <FormDescription>
-              Shown beside your name everywhere.
-            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
