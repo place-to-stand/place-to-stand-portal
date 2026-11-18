@@ -12,3 +12,5 @@ A notice that stays on the page or in a sheet while its cause does. From `@pts/u
 
 **Do:** say what is wrong in one sentence and put the fix in the action. Use it for mismatches in a form (a lead's person not at its company), advisories (below a product's minimum quantity), and page-level failures (the saved close can't be read).
 **Don't:** use it for something that just happened (that's a toast), for a field error (`FormMessage`) or a save result (a toast), or hand-roll an amber or red box.
+
+**App-wide notice:** a notice about the whole install (the business setup banner, `components/layout/business-setup-banner.tsx`) is a full-width strip above the page header, not an `Alert` card: background, bottom border, muted text, one `xs` outline action. (guard: review)
