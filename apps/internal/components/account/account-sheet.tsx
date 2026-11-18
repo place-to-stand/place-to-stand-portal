@@ -10,7 +10,6 @@ import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetSection } from '@/components/sheets/sheet-section'
-import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { useAccountSheet } from '@/lib/account/use-account-sheet'
 import type { AppUser } from '@/lib/auth/session'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
@@ -34,8 +33,6 @@ import {
  * over whatever page is open. It isn't a record, so it sits outside the
  * entity sheet stack and always layers on top of it.
  */
-// The person's own sign-in: the registry's Sign-in icon, in its colour.
-const UserIcon = ENTITY_ICONS.user
 
 export function AccountSheet({ user }: { user: AppUser }) {
   const { section, isOpen, close } = useAccountSheet()
@@ -99,7 +96,8 @@ export function AccountSheet({ user }: { user: AppUser }) {
           <SheetFormHeader entity='user' title='Account' />
           <Form {...form}>
             <div className='flex flex-1 flex-col gap-6 overflow-y-auto px-6 pt-6 pb-8'>
-              <SheetSection title='Profile' icon={UserIcon}>
+              {/* The first group: the sheet title already says what it is. */}
+              <SheetSection>
                 <form
                   id={formId}
                   onSubmit={event => {
