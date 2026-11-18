@@ -960,13 +960,6 @@
       "when": 1794953679745,
       "tag": "0137_business_settings",
       "breakpoints": true
-    },
-    {
-      "idx": 138,
-      "version": "7",
-      "when": 1794953689252,
-      "tag": "0138_seed_business_settings",
-      "breakpoints": true
     }
   ]
 }

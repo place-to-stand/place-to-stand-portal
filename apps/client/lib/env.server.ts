@@ -17,7 +17,6 @@ const schema = z.object({
   // module checks for what it actually needs and names the gap when sending.
   RESEND_API_KEY: z.string().min(1).optional(),
   RESEND_FROM_EMAIL: z.email().optional(),
-  RESEND_REPLY_TO_EMAIL: z.email().optional(),
 })
 
 // Validated separately, and only by the GitHub App routes and helpers, for the
@@ -45,7 +44,6 @@ function getServerEnv() {
     INTERNAL_PORTAL_URL: process.env.INTERNAL_PORTAL_URL,
     RESEND_API_KEY: emptyToUndefined(process.env.RESEND_API_KEY),
     RESEND_FROM_EMAIL: emptyToUndefined(process.env.RESEND_FROM_EMAIL),
-    RESEND_REPLY_TO_EMAIL: emptyToUndefined(process.env.RESEND_REPLY_TO_EMAIL),
   })
 }
 

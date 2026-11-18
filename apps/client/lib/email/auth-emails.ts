@@ -49,11 +49,12 @@ export function assertAuthEmailConfigured(): void {
 }
 
 async function deliver(to: string, auth: AuthEmail): Promise<void> {
-  const { from, replyTo: envReplyTo, transport } = resolveMailConfig()
+  const { from, transport } = resolveMailConfig()
   const business = await getBusiness()
-  // Same rule as the internal portal: the Business page's addresses win.
-  const replyTo = business.inboxEmail ?? envReplyTo
+  // Same rule as the internal portal: the Business page's addresses win, and
+  // with no inbox email set, replies go back to the sending address.
   const sender = business.sendingEmail ?? from
+  const replyTo = business.inboxEmail ?? sender
   const email = renderAuthEmail(
     auth,
     'client',
@@ -76,11 +77,9 @@ async function deliver(to: string, auth: AuthEmail): Promise<void> {
 
 /** Stand-ins for local mail. Mailpit accepts anything; nothing is delivered. */
 const LOCAL_FROM = 'portal@localhost'
-const LOCAL_REPLY_TO = 'hello@placetostandagency.com'
 
 type MailConfig = {
   from: string
-  replyTo: string
   transport: TransportConfig
 }
 
@@ -102,7 +101,6 @@ function resolveMailConfig(): MailConfig {
   if (process.env.NODE_ENV !== 'production') {
     return {
       from: env.RESEND_FROM_EMAIL ?? LOCAL_FROM,
-      replyTo: env.RESEND_REPLY_TO_EMAIL ?? LOCAL_REPLY_TO,
       transport: { mode: 'mailpit' },
     }
   }
@@ -110,7 +108,6 @@ function resolveMailConfig(): MailConfig {
   const missing = [
     ['RESEND_API_KEY', env.RESEND_API_KEY],
     ['RESEND_FROM_EMAIL', env.RESEND_FROM_EMAIL],
-    ['RESEND_REPLY_TO_EMAIL', env.RESEND_REPLY_TO_EMAIL],
   ]
     .filter(([, value]) => !value)
     .map(([name]) => name)
@@ -123,7 +120,6 @@ function resolveMailConfig(): MailConfig {
 
   return {
     from: env.RESEND_FROM_EMAIL!,
-    replyTo: env.RESEND_REPLY_TO_EMAIL!,
     transport: { mode: 'resend', apiKey: env.RESEND_API_KEY! },
   }
 }

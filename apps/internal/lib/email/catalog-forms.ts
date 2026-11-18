@@ -58,9 +58,10 @@ const SAMPLE_AUDIT_RESULT = {
  * Samples call the real templates with obviously fake data, as everywhere else.
  */
 export function buildFormEmailEntries(
-  internalOrigin: string
+  internalOrigin: string,
+  businessInbox: string | null
 ): EmailTemplateEntry[] {
-  const formAddresses = resolveFormEmailAddresses()
+  const formAddresses = resolveFormEmailAddresses(businessInbox)
 
   return [
     {

@@ -57,15 +57,21 @@ export function invoiceIssuerFor(identity: BusinessIdentity): InvoiceIssuer {
   }
 }
 
-/** Where replies go: the Business inbox, else the env fallback. */
+/**
+ * Where replies go: the Business page's inbox email. With none set, replies
+ * go back to the address the mail came from.
+ */
 export function replyToFor(identity: BusinessIdentity): string {
-  return identity.inboxEmail ?? serverEnv.RESEND_REPLY_TO_EMAIL
+  return identity.inboxEmail ?? sendingAddressFor(identity)
+}
+
+function sendingAddressFor(identity: BusinessIdentity): string {
+  return identity.sendingEmail ?? serverEnv.RESEND_FROM_EMAIL
 }
 
 /** `Name <address>` for automated mail. */
 export function fromAddressFor(identity: BusinessIdentity): string {
-  const address = identity.sendingEmail ?? serverEnv.RESEND_FROM_EMAIL
-  return formatSender(identity.name, address)
+  return formatSender(identity.name, sendingAddressFor(identity))
 }
 
 /** Sender, reply-to and brand for one outbound email, in one read. */
@@ -74,6 +80,7 @@ export async function getEmailSender() {
   return {
     from: fromAddressFor(identity),
     replyTo: replyToFor(identity),
+    inboxEmail: identity.inboxEmail,
     brand: emailBrandFor(identity),
   }
 }

@@ -6,16 +6,15 @@ import { businessSettings, companies } from './schema'
 /**
  * The install's own business, read in one place by both apps (emails, PDFs,
  * share pages, dates). The name comes from the staff company; everything else
- * from the one `business_settings` row (migrations 0137 and 0138).
+ * from the one `business_settings` row (migration 0137).
  *
- * Every field has a fallback, so a database before 0137, or a row with blanks,
- * still renders: the fallbacks are Place To Stand's own details, which is what
- * every install starts with anyway.
+ * A database before 0137, or with no row yet, still renders: the name falls
+ * back to the product's, and every other field is left empty. No install
+ * starts with another business's contact details.
  */
 
 export const DEFAULT_BUSINESS_NAME = 'Place To Stand'
 export const DEFAULT_TIME_ZONE = 'America/Chicago'
-const DEFAULT_WEBSITE = 'https://placetostandagency.com'
 
 export type BusinessAddress = {
   line1: string | null
@@ -88,8 +87,8 @@ function fallbackIdentity(name: string): BusinessIdentity {
   return {
     name,
     legalName: name,
-    website: DEFAULT_WEBSITE,
-    websiteLabel: websiteLabel(DEFAULT_WEBSITE),
+    website: null,
+    websiteLabel: null,
     address: {
       line1: null,
       line2: null,

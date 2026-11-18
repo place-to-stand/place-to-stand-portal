@@ -73,10 +73,13 @@ export function buildEmailTemplateCatalog({
   from,
   replyTo,
   brand,
+  inboxEmail,
 }: {
   from: string
   replyTo: string
   brand: EmailBrand
+  /** The Business page's inbox email, for the form emails' team inbox. */
+  inboxEmail: string | null
 }): EmailTemplateEntry[] {
   const internalOrigin = new URL(serverEnv.GOOGLE_REDIRECT_URI).origin
   const clientOrigin = serverEnv.CLIENT_PORTAL_URL
@@ -231,7 +234,7 @@ export function buildEmailTemplateCatalog({
         },
       ],
     },
-    ...buildFormEmailEntries(internalOrigin),
+    ...buildFormEmailEntries(internalOrigin, inboxEmail),
     {
       id: 'invoice',
       overview: 'Sent when an admin sends a client an invoice.',

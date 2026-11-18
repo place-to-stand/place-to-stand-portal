@@ -10,9 +10,9 @@ import {
 import { Button } from '@pts/ui/button'
 
 /**
- * Shown to admins until someone saves Settings → Business: a new install
- * starts with Place To Stand's details, and everything the portal sends
- * (emails, invoices, share pages) prints them until they're changed.
+ * Shown to admins until someone saves Settings → Business: until then,
+ * emails, invoices and share pages carry no address, phone, website or
+ * inbox for replies.
  */
 export function BusinessSetupBanner() {
   return (
@@ -21,13 +21,13 @@ export function BusinessSetupBanner() {
         <IdCard />
         <AlertContent>
           <AlertDescription>
-            Emails and invoices show Place To Stand&rsquo;s details until you
-            check your business settings.
+            Add your business details so emails and invoices show your address,
+            website and where replies go.
           </AlertDescription>
         </AlertContent>
         <AlertAction>
           <Button asChild size='xs' variant='outline'>
-            <Link href='/settings/business'>Check settings</Link>
+            <Link href='/settings/business'>Add details</Link>
           </Button>
         </AlertAction>
       </Alert>

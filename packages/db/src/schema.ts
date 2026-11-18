@@ -2028,9 +2028,9 @@ export const productCatalogItems = pgTable(
 /**
  * The install's own business: one row, read through `@pts/db/business`.
  * The display name stays on the staff company (`companies.is_staff`); this
- * holds everything else the portal prints about the business. Every install
- * starts with Place To Stand's details; `confirmed_at` stays empty until an
- * admin saves the Business page, and the portal shows a banner until then.
+ * holds everything else the portal prints about the business. A new install
+ * has no row; the first save of the Business page creates it and sets
+ * `confirmed_at`, and the portal shows admins a banner until then.
  * Logo and icon are small images kept as data URLs, served by the app, so an
  * install needs no storage bucket for them.
  */
