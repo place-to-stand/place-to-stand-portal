@@ -20,8 +20,13 @@ export function BusinessSetupBanner() {
     <div className='bg-background text-muted-foreground flex items-center gap-2 border-b px-3 py-1.5 text-sm sm:px-4'>
       <IdCard className='size-4 shrink-0' aria-hidden />
       <p className='min-w-0 flex-1 truncate'>
-        Add your business details so emails and invoices show your address,
-        website and where replies go.
+        <span className='text-foreground font-medium'>
+          Business details missing.
+        </span>
+        <span className='max-sm:hidden'>
+          {' '}
+          Emails and invoices show no address, website or reply inbox.
+        </span>
       </p>
       <Button asChild size='xs' variant='outline' className='shrink-0'>
         <Link href='/settings/business'>Add details</Link>
