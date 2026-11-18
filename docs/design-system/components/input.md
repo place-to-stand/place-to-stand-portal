@@ -13,3 +13,5 @@ The single-line text field, plus `Textarea`, `Label` and `FormLabel`. From `@pts
 - Use `data-autofocus` on the field a sheet should focus first.
 
 **Don't:** add per-field hint paragraphs, placeholders that repeat the label, or custom border colors.
+
+**Image fields:** every image upload (a person's photo, the business logo and icon) is `ImageUploadControls` (`components/forms/image-upload-controls.tsx`): the preview, an outline "Upload/Replace <noun>" button with the image icon, a secondary "Remove" with the trash icon, and one line naming the size and file types. The caller decides where the file goes. (guard: review)

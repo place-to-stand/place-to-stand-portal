@@ -156,6 +156,7 @@ export function BusinessSettingsForm({
                   <BusinessImageField
                     label='Logo'
                     shape='wide'
+                    hint='Wide image up to 256 KB. PNG, JPEG, WEBP, or SVG.'
                     currentSrc={initial.logoSrc}
                     change={logo}
                     onChange={setLogo}
@@ -165,6 +166,7 @@ export function BusinessSettingsForm({
                   <BusinessImageField
                     label='Icon'
                     shape='square'
+                    hint='Square image up to 256 KB. PNG, JPEG, WEBP, or SVG.'
                     currentSrc={initial.iconSrc}
                     change={icon}
                     onChange={setIcon}
@@ -205,6 +207,7 @@ export function BusinessSettingsForm({
         <ProfitShareFields
           control={form.control}
           staff={initial.staff}
+          savedPartnerIds={initial.profitSharePartnerIds}
           disabled={isPending}
         />
         <div>

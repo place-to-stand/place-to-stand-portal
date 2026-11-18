@@ -48,7 +48,20 @@ export type InvoiceIssuer = {
 export const DEFAULT_INVOICE_ISSUER: InvoiceIssuer = {
   name: 'Place To Stand',
   legalName: 'Place To Stand',
-  websiteLabel: 'placetostandagency.com',
+  websiteLabel: null,
+}
+
+/** The invoice issuer for a business (Settings → Business). */
+export function invoiceIssuerFor(business: {
+  name: string
+  legalName: string
+  websiteLabel: string | null
+}): InvoiceIssuer {
+  return {
+    name: business.name,
+    legalName: business.legalName,
+    websiteLabel: business.websiteLabel,
+  }
 }
 
 export async function generateInvoicePdf(

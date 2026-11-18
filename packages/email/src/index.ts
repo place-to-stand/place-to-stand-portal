@@ -7,6 +7,7 @@ export {
 export {
   DEFAULT_EMAIL_BRAND,
   EMAIL_COLORS,
+  emailBrandFor,
   EMAIL_FONTS,
   escapeHtml,
   formatExpiryWindow,

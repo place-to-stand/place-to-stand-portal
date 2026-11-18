@@ -4,8 +4,8 @@ import { cache } from 'react'
 import { connection } from 'next/server'
 
 import { readBusinessIdentity, type BusinessIdentity } from '@pts/db/business'
-import { formatSender, type EmailBrand } from '@pts/email'
-import type { InvoiceIssuer } from '@pts/pdf'
+import { emailBrandFor, formatSender } from '@pts/email'
+import { invoiceIssuerFor } from '@pts/pdf'
 import { setCompanyTimeZone } from '@pts/ui/dates'
 
 import { db } from '@/lib/db'
@@ -40,22 +40,6 @@ export const getBusinessIdentity = cache(
 /** Drops the process copy, after a save. */
 export function clearBusinessIdentityMemo() {
   memo = null
-}
-
-export function emailBrandFor(identity: BusinessIdentity): EmailBrand {
-  return {
-    name: identity.name,
-    siteUrl: identity.website,
-    siteLabel: identity.websiteLabel,
-  }
-}
-
-export function invoiceIssuerFor(identity: BusinessIdentity): InvoiceIssuer {
-  return {
-    name: identity.name,
-    legalName: identity.legalName,
-    websiteLabel: identity.websiteLabel,
-  }
 }
 
 /**
@@ -110,3 +94,6 @@ export async function getBusinessIdentityOrDefaults(): Promise<BusinessIdentity 
     return null
   }
 }
+
+// One shape for every app, built in @pts/email and @pts/pdf.
+export { emailBrandFor, invoiceIssuerFor }

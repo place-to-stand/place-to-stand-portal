@@ -1,11 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ImagePlus, Loader2, Trash2 } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
-import { Button } from '@pts/ui/button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { ImageUploadControls } from '@/components/forms/image-upload-controls'
 import { useToast } from '@/components/ui/use-toast'
 
 const UPLOAD_ENDPOINT = '/api/uploads/user-avatar'
@@ -37,7 +35,6 @@ export function AvatarUploadField({
   existingUserId,
   contactId,
 }: Props) {
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const { toast } = useToast()
   // Uploads staged this session, by path, with a local preview of each. All
   // stay until the field goes away: undo and redo can bring any of them back.
@@ -77,22 +74,8 @@ export function AvatarUploadField({
     [displayName, initials]
   )
 
-  const openFilePicker = useCallback(() => {
-    if (disabled || isUploading) {
-      return
-    }
-
-    fileInputRef.current?.click()
-  }, [disabled, isUploading])
-
-  const handleFileChange = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0]
-
-      if (!file) {
-        return
-      }
-
+  const handleFile = useCallback(
+    async (file: File) => {
       setIsUploading(true)
       onUploadingChange?.(true)
 
@@ -149,9 +132,6 @@ export function AvatarUploadField({
       } finally {
         setIsUploading(false)
         onUploadingChange?.(false)
-        if (fileInputRef.current) {
-          fileInputRef.current.value = ''
-        }
       }
     },
     [
@@ -191,11 +171,6 @@ export function AvatarUploadField({
     return null
   }, [cacheBuster, contactId, existingUserId, previewUrl, targetUserId, value])
 
-  const disableButtons = disabled || isUploading
-  const disabledReason = disableButtons
-    ? 'Please wait for the current request to finish.'
-    : null
-
   // Previews are freed when the field goes away (undo may still show one).
   const stagedPreviewsRef = useRef(stagedPreviews)
   useEffect(() => {
@@ -228,64 +203,25 @@ export function AvatarUploadField({
   }, [deletePendingUpload])
 
   return (
-    <div className='flex items-start gap-4'>
-      <Avatar size='xl'>
-        {remoteImage ? (
-          <AvatarImage src={remoteImage} alt={avatarLabel ?? 'Photo'} />
-        ) : null}
-        <AvatarFallback className='font-semibold uppercase'>
-          {initials}
-        </AvatarFallback>
-      </Avatar>
-      <div className='flex flex-col gap-2'>
-        <div className='flex flex-wrap gap-2'>
-          <DisabledFieldTooltip
-            disabled={disableButtons}
-            reason={disabledReason}
-          >
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={openFilePicker}
-              disabled={disableButtons}
-            >
-              {isUploading ? (
-                <Loader2 className='animate-spin' />
-              ) : (
-                <ImagePlus />
-              )}
-              {value || previewUrl ? 'Replace photo' : 'Upload photo'}
-            </Button>
-          </DisabledFieldTooltip>
-          {(value || previewUrl) && (
-            <DisabledFieldTooltip
-              disabled={disableButtons}
-              reason={disabledReason}
-            >
-              <Button
-                type='button'
-                variant='secondary'
-                size='sm'
-                onClick={removeAvatar}
-                disabled={disableButtons}
-              >
-                <Trash2 /> Remove
-              </Button>
-            </DisabledFieldTooltip>
-          )}
-        </div>
-        <p className='text-muted-foreground text-xs'>
-          Square image up to 2MB. PNG, JPEG, WEBP, or GIF.
-        </p>
-      </div>
-      <input
-        ref={fileInputRef}
-        type='file'
-        accept='image/png,image/jpeg,image/webp,image/gif'
-        hidden
-        onChange={handleFileChange}
-      />
-    </div>
+    <ImageUploadControls
+      preview={
+        <Avatar size='xl'>
+          {remoteImage ? (
+            <AvatarImage src={remoteImage} alt={avatarLabel ?? 'Photo'} />
+          ) : null}
+          <AvatarFallback className='font-semibold uppercase'>
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+      }
+      hasImage={Boolean(value || previewUrl)}
+      noun='photo'
+      hint='Square image up to 2MB. PNG, JPEG, WEBP, or GIF.'
+      accept='image/png,image/jpeg,image/webp,image/gif'
+      onFile={file => void handleFile(file)}
+      onRemove={removeAvatar}
+      disabled={disabled}
+      isUploading={isUploading}
+    />
   )
 }

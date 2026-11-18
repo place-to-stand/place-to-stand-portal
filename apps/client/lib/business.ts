@@ -4,8 +4,8 @@ import { cache } from 'react'
 import { connection } from 'next/server'
 
 import { readBusinessIdentity, type BusinessIdentity } from '@pts/db/business'
-import type { EmailBrand } from '@pts/email'
-import type { InvoiceIssuer } from '@pts/pdf'
+import { emailBrandFor } from '@pts/email'
+import { invoiceIssuerFor } from '@pts/pdf'
 import { setCompanyTimeZone } from '@pts/ui/dates'
 
 import { db } from '@/lib/db'
@@ -41,22 +41,6 @@ export async function getBusinessOrNull(): Promise<BusinessIdentity | null> {
   }
 }
 
-export function emailBrandFor(identity: BusinessIdentity): EmailBrand {
-  return {
-    name: identity.name,
-    siteUrl: identity.website,
-    siteLabel: identity.websiteLabel,
-  }
-}
-
-export function invoiceIssuerFor(identity: BusinessIdentity): InvoiceIssuer {
-  return {
-    name: identity.name,
-    legalName: identity.legalName,
-    websiteLabel: identity.websiteLabel,
-  }
-}
-
 /**
  * Props for `BrandLogo`. The images are served by the internal portal, which
  * owns the upload.
@@ -76,3 +60,6 @@ export function brandPropsFor(identity: BusinessIdentity) {
       : null,
   }
 }
+
+// One shape for every app, built in @pts/email and @pts/pdf.
+export { emailBrandFor, invoiceIssuerFor }

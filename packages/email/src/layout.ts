@@ -27,8 +27,21 @@ export type EmailBrand = {
 
 export const DEFAULT_EMAIL_BRAND: EmailBrand = {
   name: 'Place To Stand',
-  siteUrl: 'https://placetostandagency.com',
-  siteLabel: 'placetostandagency.com',
+  siteUrl: null,
+  siteLabel: null,
+}
+
+/** The email brand for a business (Settings → Business). */
+export function emailBrandFor(business: {
+  name: string
+  website: string | null
+  websiteLabel: string | null
+}): EmailBrand {
+  return {
+    name: business.name,
+    siteUrl: business.website,
+    siteLabel: business.websiteLabel,
+  }
 }
 
 /**

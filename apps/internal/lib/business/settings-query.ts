@@ -3,13 +3,21 @@ import 'server-only'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import { DEFAULT_TIME_ZONE } from '@pts/db/business'
-import { personNameSql } from '@pts/db/names'
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import { businessSettings, companies, users } from '@pts/db/schema'
 
 import { db } from '@/lib/db'
 import { eligiblePartner } from '@/lib/queries/reports/profit-share-partners'
 
 import { businessImageSrc } from './images'
+
+/** A staff sign-in the profit share can be split with. */
+export type ProfitShareStaff = {
+  id: string
+  name: string
+  email: string
+  hasPhoto: boolean
+}
 
 /** What the Business page form starts from: the stored values, no fallbacks. */
 export type BusinessSettingsFormData = {
@@ -32,7 +40,7 @@ export type BusinessSettingsFormData = {
   profitShareMinimumBalance: string
   profitSharePartnerIds: string[]
   /** Staff who can be picked as profit-share partners. */
-  staff: { id: string; name: string }[]
+  staff: ProfitShareStaff[]
   logoSrc: string | null
   iconSrc: string | null
   confirmedAt: string | null
@@ -73,7 +81,12 @@ export async function loadBusinessSettingsForm(): Promise<BusinessSettingsFormDa
       .from(businessSettings)
       .limit(1),
     db
-      .select({ id: users.id, name: staffName })
+      .select({
+        id: users.id,
+        name: staffName,
+        email: users.email,
+        hasPhoto: sql<boolean>`${personAvatarSql} is not null`,
+      })
       .from(users)
       .where(eligiblePartner)
       .orderBy(staffName),
