@@ -8,7 +8,7 @@
  *
  * Rounding down means a stray cent stays in the account instead of being
  * paid twice. The start month, minimum balance and partners are set on
- * Settings → Business (`readProfitSharePolicy` in @pts/db/business); a
+ * Settings → Billing (`readProfitSharePolicy` in @pts/db/business); a
  * closed month keeps the figures frozen in its snapshot.
  *
  * Pure module (no server-only): the close drift comparison and the UI both

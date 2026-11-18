@@ -139,33 +139,6 @@
       "count": 1
     }
   },
-  "app/(dashboard)/invoices/settings/_components/product-catalog-section.tsx": {
-    "max-lines": {
-      "count": 1
-    },
-    "pts/use-id-not-fixed-id": {
-      "count": 14
-    },
-    "typescript/no-misused-promises": {
-      "count": 1
-    }
-  },
-  "app/(dashboard)/invoices/settings/_components/tax-rates-section.tsx": {
-    "max-lines": {
-      "count": 1
-    },
-    "pts/use-id-not-fixed-id": {
-      "count": 8
-    },
-    "typescript/no-misused-promises": {
-      "count": 1
-    }
-  },
-  "app/(dashboard)/invoices/settings/actions.ts": {
-    "typescript/no-deprecated": {
-      "count": 2
-    }
-  },
   "app/(dashboard)/leads/_actions/move-lead.ts": {
     "typescript/no-deprecated": {
       "count": 1
@@ -367,9 +340,20 @@
       "count": 2
     }
   },
-  "app/(dashboard)/settings/integrations/integrations-panel.tsx": {
+  "app/(dashboard)/settings/billing/_components/product-catalog-section.tsx": {
     "max-lines": {
       "count": 1
+    },
+    "pts/use-id-not-fixed-id": {
+      "count": 14
+    }
+  },
+  "app/(dashboard)/settings/billing/_components/tax-rates-section.tsx": {
+    "max-lines": {
+      "count": 1
+    },
+    "pts/use-id-not-fixed-id": {
+      "count": 8
     }
   },
   "app/(dashboard)/settings/templates/_components/pdfs-gallery.tsx": {
@@ -606,17 +590,6 @@
   },
   "components/integrations/token-integration-card.tsx": {
     "typescript/no-deprecated": {
-      "count": 1
-    }
-  },
-  "components/layout/edit-profile-dialog.tsx": {
-    "max-lines": {
-      "count": 1
-    },
-    "typescript/no-deprecated": {
-      "count": 1
-    },
-    "typescript/no-misused-promises": {
       "count": 1
     }
   },

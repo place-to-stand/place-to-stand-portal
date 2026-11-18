@@ -2,7 +2,10 @@ import 'server-only'
 
 import { asc, and, isNull, eq } from 'drizzle-orm'
 
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
+
+/** The default client, or the transaction Settings → Billing saves in. */
+type Executor = typeof db | DbTx
 import { productCatalogItems } from '@/lib/db/schema'
 
 export type ProductCatalogItemRow = {
@@ -106,9 +109,10 @@ export async function listAllProductCatalogItems(): Promise<
 // ---------------------------------------------------------------------------
 
 export async function getProductCatalogItemById(
-  id: string
+  id: string,
+  executor: Executor = db
 ): Promise<ProductCatalogItemRow | null> {
-  const rows = await db
+  const rows = await executor
     .select(productCatalogSelection)
     .from(productCatalogItems)
     .where(
@@ -125,11 +129,12 @@ export async function getProductCatalogItemById(
 // ---------------------------------------------------------------------------
 
 export async function createProductCatalogItem(
-  input: ProductCatalogItemInput
+  input: ProductCatalogItemInput,
+  executor: Executor = db
 ): Promise<ProductCatalogItemRow> {
   const now = new Date().toISOString()
 
-  const [row] = await db
+  const [row] = await executor
     .insert(productCatalogItems)
     .values({
       name: input.name,
@@ -154,11 +159,12 @@ export async function createProductCatalogItem(
 
 export async function updateProductCatalogItem(
   id: string,
-  input: Partial<ProductCatalogItemInput>
+  input: Partial<ProductCatalogItemInput>,
+  executor: Executor = db
 ): Promise<ProductCatalogItemRow | null> {
   const now = new Date().toISOString()
 
-  const rows = await db
+  const rows = await executor
     .update(productCatalogItems)
     .set({
       ...(input.name !== undefined && { name: input.name }),

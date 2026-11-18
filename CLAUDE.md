@@ -101,7 +101,7 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 - **Email**: Resend
 - **GitHub Integration**: GitHub App for repo linking (`packages/github`)
 - **Vercel / Supabase linking**: staff personal access tokens stored encrypted in `oauth_connections`; provider adapters in `apps/internal/lib/integrations/`, routes under `api/integrations/[provider]/`
-- **Mercury**: one company-wide read-only token (`MERCURY_API_TOKEN`, not per person) for the monthly close profit share — month-end balance in `lib/integrations/mercury/`, the split math in `lib/billing/profit-share.ts`; start month, minimum balance and partners are set on Settings → Business (`business_settings.profit_share_*`, off until set); frozen beside the report in each close snapshot
+- **Mercury**: one company-wide read-only token (`MERCURY_API_TOKEN`, not per person) for the monthly close profit share — month-end balance in `lib/integrations/mercury/`, the split math in `lib/billing/profit-share.ts`; start month, minimum balance and partners are set on Settings → Billing (`business_settings.profit_share_*`, off until set); frozen beside the report in each close snapshot
 
 ### Route Organization
 
@@ -113,12 +113,12 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 │   ├── companies/    # Companies and their billing (archive, activity); /clients/* redirects here
 │   ├── people/       # People and their sign-ins (archive, activity); /contacts/* redirects here
 │   ├── hour-blocks/  # Prepaid hour block management (archive, activity)
-│   ├── invoices/     # Invoicing (settings, archive, activity)
+│   ├── invoices/     # Invoicing (archive, activity); products and tax rates are Settings → Billing
 │   ├── leads/        # Lead kanban board (board, archive, activity)
 │   ├── my/           # Current user's pages (home, tasks)
 │   ├── projects/     # Project workspace (tabbed, see below; archive, activity)
 │   ├── reports/      # Reports (monthly-close)
-│   ├── settings/     # Users, projects, integrations
+│   ├── settings/     # Sidebar "Admin": Settings (tabs: business, billing (products, tax rates, profit share), integrations (the agency's services)), roles & permissions, templates. A person's own settings are the Account sheet, not here
 │   └── submissions/  # Website form submissions
 ├── (public)/         # Publicly shared pages (e.g. share/invoices/[token])
 ├── api/              # API routes: v1/, cli/v1/, tasks/, task-comments/, my-tasks/,
@@ -429,6 +429,8 @@ Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never
 - **Two saves**: Save and close (⌘S) clears the entity param, for create _and_ edit; Save (⇧⌘S) keeps the sheet open through `useSaveAndStay` (`lib/sheets/use-save-and-stay.ts`), which re-baselines an edit sheet and turns a create sheet into the new record's sheet by swapping `new` for the id in the URL. Never transition a create sheet into edit mode any other way (see `task-sheet-closes-on-save`).
 - Paginated/filtered list pages resolve the param server-side with `resolveSheetDeepLink()` so a link to a row on page 3 still opens, and cross-redirect between active/archive tabs.
 - Generate links with the builders in `lib/sheets/hrefs.ts` (board task links come from `buildBoardPath`), never string-concatenated inline.
+
+**Account sheet:** the signed-in person's own settings (profile, their Google/GitHub/Vercel/Supabase connections and connected apps, preferences) are one sheet over any page, `?account=<profile|integrations|preferences>` (`lib/account/use-account-sheet.ts`, `components/account/`), opened from the user menu, Ctrl K and "Connect in Account" buttons. It is not a record, so it sits outside the sheet stack and layers on top (`SheetContent aboveStack`). Every staff role gets all of it (`integrations.personal`); the agency's own services stay on Settings → Integrations (`integrations.manage`). OAuth callbacks return to `/my/home?account=integrations`.
 
 **Retired routes and params:** static redirects live in `apps/internal/next.config.ts` `redirects()`; only routes that need a lookup stay as redirect pages (`/clients/[clientSlug]`, `/settings/users`). Old `?client=`/`?user=` sheet params are mapped in `proxy.ts`.
 

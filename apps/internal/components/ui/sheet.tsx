@@ -5,7 +5,11 @@ import { Dialog as SheetPrimitive } from '@base-ui/react/dialog'
 import { XIcon } from 'lucide-react'
 
 import { SheetNoticeProvider } from '@/components/sheets/sheet-notice-slot'
-import { sheetLayerZ, useSheetStackEntry } from '@/lib/sheets/stack-entry'
+import {
+  sheetLayerZ,
+  TOP_SHEET_POSITION,
+  useSheetStackEntry,
+} from '@/lib/sheets/stack-entry'
 import { cn } from '@/lib/utils'
 
 // Don't close the sheet when a press lands in a toast or inside another
@@ -96,9 +100,11 @@ const SheetPortal = ({ ...props }: SheetPrimitive.Portal.Props) => {
 const SheetOverlay = ({
   className,
   style,
+  aboveStack = false,
   ...props
-}: SheetPrimitive.Backdrop.Props) => {
-  const zIndex = sheetLayerZ(useSheetStackEntry()?.position)
+}: SheetPrimitive.Backdrop.Props & { aboveStack?: boolean }) => {
+  const position = useSheetStackEntry()?.position
+  const zIndex = sheetLayerZ(aboveStack ? TOP_SHEET_POSITION : position)
   return (
     <SheetPrimitive.Backdrop
       data-slot='sheet-overlay'
@@ -203,6 +209,11 @@ const SheetContent = React.forwardRef<
      * Close animations still play.
      */
     skipMountAnimation?: boolean
+    /**
+     * Layer above every entity sheet. Only for a sheet outside the stack
+     * that opens over it (Account); stacked sheets layer by position.
+     */
+    aboveStack?: boolean
   }
 >(
   (
@@ -214,13 +225,15 @@ const SheetContent = React.forwardRef<
       showOverlay = true,
       hideCloseButton = false,
       skipMountAnimation = false,
+      aboveStack = false,
       style,
       ...props
     },
     ref
   ) => {
     // Stack position, not mount order, decides which sheet is on top.
-    const layerZ = sheetLayerZ(useSheetStackEntry()?.position)
+    const stackPosition = useSheetStackEntry()?.position
+    const layerZ = sheetLayerZ(aboveStack ? TOP_SHEET_POSITION : stackPosition)
     const isHorizontal = side === 'left' || side === 'right'
     const popupRef = React.useRef<HTMLDivElement | null>(null)
     const [popupNode, setPopupNode] = React.useState<HTMLDivElement | null>(
@@ -284,6 +297,7 @@ const SheetContent = React.forwardRef<
       <SheetPortal>
         {showOverlay && (
           <SheetOverlay
+            aboveStack={aboveStack}
             className={
               skipMountAnimation ? 'data-open:animate-none' : undefined
             }

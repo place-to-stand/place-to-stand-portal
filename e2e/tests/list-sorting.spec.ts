@@ -17,7 +17,7 @@ const LISTS = [
   '/hour-blocks',
   '/invoices',
   '/invoices/archive',
-  '/invoices/settings',
+  '/settings/billing',
   '/submissions',
   '/submissions/archive',
   '/time-logs',

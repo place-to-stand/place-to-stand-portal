@@ -44,6 +44,63 @@ export function setCompanyTimeZone(timeZone: string | null | undefined) {
   }
 }
 
+export type TimeZoneDescription = {
+  /** "Central Time", or null when the runtime only knows the offset. */
+  genericName: string | null
+  /** "CT", or null when the runtime only knows the offset. */
+  shortGeneric: string | null
+  /** "GMT−6" (real minus sign), "GMT+5:30", or "GMT" for UTC. */
+  offsetLabel: string
+  /** Minutes east of UTC on `now` (−360 for Chicago in November). */
+  offsetMinutes: number
+}
+
+const OFFSET_RE = /^(?:GMT|UTC)(?:([+-\u2212])(\d{1,2})(?::(\d{2}))?)?$/
+
+/**
+ * How a time zone reads in a picker on `now`: its generic name and offset.
+ * The offset follows that date, so daylight saving shows. Null for a name
+ * the runtime doesn't know.
+ */
+export function describeTimeZone(
+  timeZone: string,
+  now: Date = new Date()
+): TimeZoneDescription | null {
+  const part = (
+    timeZoneName: 'longGeneric' | 'shortGeneric' | 'shortOffset'
+  ) => {
+    try {
+      return (
+        new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName })
+          .formatToParts(now)
+          .find(entry => entry.type === 'timeZoneName')?.value ?? null
+      )
+    } catch {
+      return undefined
+    }
+  }
+  const offset = part('shortOffset')
+  if (offset === undefined || offset === null) return null
+  const match = OFFSET_RE.exec(offset)
+  const sign = match?.[1] ? (match[1] === '+' ? 1 : -1) : 1
+  const hours = Number(match?.[2] ?? 0)
+  const minutes = Number(match?.[3] ?? 0)
+  const offsetMinutes = sign * (hours * 60 + minutes)
+  const offsetLabel =
+    offsetMinutes === 0
+      ? 'GMT'
+      : offset.replace(/^UTC/, 'GMT').replace('-', '\u2212')
+  // A zone with no generic name reads back as its offset ("GMT-3").
+  const named = (value: string | null | undefined) =>
+    value && !OFFSET_RE.test(value) ? value : null
+  return {
+    genericName: named(part('longGeneric')),
+    shortGeneric: named(part('shortGeneric')),
+    offsetLabel,
+    offsetMinutes,
+  }
+}
+
 const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/
 
 type CalendarDateStyle = Pick<

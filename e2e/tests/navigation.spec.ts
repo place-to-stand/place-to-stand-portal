@@ -2,16 +2,32 @@ import { expect, test } from '@playwright/test'
 
 import { expectHealthy } from './helpers'
 
-test('admin sidebar: Settings starts with Integrations and ends with Design system', async ({
+test('admin sidebar: Admin starts with Settings and ends with Design system', async ({
   page,
 }) => {
   await page.goto('/my/home')
-  const settings = page
+  const admin = page
     .locator('[data-sidebar="group"]')
-    .filter({ hasText: 'Settings' })
-  const items = settings.locator('[data-sidebar="menu-button"]')
-  await expect(items.first()).toContainText('Integrations')
+    .filter({ hasText: 'Admin' })
+  const items = admin.locator('[data-sidebar="menu-button"]')
+  await expect(items.first()).toContainText('Settings')
   await expect(items.last()).toContainText('Design system')
+})
+
+test('Settings is one tabbed page; /settings lands on Business', async ({
+  page,
+}) => {
+  await page.goto('/settings')
+  await expect(page).toHaveURL(/\/settings\/business$/)
+  for (const tab of ['Business', 'Billing', 'Integrations']) {
+    await expect(page.getByRole('tab', { name: tab })).toBeVisible()
+  }
+  const item = page.locator('[data-sidebar="menu-button"]', {
+    hasText: 'Settings',
+  })
+  await page.getByRole('tab', { name: 'Billing' }).click()
+  await expect(page).toHaveURL(/\/settings\/billing$/)
+  await expect(item).toHaveAttribute('data-active', 'true')
 })
 
 test('the Design system item is active on /design', async ({ page }) => {
@@ -62,4 +78,23 @@ test('old ?client= sheet links open the company sheet', async ({ page }) => {
   await page.goto(`/companies?client=${id}&task=new`)
   // Renamed in place, so the stack order (company under task) is kept.
   await expect(page).toHaveURL(new RegExp(`\\?company=${id}&task=new$`))
+})
+
+test('the user menu opens the Account sheet; Settings → Integrations is company only', async ({
+  page,
+}) => {
+  await page.goto('/my/home')
+  await page.locator('[data-sidebar="footer"] button').first().click()
+  await page.getByRole('menuitem', { name: 'Account' }).click()
+  await expect(page).toHaveURL(/[?&]account=profile/)
+  const sheet = page.getByRole('dialog', { name: 'Account' })
+  for (const heading of ['Profile', 'Integrations', 'Preferences']) {
+    await expect(sheet.getByRole('heading', { name: heading })).toBeVisible()
+  }
+  await page.keyboard.press('Escape')
+  await expect(page).not.toHaveURL(/account=/)
+
+  await page.goto('/settings/integrations')
+  await expect(page.getByText('Mercury').first()).toBeVisible()
+  await expect(page.getByText('Connected apps')).toHaveCount(0)
 })

@@ -5,11 +5,12 @@ import { Loader2, Trash2, Plus, RefreshCw } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Button } from '@pts/ui/button'
-import { Badge } from '@pts/ui/badge'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
+
+import { INTEGRATION_ROW_CLASS } from './integration-card'
 
 const PROVIDER_NAMES = {
   google: 'Google',
@@ -119,45 +120,32 @@ export function ConnectedAccountsList({
 
   return (
     <>
-      <div className='space-y-3'>
+      <div>
         {activeAccounts.map(account => {
           const isCurrentlyDisconnecting =
             disconnectingId === account.id || isDisconnecting === account.id
 
           return (
-            <div
-              key={account.id}
-              className='flex items-center justify-between rounded-lg border p-3'
-            >
-              <div className='flex items-center gap-3'>
-                <Avatar size='lg'>
+            <div key={account.id} className={INTEGRATION_ROW_CLASS}>
+              <div className='flex min-w-0 items-center gap-2'>
+                <Avatar size='xs'>
                   <AvatarImage src={getAvatarUrl(account)} />
                   <AvatarFallback>{getInitials(account)}</AvatarFallback>
                 </Avatar>
-                <div className='flex flex-col'>
-                  <span className='text-sm font-medium'>
+                <div className='flex min-w-0 items-baseline gap-2'>
+                  <span className='shrink-0 text-sm'>
                     {getDisplayLabel(account)}
                   </span>
-                  {account.email && provider === 'github' && (
-                    <span className='text-muted-foreground text-xs'>
-                      {account.email}
-                    </span>
-                  )}
-                  <span className='text-muted-foreground text-xs'>
+                  <span className='text-muted-foreground truncate text-xs'>
+                    {account.email && provider === 'github'
+                      ? `${account.email} · `
+                      : ''}
                     Connected {formatDate(account.connectedAt)}
                   </span>
                 </div>
               </div>
 
-              <div className='flex items-center gap-2'>
-                <Badge
-                  variant={
-                    account.status === 'ACTIVE' ? 'default' : 'secondary'
-                  }
-                >
-                  {account.status === 'ACTIVE' ? 'Active' : account.status}
-                </Badge>
-
+              <div className='flex shrink-0 items-center gap-1'>
                 {onUpdatePermissions && (
                   <RowActionButton
                     label='Update permissions'

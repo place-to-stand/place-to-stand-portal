@@ -36,18 +36,18 @@ export async function GET(request: NextRequest) {
 
   // Handle user denial
   if (error) {
-    return landing('/settings/integrations?error=access_denied')
+    return landing('/my/home?account=integrations&error=access_denied')
   }
 
   // Validate required params
   if (!code || !state) {
-    return landing('/settings/integrations?error=invalid_request')
+    return landing('/my/home?account=integrations&error=invalid_request')
   }
 
   // Validate state
   const isValidState = await validateOAuthState(state)
   if (!isValidState) {
-    return landing('/settings/integrations?error=invalid_state')
+    return landing('/my/home?account=integrations&error=invalid_state')
   }
 
   try {
@@ -153,9 +153,9 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    return landing('/settings/integrations?success=google_connected')
+    return landing('/my/home?account=integrations&success=google_connected')
   } catch (err) {
     console.error('Google OAuth error:', err)
-    return landing('/settings/integrations?error=oauth_failed')
+    return landing('/my/home?account=integrations&error=oauth_failed')
   }
 }

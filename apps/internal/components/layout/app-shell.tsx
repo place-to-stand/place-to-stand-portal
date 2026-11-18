@@ -1,13 +1,14 @@
 'use client'
 
 import * as React from 'react'
-import { useMemo, type ReactNode } from 'react'
+import { Suspense, useMemo, type ReactNode } from 'react'
 
 import type { AppUser } from '@/lib/auth/session'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { BusinessNameProvider } from '@/components/providers/business-name'
 import { ViewerAccessProvider } from '@/components/providers/viewer-access-provider'
 
+import { AccountSheet } from '@/components/account/account-sheet'
 import { KeyboardShortcutsProvider } from '@/components/keyboard/keyboard-shortcuts-dialog'
 
 import { Sidebar, type SidebarBrand } from './sidebar'
@@ -75,6 +76,10 @@ export function AppShell({
                 {banner}
                 <ListRefreshProvider>{children}</ListRefreshProvider>
               </div>
+              {/* Reads `?account=`; Suspense keeps the URL read client-only. */}
+              <Suspense fallback={null}>
+                <AccountSheet user={user} />
+              </Suspense>
             </SidebarProvider>
           </CommandPaletteProvider>
         </KeyboardShortcutsProvider>

@@ -204,19 +204,21 @@ export function AvatarUploadField({
 
   return (
     <ImageUploadControls
-      preview={
-        <Avatar size='xl'>
-          {remoteImage ? (
-            <AvatarImage src={remoteImage} alt={avatarLabel ?? 'Photo'} />
-          ) : null}
-          <AvatarFallback className='font-semibold uppercase'>
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+      shape='circle'
+      image={
+        value || previewUrl ? (
+          <Avatar size='xl'>
+            {remoteImage ? (
+              <AvatarImage src={remoteImage} alt={avatarLabel ?? 'Photo'} />
+            ) : null}
+            <AvatarFallback className='font-semibold uppercase'>
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+        ) : null
       }
-      hasImage={Boolean(value || previewUrl)}
       noun='photo'
-      hint='Square image up to 2MB. PNG, JPEG, WEBP, or GIF.'
+      hint='Image up to 2 MB, shown in a circle. PNG, JPEG, WEBP or GIF.'
       accept='image/png,image/jpeg,image/webp,image/gif'
       onFile={file => void handleFile(file)}
       onRemove={removeAvatar}

@@ -46,4 +46,10 @@ export const useSheetStackEntry = () => useContext(SheetStackEntryContext)
  * order). 40 up, under the z-50 popovers, menus and dialogs a sheet opens.
  */
 export const sheetLayerZ = (position: number | undefined) =>
-  40 + Math.min(Math.max(position ?? 0, 0), 9)
+  40 + Math.min(Math.max(position ?? 0, 0), TOP_SHEET_POSITION)
+
+/**
+ * The highest layer: a sheet outside the entity stack (Account) that opens
+ * over whatever sheets are up takes it (`SheetContent aboveStack`).
+ */
+export const TOP_SHEET_POSITION = 9

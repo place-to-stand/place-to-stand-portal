@@ -22,6 +22,7 @@ import {
   Sheet,
   SheetContent,
 } from '@/components/ui/sheet'
+// oxlint-disable-next-line no-restricted-imports -- a read-only sheet: its footer holds actions, not a save
 import { SheetFooterBar } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'

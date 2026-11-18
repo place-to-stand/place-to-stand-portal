@@ -9,7 +9,7 @@ export const textSchema = businessSettingsSchema.omit({
 })
 export type TextInput = z.input<typeof textSchema>
 export type TextOutput = z.output<typeof textSchema>
-export type TextField = Exclude<keyof TextInput, 'profitSharePartnerIds'>
+export type TextField = keyof TextInput
 
 export type Field = {
   name: TextField
@@ -88,17 +88,18 @@ export const SECTIONS: { title: string; fields: Field[] }[] = [
         optional: true,
         type: 'email',
       },
-      {
-        name: 'sendingEmail',
-        label: 'Sending email',
-        optional: true,
-        type: 'email',
-      },
+      // Both emails in the right column: Phone | Inbox, Booking | Sending.
       {
         name: 'bookingUrl',
         label: 'Booking link',
         optional: true,
         type: 'url',
+      },
+      {
+        name: 'sendingEmail',
+        label: 'Sending email',
+        optional: true,
+        type: 'email',
       },
     ],
   },

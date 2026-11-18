@@ -16,7 +16,7 @@ type SummaryStripProps = {
   profitShare: ProfitShareState
   /** The month is still running: every figure is "so far". */
   inProgress: boolean
-  /** First month of the profit share (Settings → Business), or null: off. */
+  /** First month of the profit share (Settings → Billing), or null: off. */
   profitShareStartsOn: string | null
 }
 
@@ -87,7 +87,7 @@ function profitShareStat(
         value: '—',
         caption: startsOn
           ? `Starts with ${formatCalendarDate(startsOn, { month: 'long', year: 'numeric' })}`
-          : 'Not set up (Settings → Business)',
+          : 'Not set up (Settings → Billing)',
         muted: true,
       }
   }

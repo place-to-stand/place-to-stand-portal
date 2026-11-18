@@ -76,8 +76,10 @@ const nextConfig: NextConfig = {
       // Index routes.
       to('/my/tasks', '/my/tasks/board'),
       to('/reports', '/reports/monthly-close'),
-      to('/settings', '/settings/permissions'),
+      to('/settings', '/settings/business'),
       to('/settings/templates', '/settings/templates/emails'),
+      // Products, tax rates and the profit share live on Settings → Billing.
+      to('/invoices/settings', '/settings/billing'),
       // Contacts are called People.
       to('/contacts', '/people'),
       to('/contacts/:path*', '/people/:path*'),

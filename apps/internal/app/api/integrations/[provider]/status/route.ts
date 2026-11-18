@@ -8,7 +8,7 @@ export async function GET(
   _request: Request,
   { params }: RouteContext<'/api/integrations/[provider]/status'>
 ) {
-  const { user, denied } = await authorizeRoute('integrations.manage')
+  const { user, denied } = await authorizeRoute('integrations.personal')
   if (denied) return denied
   const resolved = resolveProviderParam((await params).provider)
   if ('response' in resolved) {

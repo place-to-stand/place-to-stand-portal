@@ -237,7 +237,7 @@ function isMissingRelation(error: unknown): boolean {
   return false
 }
 
-/** The partner profit share as set on Settings → Business. */
+/** The partner profit share as set on Settings → Billing. */
 export type ProfitSharePolicy = {
   /** First month (YYYY-MM-01) it applies to. */
   startsOn: string

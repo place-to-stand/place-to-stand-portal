@@ -4,6 +4,10 @@ import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { Tabs, TabsList, TabsTrigger } from '@pts/ui/tabs'
+import {
+  confirmDiscardAll,
+  PAGE_FORM_GUARD_ID,
+} from '@/lib/sheets/discard-guards'
 import { cn } from '@/lib/utils'
 
 import { TOOLBAR_TAB_CLASS, TOOLBAR_TABS_LIST_CLASS } from './tabs-nav-classes'
@@ -50,10 +54,13 @@ export function TabsNav({ tabs, activeTab, className }: TabsNavProps) {
   const handleValueChange = useCallback(
     (nextValue: string) => {
       const target = tabs.find(tab => tab.value === nextValue)
-      if (target) {
+      if (!target) return
+      // A page form with unsaved changes (Settings → Billing) asks first;
+      // "Stay" leaves the tab where it was.
+      confirmDiscardAll([PAGE_FORM_GUARD_ID], () => {
         setShownTab(nextValue)
         router.push(target.href)
-      }
+      })
     },
     [router, tabs, setShownTab]
   )

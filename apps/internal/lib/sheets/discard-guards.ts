@@ -10,6 +10,12 @@ type Confirm = (next: () => void, stay?: () => void) => void
 // own unsaved work under the same id.
 const guards = new Map<string, Set<Confirm>>()
 
+/**
+ * The page's own form (`PageForm`) while it has unsaved changes. Leaving the
+ * page (the Ctrl K palette) asks it after the open sheets.
+ */
+export const PAGE_FORM_GUARD_ID = 'page-form'
+
 /** Called by a sheet while it has unsaved changes. Returns the unregister. */
 export function registerDiscardGuard(id: string, confirm: Confirm) {
   const set = guards.get(id) ?? new Set<Confirm>()
