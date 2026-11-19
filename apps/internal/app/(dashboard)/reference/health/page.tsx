@@ -1,20 +1,24 @@
 import type { Metadata } from 'next'
 
-import { PagePanel } from '@/components/layout/page-panel'
 import { PageShell } from '@/components/layout/page-shell'
 import { requirePage } from '@/lib/auth/session'
+import { serverEnv } from '@/lib/env.server'
 import {
   countStaleUnreadNotifications,
+  listConnectionHealth,
   readEmailQueueHealth,
 } from '@/lib/health/queries'
-import {
-  describeSchedule,
-  listScheduledJobs,
-} from '@/lib/health/scheduled-jobs'
+import { readJobRuns, readStripeHealth } from '@/lib/health/runs'
+import { listScheduledJobs } from '@/lib/health/scheduled-jobs'
 import {
   referenceCrumbs,
   referenceTabsFor,
 } from '@/lib/navigation/reference-tabs'
+
+import { ConnectionsPanel } from './_components/connections-panel'
+import { HealthPanel, Stat } from './_components/health-parts'
+import { JobsPanel } from './_components/jobs-panel'
+import { StripePanel } from './_components/stripe-panel'
 
 export const metadata: Metadata = {
   title: 'System health | Reference',
@@ -22,19 +26,39 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
+/** The company-wide keys the portal can't work without, set or not. */
+function companyKeys() {
+  return [
+    {
+      name: 'Stripe',
+      set: Boolean(serverEnv.STRIPE_WEBHOOK_SECRET),
+      does: 'Hears about invoice payments. Without it, paid invoices stay unpaid here.',
+    },
+    {
+      name: 'Mercury',
+      set: Boolean(serverEnv.MERCURY_API_TOKEN),
+      does: 'Reads the month-end bank balance for the profit share.',
+    },
+  ]
+}
+
 /**
  * Reference → System health: whether the work the portal does on its own is
- * keeping up. Today that's the website form email queue and the scheduled
- * jobs; job runs aren't recorded yet, so each job shows its schedule only.
+ * keeping up: scheduled jobs, Stripe payments, connected accounts and the
+ * website form email queue.
  */
 export default async function SystemHealthPage() {
   const user = await requirePage('settings.health')
-  const [queue, staleUnread] = await Promise.all([
+  const jobs = listScheduledJobs()
+  const [queue, staleUnread, runs, stripe, connections] = await Promise.all([
     readEmailQueueHealth(),
     countStaleUnreadNotifications(),
+    readJobRuns(jobs.map(job => job.path)),
+    readStripeHealth(),
+    listConnectionHealth(),
   ])
-  const jobs = listScheduledJobs()
-  const healthy = queue.stuck === 0 && queue.gaveUp === 0
+  const now = new Date()
+  const queueHealthy = queue.stuck === 0 && queue.gaveUp === 0
 
   return (
     <PageShell
@@ -44,27 +68,25 @@ export default async function SystemHealthPage() {
     >
       <div className='w-full space-y-6'>
         <p className='text-muted-foreground text-sm'>
-          Whether the work the portal does on its own is keeping up. A queue
-          should drain to zero; numbers that stay up mean something is stuck.
+          Whether the work the portal does on its own is keeping up. Anything in
+          red needs a look.
         </p>
 
-        <PagePanel
-          aria-label='Website form emails'
-          flush
-          className='overflow-hidden'
+        <JobsPanel jobs={jobs} runs={runs} now={now} />
+
+        <StripePanel stripe={stripe} now={now} />
+
+        <ConnectionsPanel
+          connections={connections}
+          keys={companyKeys()}
+          now={now}
+        />
+
+        <HealthPanel
+          title='Website form emails'
+          status={queueHealthy ? 'Draining' : 'Needs a look'}
+          alert={!queueHealthy}
         >
-          <div className='bg-muted/40 flex items-center justify-between gap-3 border-b px-4 py-2.5'>
-            <h2 className='text-sm font-semibold'>Website form emails</h2>
-            <span
-              className={
-                healthy
-                  ? 'text-muted-foreground text-xs'
-                  : 'text-destructive text-xs font-semibold'
-              }
-            >
-              {healthy ? 'Draining' : 'Needs a look'}
-            </span>
-          </div>
           <dl className='grid grid-cols-2 divide-x divide-y sm:grid-cols-4 sm:divide-y-0'>
             <Stat
               label='Waiting'
@@ -89,40 +111,9 @@ export default async function SystemHealthPage() {
               hint='Team notices sent in the last 7 days.'
             />
           </dl>
-        </PagePanel>
+        </HealthPanel>
 
-        <PagePanel
-          aria-label='Scheduled jobs'
-          flush
-          className='overflow-hidden'
-        >
-          <div className='bg-muted/40 border-b px-4 py-2.5'>
-            <h2 className='text-sm font-semibold'>Scheduled jobs</h2>
-          </div>
-          <ul className='divide-y'>
-            {jobs.map(job => (
-              <li
-                key={job.path}
-                className='grid grid-cols-1 gap-1 px-4 py-3 md:grid-cols-[minmax(0,14rem)_minmax(0,12rem)_minmax(0,1fr)] md:gap-4'
-              >
-                <span className='text-sm font-semibold'>{job.name}</span>
-                <span className='text-muted-foreground text-sm'>
-                  {describeSchedule(job.schedule)}
-                </span>
-                <span className='text-sm'>{job.does}</span>
-              </li>
-            ))}
-          </ul>
-          <p className='text-muted-foreground border-t px-4 py-2.5 text-xs'>
-            Runs aren&rsquo;t recorded yet, so last run and failures don&rsquo;t
-            show here. Vercel&rsquo;s Cron Jobs page has them.
-          </p>
-        </PagePanel>
-
-        <PagePanel aria-label='Notifications' flush className='overflow-hidden'>
-          <div className='bg-muted/40 border-b px-4 py-2.5'>
-            <h2 className='text-sm font-semibold'>Notifications</h2>
-          </div>
+        <HealthPanel title='Notifications'>
           <dl className='grid grid-cols-2 sm:grid-cols-4'>
             <Stat
               label='Unread over a week'
@@ -130,36 +121,8 @@ export default async function SystemHealthPage() {
               hint='Across everyone. A high number means people stopped reading them.'
             />
           </dl>
-        </PagePanel>
+        </HealthPanel>
       </div>
     </PageShell>
-  )
-}
-
-function Stat({
-  label,
-  value,
-  hint,
-  alert = false,
-}: {
-  label: string
-  value: number
-  hint: string
-  alert?: boolean
-}) {
-  return (
-    <div className='flex flex-col gap-1 px-4 py-3'>
-      <dt className='text-muted-foreground text-xs'>{label}</dt>
-      <dd
-        className={
-          alert
-            ? 'text-destructive text-2xl font-semibold tabular-nums'
-            : 'text-2xl font-semibold tabular-nums'
-        }
-      >
-        {value}
-      </dd>
-      <dd className='text-muted-foreground text-xs'>{hint}</dd>
-    </div>
   )
 }

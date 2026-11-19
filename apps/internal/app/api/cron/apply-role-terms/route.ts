@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { serverEnv } from '@/lib/env.server'
 import { verifyIntakeToken } from '@/lib/integrations/verify-intake-token'
 import { applyDueRoleTerms } from '@/lib/users/services/role'
+import { withJobRun } from '@/lib/health/runs'
 
 /**
  * Daily Vercel Cron (see vercel.json): a role change an admin dated next
@@ -12,18 +13,25 @@ import { applyDueRoleTerms } from '@/lib/users/services/role'
  *
  * Auth: Vercel sends `Authorization: Bearer ${CRON_SECRET}`.
  */
-export async function GET(request: NextRequest) {
-  const authFailure = verifyIntakeToken(request, serverEnv.CRON_SECRET, 'Cron')
-  if (authFailure) return authFailure
-
-  try {
-    const changes = await applyDueRoleTerms()
-    return NextResponse.json({ ok: true, data: { applied: changes.length } })
-  } catch (error) {
-    console.error('Failed to apply scheduled role changes', error)
-    return NextResponse.json(
-      { ok: false, error: 'Unable to apply scheduled role changes.' },
-      { status: 500 }
+export const GET = withJobRun(
+  '/api/cron/apply-role-terms',
+  async (request: NextRequest) => {
+    const authFailure = verifyIntakeToken(
+      request,
+      serverEnv.CRON_SECRET,
+      'Cron'
     )
+    if (authFailure) return authFailure
+
+    try {
+      const changes = await applyDueRoleTerms()
+      return NextResponse.json({ ok: true, data: { applied: changes.length } })
+    } catch (error) {
+      console.error('Failed to apply scheduled role changes', error)
+      return NextResponse.json(
+        { ok: false, error: 'Unable to apply scheduled role changes.' },
+        { status: 500 }
+      )
+    }
   }
-}
+)

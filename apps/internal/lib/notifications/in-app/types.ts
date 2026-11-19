@@ -11,6 +11,7 @@ export const NOTIFICATION_TYPES = [
   'lead_assigned',
   'lead_update',
   'lead_stage',
+  'connection_reauth',
 ] as const
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]

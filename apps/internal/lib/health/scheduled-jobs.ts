@@ -16,7 +16,7 @@ const JOB_DESCRIPTIONS: Record<string, { name: string; does: string }> = {
   },
   '/api/cron/prune-activity-logs': {
     name: 'Prune old records',
-    does: 'Deletes activity log rows past their keep date and notifications archived over 90 days ago.',
+    does: 'Deletes activity log rows past their keep date, notifications archived over 90 days ago and System health records over 90 days old.',
   },
 }
 
@@ -64,4 +64,41 @@ export function describeSchedule(cron: string): string {
     return `${days[Number(dayOfWeek)]} at ${time}`
   }
   return cron
+}
+
+/**
+ * How often a schedule runs, in ms, or null for one this can't read. Used
+ * to call a job late: no run in twice its interval.
+ */
+export function scheduleIntervalMs(cron: string): number | null {
+  const [minute, hour, dayOfMonth, month, dayOfWeek] = cron.split(' ')
+  if (month !== '*' || dayOfMonth !== '*') return null
+  const every = minute?.match(/^\*\/(\d+)$/)
+  if (every && hour === '*' && dayOfWeek === '*') {
+    return Number(every[1]) * 60_000
+  }
+  if (!/^\d+$/.test(minute ?? '') || !/^\d+$/.test(hour ?? '')) return null
+  if (dayOfWeek === '*') return 24 * 60 * 60_000
+  if (/^\d$/.test(dayOfWeek ?? '')) return 7 * 24 * 60 * 60_000
+  return null
+}
+
+export type JobState = 'ok' | 'failed' | 'late' | 'unrecorded'
+
+/** A job's state from its latest run and its schedule. */
+export function jobState(
+  run: { lastRunAt: string | null; lastOutcome: string | null },
+  schedule: string,
+  now: Date
+): JobState {
+  if (!run.lastRunAt) return 'unrecorded'
+  if (run.lastOutcome === 'failed') return 'failed'
+  const interval = scheduleIntervalMs(schedule)
+  if (
+    interval &&
+    now.getTime() - new Date(run.lastRunAt).getTime() > interval * 2
+  ) {
+    return 'late'
+  }
+  return 'ok'
 }

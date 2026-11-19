@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { eq, and } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 
 import { requirePage } from '@/lib/auth/session'
 import { db } from '@/lib/db'
@@ -102,6 +102,8 @@ export async function GET(request: NextRequest) {
             accessTokenExpiresAt: expiresAt,
             scopes: grantedScopes,
             status: 'ACTIVE',
+            // Reconnected: drop the broken-sign-in marks, keep sync progress.
+            syncState: sql`${oauthConnections.syncState} - 'needsReauth' - 'lastError' - 'lastErrorAt'`,
             providerEmail: userInfo.email,
             displayName: userInfo.email,
             providerMetadata: {

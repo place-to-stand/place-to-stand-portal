@@ -5,6 +5,7 @@ import { logActivity } from '@/lib/activity/logger'
 import { serverEnv } from '@/lib/env.server'
 import { verifyIntakeToken } from '@/lib/integrations/verify-intake-token'
 import { abandonStaleFormSubmissions } from '@/lib/queries/form-submissions'
+import { withJobRun } from '@/lib/health/runs'
 
 /**
  * Daily Vercel Cron (see vercel.json): flips audits stuck at `in_progress`
@@ -20,37 +21,45 @@ import { abandonStaleFormSubmissions } from '@/lib/queries/form-submissions'
  */
 const STALE_AFTER_HOURS = 24
 
-export async function GET(request: NextRequest) {
-  const authFailure = verifyIntakeToken(request, serverEnv.CRON_SECRET, 'Cron')
+export const GET = withJobRun(
+  '/api/cron/abandon-stale-submissions',
+  async (request: NextRequest) => {
+    const authFailure = verifyIntakeToken(
+      request,
+      serverEnv.CRON_SECRET,
+      'Cron'
+    )
 
-  if (authFailure) {
-    return authFailure
-  }
-
-  try {
-    const abandonedCount = await abandonStaleFormSubmissions(STALE_AFTER_HOURS)
-
-    if (abandonedCount > 0) {
-      const event = submissionsAbandonedEvent({
-        count: abandonedCount,
-        staleAfterHours: STALE_AFTER_HOURS,
-      })
-      await logActivity({
-        actorId: null,
-        source: 'SYSTEM',
-        verb: event.verb,
-        summary: event.summary,
-        targetType: 'SUBMISSION',
-        metadata: event.metadata,
-      })
+    if (authFailure) {
+      return authFailure
     }
 
-    return NextResponse.json({ ok: true, data: { abandonedCount } })
-  } catch (error) {
-    console.error('Failed to abandon stale submissions', error)
-    return NextResponse.json(
-      { ok: false, error: 'Unable to abandon stale submissions.' },
-      { status: 500 }
-    )
+    try {
+      const abandonedCount =
+        await abandonStaleFormSubmissions(STALE_AFTER_HOURS)
+
+      if (abandonedCount > 0) {
+        const event = submissionsAbandonedEvent({
+          count: abandonedCount,
+          staleAfterHours: STALE_AFTER_HOURS,
+        })
+        await logActivity({
+          actorId: null,
+          source: 'SYSTEM',
+          verb: event.verb,
+          summary: event.summary,
+          targetType: 'SUBMISSION',
+          metadata: event.metadata,
+        })
+      }
+
+      return NextResponse.json({ ok: true, data: { abandonedCount } })
+    } catch (error) {
+      console.error('Failed to abandon stale submissions', error)
+      return NextResponse.json(
+        { ok: false, error: 'Unable to abandon stale submissions.' },
+        { status: 500 }
+      )
+    }
   }
-}
+)

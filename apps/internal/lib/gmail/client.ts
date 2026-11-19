@@ -3,6 +3,9 @@ import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 import { refreshAccessToken } from '@/lib/oauth/google'
+import { markConnectionNeedsReauth } from './reauth'
+
+export { markConnectionNeedsReauth }
 
 /**
  * Error thrown when OAuth token refresh fails and user needs to reconnect
@@ -137,29 +140,6 @@ export async function getValidAccessToken(
       'GOOGLE'
     )
   }
-}
-
-/**
- * Mark a connection as needing re-authentication
- */
-export async function markConnectionNeedsReauth(
-  connectionId: string,
-  reason: string
-): Promise<void> {
-  const syncState = {
-    lastError: reason,
-    lastErrorAt: new Date().toISOString(),
-    needsReauth: true,
-  }
-
-  await db
-    .update(oauthConnections)
-    .set({
-      status: 'PENDING_REAUTH',
-      syncState,
-      updatedAt: new Date().toISOString(),
-    })
-    .where(eq(oauthConnections.id, connectionId))
 }
 
 // =============================================================================
