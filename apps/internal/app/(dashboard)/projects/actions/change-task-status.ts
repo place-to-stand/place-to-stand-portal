@@ -104,14 +104,14 @@ export async function changeTaskStatus(input: {
 
     // The reorder route calls this first and then writes the dropped
     // position over it, so drag-and-drop still lands exactly where dropped.
+    // The status is saved either way, so a failed pin still notifies and
+    // logs below before it reports the error.
+    let pinFailed = false
     try {
       await pinTaskToTopOfAssigneeBoards(taskId, status)
     } catch (sortError) {
       console.error('Failed to pin task on assignee boards', sortError)
-      return {
-        error:
-          'Status saved but the task could not be moved to the top of My Tasks.',
-      }
+      pinFailed = true
     }
 
     await notifyTaskStatusChanged(
@@ -137,6 +137,14 @@ export async function changeTaskStatus(input: {
       targetCompanyId: task.companyId ?? null,
       metadata: event.metadata,
     })
+
+    if (pinFailed) {
+      await revalidateProjectTaskViews()
+      return {
+        error:
+          'Status saved but the task could not be moved to the top of My Tasks.',
+      }
+    }
   }
 
   await revalidateProjectTaskViews()

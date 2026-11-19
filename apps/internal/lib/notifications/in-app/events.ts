@@ -84,7 +84,7 @@ async function taskFollowers(taskId: string) {
   const [task] = await db
     .select({ projectId: tasks.projectId, createdBy: tasks.createdBy })
     .from(tasks)
-    .where(eq(tasks.id, taskId))
+    .where(and(eq(tasks.id, taskId), isNull(tasks.deletedAt)))
     .limit(1)
   if (!task) return []
   const assigned = await db

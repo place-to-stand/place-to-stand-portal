@@ -26,9 +26,33 @@ function reloadedFor() {
 function safeToReload() {
   return (
     !hasUnsavedChanges() &&
-    !document.querySelector('[role="dialog"], [role="alertdialog"]')
+    !document.querySelector('[role="dialog"], [role="alertdialog"]') &&
+    !typingInField()
   )
 }
+
+/** A focused field with text in it (say a search box mid-debounce). */
+function typingInField() {
+  const field = document.activeElement
+  if (
+    field instanceof HTMLInputElement ||
+    field instanceof HTMLTextAreaElement
+  ) {
+    return field.value !== ''
+  }
+  return field instanceof HTMLElement && field.isContentEditable
+    ? (field.textContent ?? '') !== ''
+    : false
+}
+
+/** Anything that shows someone is using the tab again. */
+const TOUCH_EVENTS = [
+  'pointerdown',
+  'keydown',
+  'wheel',
+  'touchstart',
+  'focusin',
+] as const
 
 /**
  * A tab left open across a deploy runs old code, and Next.js turns its next
@@ -47,18 +71,15 @@ export function NewVersionReload() {
     let checking = false
     let touchedSinceVisible = false
 
-    const check = async (whileVisible: boolean) => {
+    const check = async () => {
       if (stopped || checking || !navigator.onLine) return
       checking = true
       try {
         const response = await fetch('/api/version', { cache: 'no-store' })
-        // Signed out (sign-in, share pages): the proxy redirects to sign-in.
-        // Nothing to compare, so stop asking.
-        if (response.redirected || response.status === 401) {
-          stopped = true
-          return
-        }
-        if (!response.ok) return
+        // Signed out (sign-in, share pages, a lapsed session): the proxy
+        // redirects to sign-in. Nothing to compare this time; ask again on
+        // the next tick, since the person may sign back in.
+        if (response.redirected || !response.ok) return
         const payload = (await response.json().catch(() => null)) as {
           data?: { version?: string | null }
         } | null
@@ -68,7 +89,9 @@ export function NewVersionReload() {
           live === TAB_VERSION ||
           reloadedFor() === live ||
           !safeToReload() ||
-          (whileVisible && touchedSinceVisible)
+          // Judged now, not when the check started: a check begun in the
+          // background can finish after the person has come back.
+          (document.visibilityState === 'visible' && touchedSinceVisible)
         ) {
           return
         }
@@ -89,7 +112,7 @@ export function NewVersionReload() {
     let hiddenAt: number | null =
       document.visibilityState === 'hidden' ? Date.now() : null
     const timer = window.setInterval(() => {
-      if (document.visibilityState === 'hidden') void check(false)
+      if (document.visibilityState === 'hidden') void check()
     }, CHECK_EVERY_MS)
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') {
@@ -99,21 +122,23 @@ export function NewVersionReload() {
       const away = hiddenAt ? Date.now() - hiddenAt : 0
       hiddenAt = null
       touchedSinceVisible = false
-      if (away >= CHECK_EVERY_MS) void check(true)
+      if (away >= CHECK_EVERY_MS) void check()
     }
     const onTouch = () => {
       touchedSinceVisible = true
     }
 
     document.addEventListener('visibilitychange', onVisibility)
-    document.addEventListener('pointerdown', onTouch, true)
-    document.addEventListener('keydown', onTouch, true)
+    for (const name of TOUCH_EVENTS) {
+      document.addEventListener(name, onTouch, { capture: true, passive: true })
+    }
     return () => {
       stopped = true
       window.clearInterval(timer)
       document.removeEventListener('visibilitychange', onVisibility)
-      document.removeEventListener('pointerdown', onTouch, true)
-      document.removeEventListener('keydown', onTouch, true)
+      for (const name of TOUCH_EVENTS) {
+        document.removeEventListener(name, onTouch, { capture: true })
+      }
     }
   }, [])
 

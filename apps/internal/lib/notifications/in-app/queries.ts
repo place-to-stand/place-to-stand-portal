@@ -9,6 +9,7 @@ import {
   inArray,
   isNull,
   isNotNull,
+  gte,
   lt,
   ne,
   sql,
@@ -78,6 +79,13 @@ export async function createNotifications(rows: NewNotification[]) {
  * user that they can work. There is no "due today": it only repeated a date
  * the person could already see (often one they had just set themselves).
  */
+/** The calendar date `days` before a YYYY-MM-DD date. */
+function daysBefore(date: string, days: number) {
+  const at = new Date(`${date}T00:00:00Z`)
+  at.setUTCDate(at.getUTCDate() - days)
+  return at.toISOString().slice(0, 10)
+}
+
 async function syncDueTaskNotifications(user: AppUser) {
   const today = companyCalendarDate()
   const workable = await listWorkableProjectIds(user)
@@ -94,6 +102,9 @@ async function syncDueTaskNotifications(user: AppUser) {
         isNull(tasks.acceptedAt),
         ne(tasks.status, 'DONE'),
         lt(tasks.dueOn, today),
+        // Within the archive window, so a notice pruned 90 days after it was
+        // archived is never made again, unread, for the same old due date.
+        gte(tasks.dueOn, daysBefore(today, ARCHIVED_NOTIFICATION_DAYS)),
         workableTasksFilter(user, workable)
       )
     )
@@ -159,7 +170,12 @@ export async function fetchNotificationFeed(
   before?: string
 ): Promise<NotificationFeed> {
   // Only the first page syncs; older pages are history.
-  if (!before) await syncDueTaskNotificationsThrottled(user)
+  // Overdue notices are a bonus: a failed sync must not break the feed.
+  if (!before) {
+    await syncDueTaskNotificationsThrottled(user).catch(error => {
+      console.error('Failed to sync due-date notifications', error)
+    })
+  }
 
   // Archived sorts by when it was archived; All and Unread by when it came.
   const sortColumn =
@@ -253,14 +269,14 @@ export async function markNotificationsUnread(userId: string, ids: string[]) {
  * Archives notifications: out of All and Unread, kept under Archived and
  * restorable. Archiving also marks them read. (The column is `cleared_at`.)
  */
-export async function archiveNotifications(userId: string, ids?: string[]) {
+export async function archiveNotifications(userId: string, ids: string[]) {
   await db
     .update(notifications)
     .set({
       clearedAt: sql`timezone('utc'::text, now())`,
       readAt: sql`coalesce(${notifications.readAt}, timezone('utc'::text, now()))`,
     })
-    .where(and(live(userId), ids ? inArray(notifications.id, ids) : undefined))
+    .where(and(live(userId), inArray(notifications.id, ids)))
 }
 
 /** Brings archived notifications back to All, as read (archive marks them read). */

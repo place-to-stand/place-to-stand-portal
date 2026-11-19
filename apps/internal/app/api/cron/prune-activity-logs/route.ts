@@ -26,15 +26,16 @@ export async function GET(request: NextRequest) {
 
   const cutoff = retentionCutoff(serverEnv.ACTIVITY_LOG_RETENTION_DAYS)
 
+  // Runs first and on its own, so neither prune's failure stops the other.
+  const archivedNotificationsDeleted = await pruneArchivedNotifications().catch(
+    error => {
+      console.error('Failed to prune archived notifications', error)
+      return null
+    }
+  )
+
   try {
     const deletedCount = await pruneActivityLogsBefore(cutoff)
-    // Its own failure is logged under its own name and doesn't undo the
-    // activity log prune above.
-    const archivedNotificationsDeleted =
-      await pruneArchivedNotifications().catch(error => {
-        console.error('Failed to prune archived notifications', error)
-        return null
-      })
 
     return NextResponse.json({
       ok: true,

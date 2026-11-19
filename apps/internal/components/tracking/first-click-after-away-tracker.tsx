@@ -111,6 +111,16 @@ export function FirstClickAfterAwayTracker() {
     }
     const onClick = (event: MouseEvent) => {
       if (armedAway === null) return
+      // A click that opens a new tab or window leaves this one where it is.
+      if (
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return
+      }
       const link = (event.target as Element | null)?.closest('a[href]')
       if (!(link instanceof HTMLAnchorElement)) return
       // Only a move to another page in this tab can be timed.

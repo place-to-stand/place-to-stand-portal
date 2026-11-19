@@ -24,6 +24,8 @@ const querySchema = z.object({
     .regex(
       /^[0-9T:.Z+\- ]{10,40}_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     )
+    // A well-formed but impossible time is a bad request, not a crash.
+    .refine(cursor => !Number.isNaN(Date.parse(cursor.split('_')[0] ?? '')))
     .optional(),
 })
 
@@ -91,7 +93,9 @@ export async function POST(request: NextRequest) {
   }
 
   const { action, ids } = parsed.data
-  if ((action === 'unread' || action === 'restore') && !ids?.length) {
+  // Only "read" may mean every notification; the others name their rows, so
+  // a stray request can't archive the whole feed.
+  if (action !== 'read' && !ids?.length) {
     return NextResponse.json(
       { ok: false, error: 'Pick notifications first.' },
       { status: 400 }
@@ -101,7 +105,7 @@ export async function POST(request: NextRequest) {
   try {
     if (action === 'read') await markNotificationsRead(user.id, ids)
     if (action === 'unread') await markNotificationsUnread(user.id, ids ?? [])
-    if (action === 'archive') await archiveNotifications(user.id, ids)
+    if (action === 'archive') await archiveNotifications(user.id, ids ?? [])
     if (action === 'restore') await restoreNotifications(user.id, ids ?? [])
     return NextResponse.json({ ok: true })
   } catch (error) {
