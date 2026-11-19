@@ -10,6 +10,13 @@ type ReferenceTabDefinition = TabsNavTab & { capability: Capability }
  * its capability; the page itself checks the same one.
  */
 export const REFERENCE_TABS = [
+  // First, so /reference opens on whether things are healthy.
+  {
+    label: 'System health',
+    value: 'health',
+    href: '/reference/health',
+    capability: 'settings.health',
+  },
   {
     label: 'Roles & permissions',
     value: 'permissions',
@@ -46,12 +53,6 @@ export const REFERENCE_TABS = [
     value: 'design-system',
     href: '/reference/design-system',
     capability: 'settings.design',
-  },
-  {
-    label: 'System health',
-    value: 'health',
-    href: '/reference/health',
-    capability: 'settings.health',
   },
 ] as const satisfies readonly ReferenceTabDefinition[]
 

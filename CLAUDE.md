@@ -118,7 +118,7 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 │   ├── my/           # Current user's pages (home, tasks)
 │   ├── projects/     # Project workspace (tabbed, see below; archive, activity)
 │   ├── reports/      # Reports (monthly-close)
-│   ├── reference/    # Sidebar Admin → "Reference": one page with tabs (`lib/navigation/reference-tabs.ts`): roles & permissions, notifications, emails, PDFs, chat messages (templates, each its own tab), design system, system health. Shows how the portal is set up and whether its queues drain; admin only today. Add a topic as a tab, never a new sidebar item
+│   ├── reference/    # Sidebar Admin → "Reference": one page with tabs (`lib/navigation/reference-tabs.ts`): system health (first), roles & permissions, notifications, emails, PDFs, chat messages (templates, each its own tab), design system. Shows how the portal is set up and whether its queues drain; admin only today. Add a topic as a tab, never a new sidebar item
 │   ├── settings/     # Sidebar "Admin": Settings (tabs: business, billing (products, tax rates, profit share), integrations (the agency's services)). A person's own settings are the Account sheet, not here
 │   └── submissions/  # Website form submissions
 ├── (public)/         # Publicly shared pages (e.g. share/invoices/[token])

@@ -19,23 +19,23 @@ test('Reference is one tabbed page; /reference lands on its first tab', async ({
   page,
 }) => {
   await page.goto('/reference')
-  await expect(page).toHaveURL(/\/reference\/permissions$/)
+  await expect(page).toHaveURL(/\/reference\/health$/)
   for (const tab of [
+    'System health',
     'Roles & permissions',
     'Notifications',
     'Emails',
     'PDFs',
     'Chat messages',
     'Design system',
-    'System health',
   ]) {
     await expect(page.getByRole('tab', { name: tab })).toBeVisible()
   }
   const item = page.locator('[data-sidebar="menu-button"]', {
     hasText: 'Reference',
   })
-  await page.getByRole('tab', { name: 'System health' }).click()
-  await expect(page).toHaveURL(/\/reference\/health$/)
+  await page.getByRole('tab', { name: 'Notifications' }).click()
+  await expect(page).toHaveURL(/\/reference\/notifications$/)
   await expect(item).toHaveAttribute('data-active', 'true')
   await expectHealthy(page)
 })
