@@ -1,7 +1,15 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Keyboard, LifeBuoy, Loader2, LogOut, Moon, Sun } from 'lucide-react'
+import {
+  CircleUserRound,
+  Keyboard,
+  LifeBuoy,
+  Loader2,
+  LogOut,
+  Moon,
+  Sun,
+} from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import {
@@ -22,11 +30,10 @@ import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-d
 import { useGetHelp } from '@/components/help/get-help-dialog'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
-import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { openAccountSheet } from '@/lib/account/use-account-sheet'
 
-// Account is your sign-in: the registry's user icon.
-const UserIcon = ENTITY_ICONS.user
+// Account is your own settings, not a record: a plain icon, no entity colour.
+const UserIcon = CircleUserRound
 
 type Props = {
   user: AppUser

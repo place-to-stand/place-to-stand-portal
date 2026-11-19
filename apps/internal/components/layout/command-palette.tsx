@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useRouter } from 'next/navigation'
-import { Keyboard, LifeBuoy, Plug } from 'lucide-react'
+import { CircleUserRound, Keyboard, LifeBuoy, Plug } from 'lucide-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 import {
@@ -37,11 +37,10 @@ import {
 } from '@/lib/sheets/discard-guards'
 import { parseSheetStack } from '@/lib/sheets/stack'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
-import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { openAccountSheet } from '@/lib/account/use-account-sheet'
 
-// Account is your sign-in: the registry's user icon.
-const UserIcon = ENTITY_ICONS.user
+// Account is your own settings, not a record: a plain icon, no entity colour.
+const UserIcon = CircleUserRound
 
 const MIN_QUERY_LENGTH = 2
 const DEBOUNCE_MS = 200
