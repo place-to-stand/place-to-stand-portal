@@ -11,6 +11,26 @@ const AWAY_MS = 60 * 60_000
 /** A click older than this when the page lands wasn't the one that loaded it. */
 const STALE_MS = 60_000
 const STORAGE_KEY = 'pts:first-click-after-away'
+/** When the tab went to the background; survives a background reload. */
+const HIDDEN_SINCE_KEY = 'pts:hidden-since'
+
+function setHiddenSince(value: number | null) {
+  try {
+    if (value) sessionStorage.setItem(HIDDEN_SINCE_KEY, String(value))
+    else sessionStorage.removeItem(HIDDEN_SINCE_KEY)
+  } catch {
+    // Storage blocked: the away time starts at this page load.
+  }
+}
+
+function readHiddenSince() {
+  try {
+    const value = Number(sessionStorage.getItem(HIDDEN_SINCE_KEY))
+    return Number.isFinite(value) && value > 0 ? value : null
+  } catch {
+    return null
+  }
+}
 
 type PendingClick = { clickAt: number; awayMinutes: number; from: string }
 
@@ -69,23 +89,41 @@ export function FirstClickAfterAwayTracker() {
   }, [pathname, search])
 
   useEffect(() => {
+    // A page reloaded in the background keeps counting from when the tab
+    // was first hidden (NewVersionReload reloads hidden tabs).
     let hiddenAt: number | null =
-      document.visibilityState === 'hidden' ? Date.now() : null
+      document.visibilityState === 'hidden'
+        ? (readHiddenSince() ?? Date.now())
+        : null
+    if (hiddenAt) setHiddenSince(hiddenAt)
     let armedAway: number | null = null
 
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') {
         hiddenAt = Date.now()
+        setHiddenSince(hiddenAt)
         return
       }
       const away = hiddenAt ? Date.now() - hiddenAt : 0
       hiddenAt = null
+      setHiddenSince(null)
       armedAway = away >= AWAY_MS ? away : null
     }
     const onClick = (event: MouseEvent) => {
       if (armedAway === null) return
       const link = (event.target as Element | null)?.closest('a[href]')
-      if (!link) return
+      if (!(link instanceof HTMLAnchorElement)) return
+      // Only a move to another page in this tab can be timed.
+      const target = new URL(link.href, window.location.href)
+      if (
+        link.target === '_blank' ||
+        link.hasAttribute('download') ||
+        target.origin !== window.location.origin ||
+        target.pathname + target.search ===
+          window.location.pathname + window.location.search
+      ) {
+        return
+      }
       writePending({
         clickAt: Date.now(),
         awayMinutes: Math.round(armedAway / 60_000),

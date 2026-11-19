@@ -7,33 +7,78 @@ import { hasUnsavedChanges } from '@/lib/sheets/discard-guards'
 /** The commit this tab's code was built from (inlined at build time). */
 const TAB_VERSION = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ?? null
 const CHECK_EVERY_MS = 5 * 60_000
+/** The version this tab last reloaded for, so a mismatch can't loop. */
+const RELOADED_FOR_KEY = 'pts:reloaded-for-version'
+
+function reloadedFor() {
+  try {
+    return sessionStorage.getItem(RELOADED_FOR_KEY)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Nothing that a reload could lose: no page form or sheet with unsaved
+ * changes, and no sheet or dialog open at all (comment drafts, the time log
+ * dialog and the Account sheet keep work outside the unsaved-changes guards).
+ */
+function safeToReload() {
+  return (
+    !hasUnsavedChanges() &&
+    !document.querySelector('[role="dialog"], [role="alertdialog"]')
+  )
+}
 
 /**
  * A tab left open across a deploy runs old code, and Next.js turns its next
  * click into a full page load (version skew), which feels like a hang. While
  * the tab is in the background this checks every few minutes for a new
- * version and, if there is one and nothing is unsaved, reloads it then, so
+ * version and, if there is one and nothing could be lost, reloads it then, so
  * it's fresh when you come back. Coming back to a tab that missed its checks
- * (Chrome slows background timers) checks once more and reloads at once.
+ * (Chrome slows background timers) checks once more, and reloads only if you
+ * haven't started clicking or typing yet.
  */
 export function NewVersionReload() {
   useEffect(() => {
     if (!TAB_VERSION) return
 
+    let stopped = false
     let checking = false
-    const check = async () => {
-      if (checking || !navigator.onLine) return
+    let touchedSinceVisible = false
+
+    const check = async (whileVisible: boolean) => {
+      if (stopped || checking || !navigator.onLine) return
       checking = true
       try {
         const response = await fetch('/api/version', { cache: 'no-store' })
+        // Signed out (sign-in, share pages): the proxy redirects to sign-in.
+        // Nothing to compare, so stop asking.
+        if (response.redirected || response.status === 401) {
+          stopped = true
+          return
+        }
         if (!response.ok) return
         const payload = (await response.json().catch(() => null)) as {
           data?: { version?: string | null }
         } | null
         const live = payload?.data?.version
-        if (live && live !== TAB_VERSION && !hasUnsavedChanges()) {
-          window.location.reload()
+        if (
+          !live ||
+          live === TAB_VERSION ||
+          reloadedFor() === live ||
+          !safeToReload() ||
+          (whileVisible && touchedSinceVisible)
+        ) {
+          return
         }
+        try {
+          sessionStorage.setItem(RELOADED_FOR_KEY, live)
+        } catch {
+          // Without storage a mismatch could repeat; skip rather than loop.
+          return
+        }
+        window.location.reload()
       } catch {
         // Offline or mid-deploy: try again on the next tick.
       } finally {
@@ -44,7 +89,7 @@ export function NewVersionReload() {
     let hiddenAt: number | null =
       document.visibilityState === 'hidden' ? Date.now() : null
     const timer = window.setInterval(() => {
-      if (document.visibilityState === 'hidden') void check()
+      if (document.visibilityState === 'hidden') void check(false)
     }, CHECK_EVERY_MS)
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') {
@@ -53,13 +98,22 @@ export function NewVersionReload() {
       }
       const away = hiddenAt ? Date.now() - hiddenAt : 0
       hiddenAt = null
-      if (away >= CHECK_EVERY_MS) void check()
+      touchedSinceVisible = false
+      if (away >= CHECK_EVERY_MS) void check(true)
+    }
+    const onTouch = () => {
+      touchedSinceVisible = true
     }
 
     document.addEventListener('visibilitychange', onVisibility)
+    document.addEventListener('pointerdown', onTouch, true)
+    document.addEventListener('keydown', onTouch, true)
     return () => {
+      stopped = true
       window.clearInterval(timer)
       document.removeEventListener('visibilitychange', onVisibility)
+      document.removeEventListener('pointerdown', onTouch, true)
+      document.removeEventListener('keydown', onTouch, true)
     }
   }, [])
 
