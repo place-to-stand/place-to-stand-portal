@@ -74,7 +74,7 @@ type RecordContextMenuProps = {
   editable?: boolean
   /** False hides Duplicate (a viewer who can't create the record). */
   duplicable?: boolean
-  /** Replaces the default duplicate (the /design specimen). */
+  /** Replaces the default duplicate (the design system specimen). */
   onDuplicate?: () => void
   /**
    * Adds "Set assignee ›" (tasks and leads): a submenu of the people who can

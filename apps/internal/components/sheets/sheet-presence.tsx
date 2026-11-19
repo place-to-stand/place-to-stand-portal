@@ -102,7 +102,7 @@ const REVEAL_MS = 200
 /**
  * Who else has the record open: their avatars and one line, "Kris Crawford
  * is editing this company". Nothing when no one else is here. Also the
- * /design specimen.
+ * design system specimen.
  */
 export function SheetViewers({
   noun,

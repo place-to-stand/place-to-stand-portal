@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 
 import { expectHealthy } from './helpers'
 
-test('admin sidebar: Admin starts with Settings and ends with Design system', async ({
+test('admin sidebar: Admin holds Settings, Reference the rest', async ({
   page,
 }) => {
   await page.goto('/my/home')
@@ -10,8 +10,17 @@ test('admin sidebar: Admin starts with Settings and ends with Design system', as
     .locator('[data-sidebar="group"]')
     .filter({ hasText: 'Admin' })
   const items = admin.locator('[data-sidebar="menu-button"]')
+  await expect(items).toHaveCount(1)
   await expect(items.first()).toContainText('Settings')
-  await expect(items.last()).toContainText('Design system')
+  const reference = page
+    .locator('[data-sidebar="group"]')
+    .filter({ hasText: 'Reference' })
+    .locator('[data-sidebar="menu-button"]')
+  await expect(reference).toHaveText([
+    'Roles & permissions',
+    'Templates',
+    'Design system',
+  ])
 })
 
 test('Settings is one tabbed page; /settings lands on Business', async ({
@@ -30,11 +39,26 @@ test('Settings is one tabbed page; /settings lands on Business', async ({
   await expect(item).toHaveAttribute('data-active', 'true')
 })
 
-test('the Design system item is active on /design', async ({ page }) => {
-  await page.goto('/design')
+test('Get help opens from the user menu', async ({ page }) => {
+  await page.goto('/my/home')
+  await page
+    .locator('[data-sidebar="footer"]')
+    .getByRole('button')
+    .first()
+    .click()
+  await page.getByRole('menuitem', { name: 'Get help' }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('link', { name: 'Book a call' })).toBeVisible()
+})
+
+test('Templates stays active across its tabs', async ({ page }) => {
+  await page.goto('/reference/templates/emails')
   const item = page.locator('[data-sidebar="menu-button"]', {
-    hasText: 'Design system',
+    hasText: 'Templates',
   })
+  await expect(item).toHaveAttribute('data-active', 'true')
+  await page.getByRole('tab', { name: 'PDFs' }).click()
+  await expect(page).toHaveURL(/\/reference\/templates\/pdfs$/)
   await expect(item).toHaveAttribute('data-active', 'true')
 })
 

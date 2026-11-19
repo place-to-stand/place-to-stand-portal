@@ -2,11 +2,11 @@ import { expect, test } from '@playwright/test'
 
 // A searchable combobox opens with its selected option in view and
 // highlighted; after that, scrolling and hovering are left alone, so an
-// option scrolled to can be clicked. Uses the /design specimen (no data).
+// option scrolled to can be clicked. Uses the design system specimen (no data).
 test('a combobox opens on its selection, and a scrolled-to option can be picked', async ({
   page,
 }) => {
-  await page.goto('/design?tab=components')
+  await page.goto('/reference/design-system?tab=components')
   const trigger = page.locator('button[aria-label="Person"]').first()
   await trigger.scrollIntoViewIfNeeded()
   await expect(trigger).toContainText('Radia Perlman')

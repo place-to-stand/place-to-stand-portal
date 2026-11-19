@@ -189,13 +189,6 @@
     "capability": "companies.manage"
   },
   {
-    "type": "page",
-    "name": "/design",
-    "file": "apps/internal/app/(dashboard)/design/page.tsx",
-    "kind": "capability",
-    "capability": "settings.design"
-  },
-  {
     "type": "action",
     "name": "softDeleteHourBlock",
     "file": "apps/internal/app/(dashboard)/hour-blocks/actions/archive-hour-block.ts",
@@ -644,6 +637,41 @@
     "capability": "projects.manage"
   },
   {
+    "type": "page",
+    "name": "/reference/design-system",
+    "file": "apps/internal/app/(dashboard)/reference/design-system/page.tsx",
+    "kind": "capability",
+    "capability": "settings.design"
+  },
+  {
+    "type": "page",
+    "name": "/reference/permissions",
+    "file": "apps/internal/app/(dashboard)/reference/permissions/page.tsx",
+    "kind": "capability",
+    "capability": "settings.permissions"
+  },
+  {
+    "type": "page",
+    "name": "/reference/templates/emails",
+    "file": "apps/internal/app/(dashboard)/reference/templates/emails/page.tsx",
+    "kind": "capability",
+    "capability": "settings.templates"
+  },
+  {
+    "type": "page",
+    "name": "/reference/templates/notifications",
+    "file": "apps/internal/app/(dashboard)/reference/templates/notifications/page.tsx",
+    "kind": "capability",
+    "capability": "settings.templates"
+  },
+  {
+    "type": "page",
+    "name": "/reference/templates/pdfs",
+    "file": "apps/internal/app/(dashboard)/reference/templates/pdfs/page.tsx",
+    "kind": "capability",
+    "capability": "settings.templates"
+  },
+  {
     "type": "action",
     "name": "addProfitShareAction",
     "file": "apps/internal/app/(dashboard)/reports/monthly-close/actions/add-profit-share.ts",
@@ -712,34 +740,6 @@
     "file": "apps/internal/app/(dashboard)/settings/integrations/page.tsx",
     "kind": "capability",
     "capability": "integrations.manage"
-  },
-  {
-    "type": "page",
-    "name": "/settings/permissions",
-    "file": "apps/internal/app/(dashboard)/settings/permissions/page.tsx",
-    "kind": "capability",
-    "capability": "settings.permissions"
-  },
-  {
-    "type": "page",
-    "name": "/settings/templates/emails",
-    "file": "apps/internal/app/(dashboard)/settings/templates/emails/page.tsx",
-    "kind": "capability",
-    "capability": "settings.templates"
-  },
-  {
-    "type": "page",
-    "name": "/settings/templates/notifications",
-    "file": "apps/internal/app/(dashboard)/settings/templates/notifications/page.tsx",
-    "kind": "capability",
-    "capability": "settings.templates"
-  },
-  {
-    "type": "page",
-    "name": "/settings/templates/pdfs",
-    "file": "apps/internal/app/(dashboard)/settings/templates/pdfs/page.tsx",
-    "kind": "capability",
-    "capability": "settings.templates"
   },
   {
     "type": "page",

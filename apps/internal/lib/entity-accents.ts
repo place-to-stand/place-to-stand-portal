@@ -1,7 +1,7 @@
 /**
  * The entity registry: the one place each kind of record gets its name, its
  * icon and its colour. The sidebar, sheets, badges, list cells, the activity
- * feed and /design all read from here; nothing else imports an entity icon
+ * feed and the design system page all read from here; nothing else imports an entity icon
  * from lucide-react or writes an entity colour (lint and
  * scripts/check-entities.mjs enforce it). Documented in
  * docs/design-system/README.md and components/sheet.md.
@@ -101,7 +101,7 @@ export type EntityDefinition = {
   stateOf?: AccentEntity
   group: EntityGroup
   icon: LucideIcon
-  /** The icon's lucide name, for docs and /design. */
+  /** The icon's lucide name, for docs and the design system page. */
   iconName: string
   /**
    * A glyph this entity used to have, still banned outside the registry so
@@ -110,7 +110,7 @@ export type EntityDefinition = {
   retiredIcon?: string
   /** Its colour token: `--entity-<token>` in theme.css. */
   token: string
-  /** A sample record name for /design. */
+  /** A sample record name for the design system page. */
   example: string
   accent: EntityAccent
 }
@@ -328,7 +328,7 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
   },
 }
 
-/** Registry order: grouped by job, as /design and the docs list them. */
+/** Registry order: grouped by job, as the design system page and the docs list them. */
 export const ENTITY_KEYS = Object.keys(ENTITIES) as AccentEntity[]
 
 /** Each entity's accent classes. */

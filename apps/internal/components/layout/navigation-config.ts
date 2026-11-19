@@ -135,21 +135,27 @@ export const NAV_GROUPS: NavGroup[] = [
           '/settings/integrations',
         ],
       },
+    ],
+  },
+  {
+    // Pages that show how the portal is set up; nothing on them changes it.
+    title: 'Reference',
+    items: [
       {
-        href: '/settings/permissions',
+        href: '/reference/permissions',
         capability: 'settings.permissions',
         label: 'Roles & permissions',
         icon: ShieldCheck,
       },
       {
-        href: '/settings/templates/emails',
+        href: '/reference/templates/emails',
         capability: 'settings.templates',
         label: 'Templates',
         icon: ENTITY_ICONS.template,
-        matchHrefs: ['/settings/templates'],
+        matchHrefs: ['/reference/templates'],
       },
       {
-        href: '/design',
+        href: '/reference/design-system',
         capability: 'settings.design',
         label: 'Design system',
         icon: Palette,

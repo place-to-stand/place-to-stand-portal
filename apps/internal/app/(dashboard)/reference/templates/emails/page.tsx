@@ -3,28 +3,30 @@ import type { Metadata } from 'next'
 import { requirePage } from '@/lib/auth/session'
 
 import { PageShell } from '@/components/layout/page-shell'
-import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { buildPdfTemplateCatalog } from '@/lib/pdf/catalog'
+import { getEmailSender } from '@/lib/business/identity'
+import { buildEmailTemplateCatalog } from '@/lib/email/catalog'
 
-import { PdfsGallery } from '../_components/pdfs-gallery'
+import { EmailsGallery } from '../_components/emails-gallery'
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
+
 import { TEMPLATES_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
-  title: 'Templates | Settings',
+  title: 'Email templates | Reference',
 }
 
-export default async function PdfTemplatesPage() {
+export default async function EmailTemplatesPage() {
   await requirePage('settings.templates')
-  const entries = buildPdfTemplateCatalog()
+  const entries = buildEmailTemplateCatalog(await getEmailSender())
 
   return (
     <PageShell
-      breadcrumbs={crumbsForNav('/settings/templates/emails')}
+      breadcrumbs={crumbsForNav('/reference/templates/emails')}
       tabs={TEMPLATES_TABS}
-      activeTab='pdfs'
+      activeTab='emails'
       count={{ label: 'templates', total: entries.length }}
     >
-      <PdfsGallery entries={entries} />
+      <EmailsGallery entries={entries} />
     </PageShell>
   )
 }

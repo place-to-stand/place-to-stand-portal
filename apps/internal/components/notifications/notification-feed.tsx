@@ -262,12 +262,17 @@ export function NotificationList({
           aria-live='polite'
         >
           {items.map(item => (
-            <li key={item.id} className='group relative flex items-start'>
+            // The whole row lights up and opens the notification (the button's
+            // ::after covers it); only Mark read and X, above it, don't.
+            <li
+              key={item.id}
+              className='group hover:bg-muted/50 has-[[data-notification-open]:focus-visible]:bg-muted/50 relative flex items-start'
+            >
               <button
                 type='button'
                 data-notification-open
                 onClick={() => openItem(item)}
-                className='hover:bg-muted/50 focus-visible:bg-muted/50 flex min-w-0 flex-1 items-start gap-3 px-4 py-2.5 text-left outline-none'
+                className='flex min-w-0 flex-1 items-start gap-3 px-4 py-2.5 text-left outline-none after:absolute after:inset-0'
               >
                 <Circle
                   aria-label={item.readAt ? 'Read' : 'Unread'}
@@ -297,7 +302,7 @@ export function NotificationList({
                   </span>
                 </span>
               </button>
-              <div className='flex shrink-0 items-center gap-0.5 py-2 pr-2 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100'>
+              <div className='pointer-events-none relative flex shrink-0 items-center gap-0.5 py-2 pr-2 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [&>*]:pointer-events-auto'>
                 <Button
                   type='button'
                   variant='ghost'

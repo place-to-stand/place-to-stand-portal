@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useRouter } from 'next/navigation'
-import { Keyboard, Plug } from 'lucide-react'
+import { CircleUserRound, Keyboard, LifeBuoy, Plug } from 'lucide-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 import {
@@ -25,6 +25,7 @@ import { NAV_GROUPS } from '@/components/layout/navigation-config'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'
 import { filterNavGroupsForRole } from '@/lib/auth/roles'
+import { useGetHelp } from '@/components/help/get-help-dialog'
 import type { PaletteSearchResult } from '@/lib/command-palette/types'
 import { CommandPaletteRecords } from '@/components/layout/command-palette-records'
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
@@ -36,11 +37,10 @@ import {
 } from '@/lib/sheets/discard-guards'
 import { parseSheetStack } from '@/lib/sheets/stack'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
-import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { openAccountSheet } from '@/lib/account/use-account-sheet'
 
-// Account is your sign-in: the registry's user icon.
-const UserIcon = ENTITY_ICONS.user
+// Account is your own settings, not a record: a plain icon, no entity colour.
+const UserIcon = CircleUserRound
 
 const MIN_QUERY_LENGTH = 2
 const DEBOUNCE_MS = 200
@@ -132,6 +132,8 @@ function CommandPalette() {
     () => (role ? filterNavGroupsForRole(NAV_GROUPS, role) : []),
     [role]
   )
+  // Help lives in the page header, so its tabs are listed here.
+  const { setOpen: setGetHelpOpen } = useGetHelp()
   const router = useRouter()
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query.trim(), DEBOUNCE_MS)
@@ -261,6 +263,16 @@ function CommandPalette() {
           </CommandItem>
         </CommandGroup>
         <CommandGroup heading='Help'>
+          <CommandItem
+            value='Help get help contact support book a call email place to stand'
+            onSelect={() => {
+              handleOpenChange(false)
+              setGetHelpOpen(true)
+            }}
+          >
+            <LifeBuoy className='size-4' />
+            <span>Get help</span>
+          </CommandItem>
           <CommandItem
             value='Help keyboard shortcuts keys'
             onSelect={() => {

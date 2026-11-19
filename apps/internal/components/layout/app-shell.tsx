@@ -10,6 +10,7 @@ import { ViewerAccessProvider } from '@/components/providers/viewer-access-provi
 
 import { AccountSheet } from '@/components/account/account-sheet'
 import { KeyboardShortcutsProvider } from '@/components/keyboard/keyboard-shortcuts-dialog'
+import { GetHelpProvider } from '@/components/help/get-help-dialog'
 
 import { Sidebar, type SidebarBrand } from './sidebar'
 import { CommandPaletteProvider } from './command-palette'
@@ -65,23 +66,25 @@ export function AppShell({
     >
       <BusinessNameProvider name={brand.name}>
         <KeyboardShortcutsProvider>
-          <CommandPaletteProvider>
-            <SidebarProvider
-              defaultOpen={sidebarDefaultOpen}
-              style={{ '--sidebar-width': '13rem' } as React.CSSProperties}
-              className='bg-muted h-dvh min-h-0 overflow-hidden'
-            >
-              <Sidebar user={user} badges={navBadges} brand={brand} />
-              <div className='flex h-dvh min-h-0 min-w-0 flex-1 flex-col'>
-                {banner}
-                <ListRefreshProvider>{children}</ListRefreshProvider>
-              </div>
-              {/* Reads `?account=`; Suspense keeps the URL read client-only. */}
-              <Suspense fallback={null}>
-                <AccountSheet user={user} />
-              </Suspense>
-            </SidebarProvider>
-          </CommandPaletteProvider>
+          <GetHelpProvider>
+            <CommandPaletteProvider>
+              <SidebarProvider
+                defaultOpen={sidebarDefaultOpen}
+                style={{ '--sidebar-width': '13rem' } as React.CSSProperties}
+                className='bg-muted h-dvh min-h-0 overflow-hidden'
+              >
+                <Sidebar user={user} badges={navBadges} brand={brand} />
+                <div className='flex h-dvh min-h-0 min-w-0 flex-1 flex-col'>
+                  {banner}
+                  <ListRefreshProvider>{children}</ListRefreshProvider>
+                </div>
+                {/* Reads `?account=`; Suspense keeps the URL read client-only. */}
+                <Suspense fallback={null}>
+                  <AccountSheet user={user} />
+                </Suspense>
+              </SidebarProvider>
+            </CommandPaletteProvider>
+          </GetHelpProvider>
         </KeyboardShortcutsProvider>
       </BusinessNameProvider>
     </ViewerAccessProvider>

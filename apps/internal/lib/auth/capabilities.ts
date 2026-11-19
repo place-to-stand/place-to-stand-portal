@@ -3,7 +3,7 @@ import type { userRole } from '@pts/db/schema'
 /**
  * The single list of what each role may do. Server guards, nav filtering,
  * dashboard widgets, the MCP server and the CLI all read from here, and
- * Settings → Roles & permissions renders it, so adding a capability (or
+ * Reference → Roles & permissions renders it, so adding a capability (or
  * moving one between roles) happens in exactly one place.
  *
  * Client-safe on purpose: no server-only imports, so UI can ask the same
@@ -26,6 +26,7 @@ export type CapabilityArea =
   | 'Directory'
   | 'Billing & reports'
   | 'Settings'
+  | 'Reference'
   | 'Integrations'
 
 type CapabilityDefinition = {
@@ -290,7 +291,8 @@ export const CAPABILITIES = {
     surfaces: ['app'],
   },
 
-  // Settings
+  // Settings (the reference pages' capabilities keep their names but sit
+  // under Reference)
   'settings.business': {
     area: 'Settings',
     label: 'Business settings',
@@ -307,21 +309,21 @@ export const CAPABILITIES = {
     surfaces: ['app'],
   },
   'settings.templates': {
-    area: 'Settings',
+    area: 'Reference',
     label: 'Email and notification templates',
     description: 'Preview everything the portal sends.',
     roles: ADMIN_ONLY,
     surfaces: ['app'],
   },
   'settings.design': {
-    area: 'Settings',
+    area: 'Reference',
     label: 'Design system',
     description: 'Colours, components and patterns used across the portal.',
     roles: ADMIN_ONLY,
     surfaces: ['app'],
   },
   'settings.permissions': {
-    area: 'Settings',
+    area: 'Reference',
     label: 'View roles & permissions',
     description: 'This page.',
     roles: ADMIN_ONLY,
@@ -391,6 +393,7 @@ export const CAPABILITY_AREAS: readonly CapabilityArea[] = [
   'Directory',
   'Billing & reports',
   'Settings',
+  'Reference',
   'Integrations',
 ]
 

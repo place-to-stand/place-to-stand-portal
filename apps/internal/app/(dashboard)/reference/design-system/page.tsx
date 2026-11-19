@@ -48,20 +48,21 @@ import {
 import { GuideShell } from './_components/guide-shell'
 import { PatternsCopy, PatternsHouseRules } from './_components/patterns'
 
+import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
+
 export const metadata: Metadata = {
-  title: 'Design',
+  title: 'Design system | Reference',
 }
 
 /**
- * The living style guide. Not in the nav: reachable at /design, admin-only
- * (requireUser). Every specimen renders the real component with inline
- * sample data; nothing here writes.
+ * The living style guide, Reference → Design system (admin-only). Every specimen
+ * renders the real component with inline sample data; nothing here writes.
  */
 export default async function DesignPage() {
   await requirePage('settings.design')
 
   return (
-    <PageShell breadcrumbs={[{ label: 'Design' }]}>
+    <PageShell breadcrumbs={crumbsForNav('/reference/design-system')}>
       <GuideShell>
         <FoundationsColour />
         <FoundationsEntities />

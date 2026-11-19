@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useId, useRef } from 'react'
-import { Plug, SlidersHorizontal } from 'lucide-react'
+import { CircleUserRound, Plug, SlidersHorizontal } from 'lucide-react'
 
 import { Separator } from '@pts/ui/separator'
 
@@ -93,7 +93,17 @@ export function AccountSheet({ user }: { user: AppUser }) {
           className='flex w-full flex-col gap-0 overflow-hidden p-0'
         >
           {/* Your sign-in: its registry icon and the sign-in rule. */}
-          <SheetFormHeader entity='user' title='Account' />
+          {/* Your own settings, not a record: the user menu's plain icon and a
+              neutral rule. */}
+          <SheetFormHeader
+            title='Account'
+            leading={
+              <CircleUserRound
+                aria-hidden
+                className='text-muted-foreground size-4 shrink-0'
+              />
+            }
+          />
           <Form {...form}>
             <div className='flex flex-1 flex-col gap-6 overflow-y-auto px-6 pt-6 pb-8'>
               {/* The first group: the sheet title already says what it is. */}

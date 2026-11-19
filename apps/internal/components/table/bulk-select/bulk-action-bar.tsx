@@ -103,7 +103,7 @@ type BulkActionBarProps = {
   controls?: (run: RunBulkAction, pending: boolean) => ReactNode
   /** Shows Archive before it saves (a board takes the cards off). */
   optimisticArchive?: BulkOptimistic
-  /** Stands in for the server actions (the /design demo). */
+  /** Stands in for the server actions (the design system demo). */
   runAction?: typeof bulkSetArchived
   resolveMatching?: typeof resolveBulkMatchingIds
 }

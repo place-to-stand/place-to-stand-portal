@@ -26,7 +26,7 @@ const isRoleLiteral = node =>
 
 /**
  * What the signed-in user may do is a capability (lib/auth/capabilities.ts),
- * so Settings → Roles & permissions shows it and a new role needs no hunt.
+ * so Reference → Roles & permissions shows it and a new role needs no hunt.
  * Comparing someone else's role (a person in a list) is data, and allowed.
  */
 export const noRoleLiteral = {

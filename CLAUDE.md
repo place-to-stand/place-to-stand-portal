@@ -118,7 +118,8 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 │   ├── my/           # Current user's pages (home, tasks)
 │   ├── projects/     # Project workspace (tabbed, see below; archive, activity)
 │   ├── reports/      # Reports (monthly-close)
-│   ├── settings/     # Sidebar "Admin": Settings (tabs: business, billing (products, tax rates, profit share), integrations (the agency's services)), roles & permissions, templates. A person's own settings are the Account sheet, not here
+│   ├── reference/    # Sidebar "Reference": roles & permissions, templates (emails, PDFs, notifications), design system. Pages that show how the portal is set up; admin only today
+│   ├── settings/     # Sidebar "Admin": Settings (tabs: business, billing (products, tax rates, profit share), integrations (the agency's services)). A person's own settings are the Account sheet, not here
 │   └── submissions/  # Website form submissions
 ├── (public)/         # Publicly shared pages (e.g. share/invoices/[token])
 ├── api/              # API routes: v1/, cli/v1/, tasks/, task-comments/, my-tasks/,
@@ -214,7 +215,7 @@ Portal access is read from the `client_portal_access` view: a contact's membersh
 
 **Access control:**
 
-- **Every check names a capability** from `lib/auth/capabilities.ts` (what each role may do; Settings → Roles & permissions shows it). Pages call `requirePage('<capability>')`, which redirects (SALES without it to `/leads`, CLIENT to `CLIENT_PORTAL_URL`). API routes call `authorizeRoute('<capability>')` (`lib/auth/guard.ts`), which answers 401/403 JSON, never a redirect; only OAuth navigations under `app/api/auth/**` keep the redirecting guards. Code below them uses `assertCan(user, '<capability>')` (throws ForbiddenError) or `roleCan(user.role, '<capability>')` for a branch. CLIENT-role users are rejected at sign-in. Shared rules (nav, activity types, sheet entities) live in `lib/auth/roles.ts`
+- **Every check names a capability** from `lib/auth/capabilities.ts` (what each role may do; Reference → Roles & permissions shows it). Pages call `requirePage('<capability>')`, which redirects (SALES without it to `/my/home`, CLIENT to `CLIENT_PORTAL_URL`). API routes call `authorizeRoute('<capability>')` (`lib/auth/guard.ts`), which answers 401/403 JSON, never a redirect; only OAuth navigations under `app/api/auth/**` keep the redirecting guards. Code below them uses `assertCan(user, '<capability>')` (throws ForbiddenError) or `roleCan(user.role, '<capability>')` for a branch. CLIENT-role users are rejected at sign-in. Shared rules (nav, activity types, sheet entities) live in `lib/auth/roles.ts`
 - Never compare the signed-in user's role to a literal (`user.role === 'ADMIN'`): add or use a capability. Comparing another person's role (a list of people) is data and fine. Lint enforces both (`pts/no-role-literal`, and a `no-restricted-syntax` ban on redirecting guards in API routes)
 - What Sales may see of billing is an allowlist: activity verbs are classified in `lib/activity/verb-audience.ts` (type-check fails on an unclassified verb), and project payloads pick the client fields members see (`lib/projects/viewer-scope.ts`)
 - `scripts/permissions-manifest.mjs` (`npm run lint`) reads each endpoint's guard from code, comments stripped, and fails on a capability that doesn't exist. Where the guard runs in code an export calls, put `// permission: <capability> — <why>` on the export
@@ -250,7 +251,7 @@ This project does NOT use PostgreSQL Row Level Security. All access control is h
 
 - `getSession()` - Retrieve Supabase session
 - `getCurrentUser()` - Combine Supabase auth with database user record
-- `requirePage(capability)` - Page and server-action guard; redirects signed-out users to sign in, CLIENT sessions to the client portal and other staff without the capability to `/leads`. `requireUser()` is `requirePage('portal.admin')`, `requireCrmUser()` is `requirePage('portal.sign_in')`
+- `requirePage(capability)` - Page and server-action guard; redirects signed-out users to sign in, CLIENT sessions to the client portal and other staff without the capability to `/my/home`. `requireUser()` is `requirePage('portal.admin')`, `requireCrmUser()` is `requirePage('portal.sign_in')`
 - `authorizeRoute(capability)` (`lib/auth/guard.ts`) - API route guard; returns `{ user, denied }`, where `denied` is a 401/403 JSON response
 
 **Permission helpers** (`apps/internal/lib/auth/permissions.ts`) — all take the `AppUser` object, not a bare user id:
@@ -294,7 +295,7 @@ API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 
 **Design system:** `docs/design-system/` (README, `tokens.json`, `components/*.md`) documents colors, type, components, copy voice and house UI rules; the `design-system` skill loads it for UI work. Read it before any visual change, and update it when you change what it describes. `tokens.json` values are generated: run `npm run design-tokens` after changing `packages/ui/src/styles/theme.css`, `BRAND` or `EMAIL_COLORS`.
 
-**Design system rule:** before any UI work, read `docs/design-system/` and open `/design` in the internal portal. Any change to a shared component, a token or an entity updates `docs/design-system/` and `/design` in the same commit. Entities (each record type's name, icon and colour) live only in the registry, `apps/internal/lib/entity-accents.ts`: use `ENTITY_ICONS` / `ENTITY_ACCENTS`, never import an entity icon from `lucide-react` or write an `*-entity-*` class elsewhere. `npm run lint` enforces it (lint, plus `scripts/check-entities.mjs` for missing icons or colours, shared icons and 3:1 contrast in both themes). A sheet's list of related records (heading, +, clickable empty state, preview cards) is always `EntityList` (`apps/internal/components/sheets/entity-list.tsx`); lint blocks importing `SectionAddButton` anywhere else.
+**Design system rule:** before any UI work, read `docs/design-system/` and open Reference → Design system (`/reference/design-system`) in the internal portal. Any change to a shared component, a token or an entity updates `docs/design-system/` and that page in the same commit. Entities (each record type's name, icon and colour) live only in the registry, `apps/internal/lib/entity-accents.ts`: use `ENTITY_ICONS` / `ENTITY_ACCENTS`, never import an entity icon from `lucide-react` or write an `*-entity-*` class elsewhere. `npm run lint` enforces it (lint, plus `scripts/check-entities.mjs` for missing icons or colours, shared icons and 3:1 contrast in both themes). A sheet's list of related records (heading, +, clickable empty state, preview cards) is always `EntityList` (`apps/internal/components/sheets/entity-list.tsx`); lint blocks importing `SectionAddButton` anywhere else.
 
 **Rules name their guard:** every house rule and component rule in `docs/design-system/` ends with what enforces it, `(guard: lint \`pts/…\`)`, `(guard: types)`, `(guard: scripts/<check>.mjs)`or`(guard: review)`, and `scripts/check-rule-guards.mjs`(in`npm run lint`) fails on one that doesn't. A new preference lands with its guard. Prefer, in order: a type on the shared component, a built-in lint setting (`no-restricted-imports`/`-properties`, or `no-restricted-syntax`, which runs as `pts/restricted-syntax`in`base.mjs`/`next.mjs`), a check added to an existing rule (`pts/class-names`for classes,`pts/copy`for text people read,`pts/sheets`for sheet links), and only then a new rule in`packages/lint-config/rules/`; the README's "Which check guards which rule" table lists them all.
 
@@ -431,6 +432,8 @@ Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never
 - Generate links with the builders in `lib/sheets/hrefs.ts` (board task links come from `buildBoardPath`), never string-concatenated inline.
 
 **Account sheet:** the signed-in person's own settings (profile, their Google/GitHub/Vercel/Supabase connections and connected apps, preferences) are one sheet over any page, `?account=<profile|integrations|preferences>` (`lib/account/use-account-sheet.ts`, `components/account/`), opened from the user menu, Ctrl K and "Connect in Account" buttons. It is not a record, so it sits outside the sheet stack and layers on top (`SheetContent aboveStack`). Every staff role gets all of it (`integrations.personal`); the agency's own services stay on Settings → Integrations (`integrations.manage`). OAuth callbacks return to `/my/home?account=integrations`.
+
+**Get help:** who built the portal and how to reach them (`PTS_CONTACT`, fixed on every install) is a dialog, not a page: user menu → Get help, or Ctrl K (`components/help/get-help-dialog.tsx`). What's new and Feedback will sit beside it.
 
 **Retired routes and params:** static redirects live in `apps/internal/next.config.ts` `redirects()`; only routes that need a lookup stay as redirect pages (`/clients/[clientSlug]`, `/settings/users`). Old `?client=`/`?user=` sheet params are mapped in `proxy.ts`.
 

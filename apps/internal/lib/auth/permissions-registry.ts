@@ -11,7 +11,7 @@ import { MCP_TOOL_CAPABILITIES } from '@/lib/mcp/tool-capabilities'
 import manifest from './permissions-manifest.json'
 
 /**
- * Joins the two halves of the permissions registry for Settings → Roles &
+ * Joins the two halves of the permissions registry for Reference → Roles &
  * permissions: `capabilities.ts` (what each role may do) and the generated
  * `permissions-manifest.json` (every endpoint and the guard it calls; run
  * `npm run permissions-manifest`, checked by `npm run lint`).

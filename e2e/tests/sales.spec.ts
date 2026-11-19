@@ -15,8 +15,10 @@ test('sales sees the CRM and member projects only', async ({ page }) => {
     'Hour blocks',
     'Time logs',
     'Monthly close',
-    'Design system',
     'Settings',
+    'Roles & permissions',
+    'Templates',
+    'Design system',
   ]) {
     await expect(nav.filter({ hasText: hidden })).toHaveCount(0)
   }
@@ -26,12 +28,23 @@ test('sales is sent back from admin pages', async ({ page }) => {
   for (const path of [
     '/invoices',
     '/hour-blocks',
-    '/design',
+    '/reference/design-system',
     '/reports/monthly-close',
   ]) {
     await page.goto(path)
     await expect(page).not.toHaveURL(new RegExp(`${path}$`))
   }
+})
+
+// Get help is everyone's.
+test('sales can open Get help from the command palette', async ({ page }) => {
+  await page.goto('/my/home')
+  await expectHealthy(page)
+  await page.keyboard.press('ControlOrMeta+k')
+  await page.getByRole('option', { name: 'Get help' }).click()
+  await expect(
+    page.getByRole('dialog').getByRole('link', { name: 'Book a call' })
+  ).toHaveAttribute('href', /placetostandagency\.com\/contact/)
 })
 
 // Account → Integrations is everyone's: their own connections, all of them.

@@ -1,7 +1,15 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Keyboard, Loader2, LogOut, Moon, Sun } from 'lucide-react'
+import {
+  CircleUserRound,
+  Keyboard,
+  LifeBuoy,
+  Loader2,
+  LogOut,
+  Moon,
+  Sun,
+} from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import {
@@ -19,13 +27,13 @@ import type { AppUser } from '@/lib/auth/session'
 import { signOut } from '@/app/(dashboard)/_actions/sign-out'
 import { useTheme } from '@/components/providers/theme-provider'
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
+import { useGetHelp } from '@/components/help/get-help-dialog'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
-import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { openAccountSheet } from '@/lib/account/use-account-sheet'
 
-// Account is your sign-in: the registry's user icon.
-const UserIcon = ENTITY_ICONS.user
+// Account is your own settings, not a record: a plain icon, no entity colour.
+const UserIcon = CircleUserRound
 
 type Props = {
   user: AppUser
@@ -40,6 +48,7 @@ export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { theme, toggleTheme } = useTheme()
   const { setOpen: setShortcutsOpen } = useKeyboardShortcuts()
+  const { setOpen: setGetHelpOpen } = useGetHelp()
 
   const initials = user.full_name
     ? user.full_name
@@ -141,6 +150,20 @@ export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
                 className='ml-auto'
               />
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={event => {
+                event.preventDefault()
+                setIsMenuOpen(false)
+                setGetHelpOpen(true)
+              }}
+              className='flex items-center gap-2'
+            >
+              <LifeBuoy className='h-4 w-4' />
+              <span>Get help</span>
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
             <DropdownMenuItem
               disabled={isPending}
               onSelect={event => {
