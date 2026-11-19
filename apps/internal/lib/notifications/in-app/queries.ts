@@ -189,7 +189,8 @@ export async function fetchNotificationFeed(
         href: notifications.href,
         readAt: notifications.readAt,
         createdAt: notifications.createdAt,
-        sortAt: sql<string>`${sortColumn}::text`,
+        // ISO in UTC with microseconds, whatever the session's DateStyle.
+        sortAt: sql<string>`to_char(${sortColumn} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
         actorName: sql<
           string | null
         >`coalesce(${personNameSql}, ${users.email})`,

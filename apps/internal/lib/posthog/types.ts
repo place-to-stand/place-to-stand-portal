@@ -5,6 +5,7 @@ export const INTERACTION_EVENTS = {
   ROUTER_TRANSITION: 'router.transition',
   BOARD_TAB_SWITCH: 'board.tab_switch',
   IDLE_RESUME: 'idle.resume',
+  FIRST_CLICK_AFTER_AWAY: 'idle.first_click',
 } as const
 
 export type InteractionEventName =

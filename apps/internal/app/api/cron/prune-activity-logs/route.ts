@@ -28,7 +28,13 @@ export async function GET(request: NextRequest) {
 
   try {
     const deletedCount = await pruneActivityLogsBefore(cutoff)
-    const archivedNotificationsDeleted = await pruneArchivedNotifications()
+    // Its own failure is logged under its own name and doesn't undo the
+    // activity log prune above.
+    const archivedNotificationsDeleted =
+      await pruneArchivedNotifications().catch(error => {
+        console.error('Failed to prune archived notifications', error)
+        return null
+      })
 
     return NextResponse.json({
       ok: true,

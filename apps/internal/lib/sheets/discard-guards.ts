@@ -50,3 +50,8 @@ export function confirmDiscardAll(
   }
   run(0)
 }
+
+/** True while any sheet or page form holds unsaved changes. */
+export function hasUnsavedChanges() {
+  return guards.size > 0
+}

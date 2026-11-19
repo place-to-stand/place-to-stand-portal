@@ -293,7 +293,7 @@ export function NotificationList({
               </div>
             </li>
           ))}
-          {feed.hasMore ? (
+          {feed.hasMore && items.length > 0 ? (
             <li className='flex justify-center px-4 py-2'>
               <Button
                 type='button'

@@ -6,6 +6,7 @@ import { PostHogProvider as PHProvider } from '@posthog/react'
 import posthog from 'posthog-js'
 
 import { RouterTransitionTracker } from '@/components/tracking/router-transition-tracker'
+import { FirstClickAfterAwayTracker } from '@/components/tracking/first-click-after-away-tracker'
 import { IdleResumeTracker } from '@/components/tracking/idle-resume-tracker'
 
 type Props = {
@@ -23,6 +24,7 @@ export function PostHogProvider({ children }: Props) {
             prerendered page. */}
         <Suspense fallback={null}>
           <RouterTransitionTracker />
+          <FirstClickAfterAwayTracker />
         </Suspense>
         <IdleResumeTracker />
       </Fragment>

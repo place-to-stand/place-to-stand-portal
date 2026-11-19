@@ -21,7 +21,7 @@ This folder describes; the code decides. When they disagree, the code wins and t
 
 `tokens.json` color values and the radius scale are written by `npm run design-tokens` (from the repo root), which reads the sources above and keeps the hand-written usage notes. `npm run lint` fails when the file is stale. Type, spacing, size, shadow and opacity entries are hand-written.
 
-**Before adding anything new** (a component, a color, a pattern), look for an existing one in `packages/ui` or `apps/internal/components` and reuse it, even if that bends the design slightly. The Reference → Templates galleries are a worked example: `PageShell`, the shared list toolbar (`components/table-toolbar/*`), `Badge`, `Tabs` and `SheetFormHeader`, all reused.
+**Before adding anything new** (a component, a color, a pattern), look for an existing one in `packages/ui` or `apps/internal/components` and reuse it, even if that bends the design slightly. The Reference → Emails, PDFs and Chat messages galleries are a worked example: `PageShell`, the shared list toolbar (`components/table-toolbar/*`), `Badge`, `Tabs` and `SheetFormHeader`, all reused.
 
 ## Files
 
