@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 import { logActivity } from '@/lib/activity/logger'
 import { taskStatusChangedEvent } from '@/lib/activity/events'
+import { notifyTaskStatusChanged } from '@/lib/notifications/in-app/events'
 import { requirePage } from '@/lib/auth/session'
 import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
@@ -112,6 +113,12 @@ export async function changeTaskStatus(input: {
           'Status saved but the task could not be moved to the top of My Tasks.',
       }
     }
+
+    await notifyTaskStatusChanged(
+      user,
+      { id: taskId, title: task.title ?? 'Task' },
+      status
+    )
 
     const event = taskStatusChangedEvent({
       title: task.title ?? 'Task',

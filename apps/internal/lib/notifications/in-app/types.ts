@@ -7,7 +7,10 @@ export const NOTIFICATION_TYPES = [
   'task_comment',
   'task_due_today',
   'task_overdue',
+  'task_status',
   'lead_assigned',
+  'lead_update',
+  'lead_stage',
 ] as const
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
@@ -28,4 +31,4 @@ export type NotificationFeed = {
   unreadCount: number
 }
 
-export type NotificationFilter = 'all' | 'unread'
+export type NotificationFilter = 'all' | 'unread' | 'archived'

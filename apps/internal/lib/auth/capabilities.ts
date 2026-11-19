@@ -329,6 +329,14 @@ export const CAPABILITIES = {
     roles: ADMIN_ONLY,
     surfaces: ['app'],
   },
+  'settings.health': {
+    area: 'Reference',
+    label: 'System health',
+    description:
+      'Whether background work keeps up: email retries and scheduled jobs.',
+    roles: ADMIN_ONLY,
+    surfaces: ['app'],
+  },
 
   // Integrations
   'integrations.mcp': {

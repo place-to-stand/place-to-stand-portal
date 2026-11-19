@@ -78,6 +78,7 @@ const nextConfig: NextConfig = {
       to('/reports', '/reports/monthly-close'),
       to('/settings', '/settings/business'),
       to('/reference/templates', '/reference/templates/emails'),
+      to('/reference/templates/notifications', '/reference/templates/chat'),
       // Reference pages, once under Admin.
       to('/settings/permissions', '/reference/permissions'),
       to('/settings/templates', '/reference/templates/emails'),

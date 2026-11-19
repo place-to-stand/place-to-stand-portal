@@ -2,11 +2,10 @@ import type { LucideIcon } from 'lucide-react'
 
 import type { Capability } from '@/lib/auth/capabilities'
 import {
+  BookOpen,
   FileText,
   Home as HomeIcon,
-  Palette,
   Settings as SettingsIcon,
-  ShieldCheck,
 } from 'lucide-react'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
@@ -135,30 +134,14 @@ export const NAV_GROUPS: NavGroup[] = [
           '/settings/integrations',
         ],
       },
-    ],
-  },
-  {
-    // Pages that show how the portal is set up; nothing on them changes it.
-    title: 'Reference',
-    items: [
       {
-        href: '/reference/permissions',
+        // One item for every reference page (tabs on the page), so the
+        // sidebar doesn't grow with each new topic. Nothing there changes
+        // the portal; it shows how it's set up and whether it's healthy.
+        href: '/reference',
         capability: 'settings.permissions',
-        label: 'Roles & permissions',
-        icon: ShieldCheck,
-      },
-      {
-        href: '/reference/templates/emails',
-        capability: 'settings.templates',
-        label: 'Templates',
-        icon: ENTITY_ICONS.template,
-        matchHrefs: ['/reference/templates'],
-      },
-      {
-        href: '/reference/design-system',
-        capability: 'settings.design',
-        label: 'Design system',
-        icon: Palette,
+        label: 'Reference',
+        icon: BookOpen,
       },
     ],
   },

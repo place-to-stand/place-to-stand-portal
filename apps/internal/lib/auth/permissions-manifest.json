@@ -645,6 +645,27 @@
   },
   {
     "type": "page",
+    "name": "/reference/health",
+    "file": "apps/internal/app/(dashboard)/reference/health/page.tsx",
+    "kind": "capability",
+    "capability": "settings.health"
+  },
+  {
+    "type": "page",
+    "name": "/reference/notifications",
+    "file": "apps/internal/app/(dashboard)/reference/notifications/page.tsx",
+    "kind": "capability",
+    "capability": "settings.templates"
+  },
+  {
+    "type": "page",
+    "name": "/reference",
+    "file": "apps/internal/app/(dashboard)/reference/page.tsx",
+    "kind": "capability",
+    "capability": "settings.permissions"
+  },
+  {
+    "type": "page",
     "name": "/reference/permissions",
     "file": "apps/internal/app/(dashboard)/reference/permissions/page.tsx",
     "kind": "capability",
@@ -652,15 +673,15 @@
   },
   {
     "type": "page",
-    "name": "/reference/templates/emails",
-    "file": "apps/internal/app/(dashboard)/reference/templates/emails/page.tsx",
+    "name": "/reference/templates/chat",
+    "file": "apps/internal/app/(dashboard)/reference/templates/chat/page.tsx",
     "kind": "capability",
     "capability": "settings.templates"
   },
   {
     "type": "page",
-    "name": "/reference/templates/notifications",
-    "file": "apps/internal/app/(dashboard)/reference/templates/notifications/page.tsx",
+    "name": "/reference/templates/emails",
+    "file": "apps/internal/app/(dashboard)/reference/templates/emails/page.tsx",
     "kind": "capability",
     "capability": "settings.templates"
   },

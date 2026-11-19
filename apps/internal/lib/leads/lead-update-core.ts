@@ -10,6 +10,8 @@ import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { leadUpdates } from '@/lib/db/schema'
 import { LEAD_UPDATE_LABELS } from '@/lib/leads/updates'
+import { notifyLeadUpdate } from '@/lib/notifications/in-app/events'
+import { htmlToPlainText } from '@/lib/activity/text-diff'
 import type { ActivitySourceValue } from '@/lib/types'
 
 import {
@@ -102,6 +104,14 @@ export async function createLeadUpdateForActor(
         occurredAt: occurred,
       }),
     })
+
+    const text = htmlToPlainText(body ?? '').trim()
+    await notifyLeadUpdate(
+      actor,
+      leadId,
+      LEAD_UPDATE_LABELS[type],
+      text.length > 140 ? `${text.slice(0, 139)}…` : text
+    )
 
     return { success: true, leadId, updateId: inserted.id }
   } catch (error) {

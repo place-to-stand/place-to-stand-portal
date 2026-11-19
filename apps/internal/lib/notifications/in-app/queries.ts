@@ -8,7 +8,8 @@ import {
   eq,
   inArray,
   isNull,
-  lte,
+  isNotNull,
+  lt,
   ne,
   sql,
 } from 'drizzle-orm'
@@ -73,8 +74,9 @@ export async function createNotifications(rows: NewNotification[]) {
 
 /**
  * Due-date notifications are made when the feed is read rather than by a
- * cron: one "due today" and one "overdue" per task and due date, for open
- * tasks assigned to the user that they can work.
+ * cron: one "overdue" per task and due date, for open tasks assigned to the
+ * user that they can work. There is no "due today": it only repeated a date
+ * the person could already see (often one they had just set themselves).
  */
 async function syncDueTaskNotifications(user: AppUser) {
   const today = companyCalendarDate()
@@ -91,7 +93,7 @@ async function syncDueTaskNotifications(user: AppUser) {
         isNull(tasks.deletedAt),
         isNull(tasks.acceptedAt),
         ne(tasks.status, 'DONE'),
-        lte(tasks.dueOn, today),
+        lt(tasks.dueOn, today),
         workableTasksFilter(user, workable)
       )
     )
@@ -99,15 +101,14 @@ async function syncDueTaskNotifications(user: AppUser) {
   await createNotifications(
     rows.flatMap(row => {
       if (!row.dueOn) return []
-      const overdue = row.dueOn < today
       return [
         {
           userId: user.id,
-          type: overdue ? 'task_overdue' : 'task_due_today',
-          title: overdue ? `Overdue: ${row.title}` : `Due today: ${row.title}`,
-          body: overdue ? `Was due ${row.dueOn}` : null,
+          type: 'task_overdue',
+          title: `Overdue: ${row.title}`,
+          body: `Was due ${row.dueOn}`,
           href: myTaskHref(row.id),
-          dedupeKey: `${overdue ? 'task-overdue' : 'task-due'}:${row.id}:${row.dueOn}`,
+          dedupeKey: `task-overdue:${row.id}:${row.dueOn}`,
         } satisfies NewNotification,
       ]
     })
@@ -146,9 +147,14 @@ export async function fetchNotificationFeed(
   await syncDueTaskNotificationsThrottled(user)
 
   const where =
-    filter === 'unread'
-      ? and(live(user.id), isNull(notifications.readAt))
-      : live(user.id)
+    filter === 'archived'
+      ? and(
+          eq(notifications.userId, user.id),
+          isNotNull(notifications.clearedAt)
+        )
+      : filter === 'unread'
+        ? and(live(user.id), isNull(notifications.readAt))
+        : live(user.id)
 
   const [rows, [unread]] = await Promise.all([
     db
@@ -167,7 +173,11 @@ export async function fetchNotificationFeed(
       .from(notifications)
       .leftJoin(users, eq(users.id, notifications.actorId))
       .where(where)
-      .orderBy(desc(notifications.createdAt))
+      .orderBy(
+        filter === 'archived'
+          ? desc(notifications.clearedAt)
+          : desc(notifications.createdAt)
+      )
       .limit(FEED_LIMIT),
     db
       .select({ value: count() })
@@ -205,7 +215,11 @@ export async function markNotificationsUnread(userId: string, ids: string[]) {
     .where(and(live(userId), inArray(notifications.id, ids)))
 }
 
-export async function clearNotifications(userId: string, ids?: string[]) {
+/**
+ * Archives notifications: out of All and Unread, kept under Archived and
+ * restorable. Archiving also marks them read. (The column is `cleared_at`.)
+ */
+export async function archiveNotifications(userId: string, ids?: string[]) {
   await db
     .update(notifications)
     .set({
@@ -213,4 +227,18 @@ export async function clearNotifications(userId: string, ids?: string[]) {
       readAt: sql`coalesce(${notifications.readAt}, timezone('utc'::text, now()))`,
     })
     .where(and(live(userId), ids ? inArray(notifications.id, ids) : undefined))
+}
+
+/** Brings archived notifications back to All (and Unread when unread). */
+export async function restoreNotifications(userId: string, ids: string[]) {
+  await db
+    .update(notifications)
+    .set({ clearedAt: null })
+    .where(
+      and(
+        eq(notifications.userId, userId),
+        isNotNull(notifications.clearedAt),
+        inArray(notifications.id, ids)
+      )
+    )
 }

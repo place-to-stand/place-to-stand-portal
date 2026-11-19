@@ -28,7 +28,10 @@ import {
   LEAD_WON_NEEDS_COMPANY_MESSAGE,
   breaksWonNeedsCompany,
 } from '@/lib/leads/won-rule'
-import { notifyLeadAssigned } from '@/lib/notifications/in-app/events'
+import {
+  notifyLeadAssigned,
+  notifyLeadStageMoved,
+} from '@/lib/notifications/in-app/events'
 import {
   fillCompanyWebsiteIfBlank,
   type DeferActivity,
@@ -420,6 +423,11 @@ async function updateLead(
         ...event,
       })
     )
+  }
+
+  if (statusChanged) {
+    const toStatus = normalized.status
+    defer(() => notifyLeadStageMoved(actor, leadId, toStatus))
   }
 
   const assigneeId = normalized.assigneeId

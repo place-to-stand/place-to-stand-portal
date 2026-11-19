@@ -2,25 +2,40 @@ import { expect, test } from '@playwright/test'
 
 import { expectHealthy } from './helpers'
 
-test('admin sidebar: Admin holds Settings, Reference the rest', async ({
+test('admin sidebar: Admin holds Settings and one Reference item', async ({
   page,
 }) => {
   await page.goto('/my/home')
   const admin = page
     .locator('[data-sidebar="group"]')
     .filter({ hasText: 'Admin' })
-  const items = admin.locator('[data-sidebar="menu-button"]')
-  await expect(items).toHaveCount(1)
-  await expect(items.first()).toContainText('Settings')
-  const reference = page
-    .locator('[data-sidebar="group"]')
-    .filter({ hasText: 'Reference' })
-    .locator('[data-sidebar="menu-button"]')
-  await expect(reference).toHaveText([
+  await expect(admin.locator('[data-sidebar="menu-button"]')).toHaveText([
+    'Settings',
+    'Reference',
+  ])
+})
+
+test('Reference is one tabbed page; /reference lands on its first tab', async ({
+  page,
+}) => {
+  await page.goto('/reference')
+  await expect(page).toHaveURL(/\/reference\/permissions$/)
+  for (const tab of [
     'Roles & permissions',
+    'Notifications',
     'Templates',
     'Design system',
-  ])
+    'System health',
+  ]) {
+    await expect(page.getByRole('tab', { name: tab })).toBeVisible()
+  }
+  const item = page.locator('[data-sidebar="menu-button"]', {
+    hasText: 'Reference',
+  })
+  await page.getByRole('tab', { name: 'System health' }).click()
+  await expect(page).toHaveURL(/\/reference\/health$/)
+  await expect(item).toHaveAttribute('data-active', 'true')
+  await expectHealthy(page)
 })
 
 test('Settings is one tabbed page; /settings lands on Business', async ({
@@ -51,15 +66,21 @@ test('Get help opens from the user menu', async ({ page }) => {
   await expect(dialog.getByRole('link', { name: 'Book a call' })).toBeVisible()
 })
 
-test('Templates stays active across its tabs', async ({ page }) => {
+test('Templates switches kind and stays on the Templates tab', async ({
+  page,
+}) => {
   await page.goto('/reference/templates/emails')
-  const item = page.locator('[data-sidebar="menu-button"]', {
-    hasText: 'Templates',
-  })
-  await expect(item).toHaveAttribute('data-active', 'true')
-  await page.getByRole('tab', { name: 'PDFs' }).click()
+  await page
+    .getByRole('tablist', { name: 'Template kind' })
+    .getByRole('tab', { name: 'PDFs' })
+    .click()
   await expect(page).toHaveURL(/\/reference\/templates\/pdfs$/)
-  await expect(item).toHaveAttribute('data-active', 'true')
+  await expect(page.getByRole('tab', { name: 'Templates' })).toHaveAttribute(
+    'aria-selected',
+    'true'
+  )
+  await page.goto('/reference/templates/notifications')
+  await expect(page).toHaveURL(/\/reference\/templates\/chat$/)
 })
 
 test('hour blocks and time logs have different sidebar icons', async ({

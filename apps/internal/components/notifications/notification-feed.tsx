@@ -2,16 +2,15 @@
 
 /**
  * The notification stream shared by the home widget and the header bell:
- * one query (polled), optimistic read/unread/clear, and the list markup.
+ * one query (polled), optimistic read/unread/archive/restore, and the list markup.
  */
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Circle, X } from 'lucide-react'
+import { Archive, ArchiveRestore, Circle } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { formatRelativeTime } from '@pts/ui/dates'
 import { Tabs, TabsList, TabsTrigger } from '@pts/ui/tabs'
 import { EmptyState } from '@pts/ui/empty-state'
@@ -22,77 +21,19 @@ import type {
   NotificationFilter,
   NotificationItem,
 } from '@/lib/notifications/in-app/types'
+
+import {
+  applyLocally,
+  FAILURE_TITLES,
+  fetchFeed,
+  postAction,
+} from './notification-feed-utils'
 import { cn } from '@/lib/utils'
 
 const QUERY_KEY = ['notifications'] as const
 
-const FAILURE_TITLES: Record<FeedAction['action'], string> = {
-  read: 'Unable to mark notifications read',
-  unread: 'Unable to mark notifications unread',
-  clear: 'Unable to clear notifications',
-}
 // Background refresh while the home page is open (paused in hidden tabs).
 const POLL_MS = 2 * 60_000
-
-type FeedAction = { action: 'read' | 'unread' | 'clear'; ids?: string[] }
-
-async function fetchFeed(
-  filter: NotificationFilter
-): Promise<NotificationFeed> {
-  const response = await fetch(`/api/notifications?filter=${filter}`)
-  const payload = await response.json()
-  if (!response.ok || !payload.ok) {
-    throw new Error(payload.error ?? 'Unable to load notifications.')
-  }
-  return payload.data
-}
-
-async function postAction(body: FeedAction) {
-  const response = await fetch('/api/notifications', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  const payload = await response.json().catch(() => ({}))
-  if (!response.ok || !payload.ok) {
-    throw new Error(payload.error ?? 'Unable to update notifications.')
-  }
-}
-
-/** Applies an action to the cached feed so the UI updates before the server answers. */
-function applyLocally(
-  feed: NotificationFeed,
-  { action, ids }: FeedAction,
-  filter: NotificationFilter
-): NotificationFeed {
-  const hits = (item: NotificationItem) => !ids || ids.includes(item.id)
-  const now = new Date().toISOString()
-  let items = feed.items
-
-  if (action === 'clear') {
-    items = items.filter(item => !hits(item))
-  } else {
-    items = items.map(item =>
-      hits(item)
-        ? { ...item, readAt: action === 'read' ? (item.readAt ?? now) : null }
-        : item
-    )
-    if (filter === 'unread' && action === 'read') {
-      items = items.filter(item => !item.readAt)
-    }
-  }
-
-  const changedUnread = feed.items.filter(
-    item => hits(item) && !item.readAt
-  ).length
-  const unreadCount =
-    action === 'unread'
-      ? feed.unreadCount +
-        feed.items.filter(item => hits(item) && item.readAt).length
-      : Math.max(0, feed.unreadCount - (ids ? changedUnread : feed.unreadCount))
-
-  return { items, unreadCount }
-}
 
 export function useNotificationFeed() {
   const router = useRouter()
@@ -150,8 +91,7 @@ export function useNotificationFeed() {
 
 export type NotificationFeedState = ReturnType<typeof useNotificationFeed>
 
-/** All/Unread tabs, mark all read, clear all. */
-/** The All/Unread toggle, beside the "Notifications" title. */
+/** The All / Unread / Archived toggle, beside the "Notifications" title. */
 export function NotificationFilterToggle({
   feed,
 }: {
@@ -170,29 +110,22 @@ export function NotificationFilterToggle({
         <TabsTrigger value='unread' className='px-2 py-0.5 text-xs'>
           Unread
         </TabsTrigger>
+        <TabsTrigger value='archived' className='px-2 py-0.5 text-xs'>
+          Archived
+        </TabsTrigger>
       </TabsList>
     </Tabs>
   )
 }
 
 /**
- * Mark all read and Clear all (confirmed), as matching text buttons at the
- * right end of the title row, in the bell and the home widget.
+ * Mark all read and Archive all, as matching text buttons at the right end of
+ * the title row, in the bell and the home widget. Archive is undone from the
+ * Archived tab, so it needs no confirm. Archived has nothing to act on in bulk.
  */
-export function NotificationActions({
-  feed,
-  onConfirmOpenChange,
-}: {
-  feed: NotificationFeedState
-  /** Lets the bell keep its popover open while the confirm is up. */
-  onConfirmOpenChange?: (open: boolean) => void
-}) {
-  const { items, unread, mutation } = feed
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const setConfirm = (next: boolean) => {
-    setConfirmOpen(next)
-    onConfirmOpenChange?.(next)
-  }
+export function NotificationActions({ feed }: { feed: NotificationFeedState }) {
+  const { filter, items, unread, mutation } = feed
+  if (filter === 'archived') return null
   return (
     <div className='flex items-center gap-1'>
       <Button
@@ -209,22 +142,16 @@ export function NotificationActions({
         variant='ghost'
         size='xs'
         disabled={!items.length}
-        onClick={() => setConfirm(true)}
+        onClick={() =>
+          mutation.mutate({
+            action: 'archive',
+            // Unread archives only what it shows; All archives everything.
+            ids: filter === 'unread' ? items.map(item => item.id) : undefined,
+          })
+        }
       >
-        Clear all
+        Archive all
       </Button>
-      <ConfirmDialog
-        open={confirmOpen}
-        title='Clear all notifications?'
-        description='This removes every notification from your list. It can’t be undone.'
-        confirmLabel='Clear all'
-        confirmVariant='destructive'
-        onConfirm={() => {
-          mutation.mutate({ action: 'clear' })
-          setConfirm(false)
-        }}
-        onCancel={() => setConfirm(false)}
-      />
     </div>
   )
 }
@@ -252,7 +179,9 @@ export function NotificationList({
             message={
               filter === 'unread'
                 ? 'All caught up.'
-                : 'No notifications. Assignments, comments on your tasks and due dates show up here.'
+                : filter === 'archived'
+                  ? 'Nothing archived. Archived notifications stay here until you restore them.'
+                  : 'No notifications. When someone assigns you work, comments on your tasks or moves your leads, it shows up here.'
             }
           />
         </div>
@@ -263,7 +192,7 @@ export function NotificationList({
         >
           {items.map(item => (
             // The whole row lights up and opens the notification (the button's
-            // ::after covers it); only Mark read and X, above it, don't.
+            // ::after covers it); only the row's actions, above it, don't.
             <li
               key={item.id}
               className='group hover:bg-muted/50 has-[[data-notification-open]:focus-visible]:bg-muted/50 relative flex items-start'
@@ -303,27 +232,40 @@ export function NotificationList({
                 </span>
               </button>
               <div className='pointer-events-none relative flex shrink-0 items-center gap-0.5 py-2 pr-2 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [&>*]:pointer-events-auto'>
-                <Button
-                  type='button'
-                  variant='ghost'
-                  size='xs'
-                  onClick={() =>
-                    mutation.mutate({
-                      action: item.readAt ? 'unread' : 'read',
-                      ids: [item.id],
-                    })
-                  }
-                >
-                  {item.readAt ? 'Mark unread' : 'Mark read'}
-                </Button>
-                <RowActionButton
-                  type='button'
-                  label='Clear notification'
-                  icon={<X aria-hidden />}
-                  onClick={() =>
-                    mutation.mutate({ action: 'clear', ids: [item.id] })
-                  }
-                />
+                {filter === 'archived' ? (
+                  <RowActionButton
+                    type='button'
+                    label='Restore notification'
+                    icon={<ArchiveRestore aria-hidden />}
+                    onClick={() =>
+                      mutation.mutate({ action: 'restore', ids: [item.id] })
+                    }
+                  />
+                ) : (
+                  <>
+                    <Button
+                      type='button'
+                      variant='ghost'
+                      size='xs'
+                      onClick={() =>
+                        mutation.mutate({
+                          action: item.readAt ? 'unread' : 'read',
+                          ids: [item.id],
+                        })
+                      }
+                    >
+                      {item.readAt ? 'Mark unread' : 'Mark read'}
+                    </Button>
+                    <RowActionButton
+                      type='button'
+                      label='Archive notification'
+                      icon={<Archive aria-hidden />}
+                      onClick={() =>
+                        mutation.mutate({ action: 'archive', ids: [item.id] })
+                      }
+                    />
+                  </>
+                )}
               </div>
             </li>
           ))}

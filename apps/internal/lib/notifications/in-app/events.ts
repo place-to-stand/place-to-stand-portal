@@ -5,8 +5,16 @@ import { unstable_rethrow } from 'next/navigation'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { taskAssignees, tasks, users } from '@/lib/db/schema'
-import { findAssigneesWithoutAccess } from '@/lib/projects/access'
+import {
+  companies,
+  contacts,
+  leads,
+  taskAssignees,
+  tasks,
+  users,
+} from '@/lib/db/schema'
+import { LEAD_STATUS_LABELS, type LeadStatusValue } from '@/lib/leads/constants'
+import { findBlockedAssignees } from '@/lib/projects/access'
 import { leadHref, myTaskHref } from '@/lib/sheets/hrefs'
 
 import { createNotifications } from './queries'
@@ -67,32 +75,40 @@ export function notifyTaskAssigned(
   })
 }
 
+/**
+ * Who hears about a task: its live assignees and the person who created it,
+ * as long as they can still open it (an assignee removed from the project,
+ * or without lead task access, isn't told). The actor is dropped later.
+ */
+async function taskFollowers(taskId: string) {
+  const [task] = await db
+    .select({ projectId: tasks.projectId, createdBy: tasks.createdBy })
+    .from(tasks)
+    .where(eq(tasks.id, taskId))
+    .limit(1)
+  if (!task) return []
+  const assigned = await db
+    .select({ userId: taskAssignees.userId })
+    .from(taskAssignees)
+    .where(
+      and(eq(taskAssignees.taskId, taskId), isNull(taskAssignees.deletedAt))
+    )
+  const ids = new Set(assigned.map(row => row.userId))
+  if (task.createdBy) ids.add(task.createdBy)
+  const staff = await staffRecipients([...ids])
+  const blocked = new Set(
+    (await findBlockedAssignees(task.projectId, staff)).map(person => person.id)
+  )
+  return staff.filter(userId => !blocked.has(userId))
+}
+
 export function notifyTaskComment(
   actor: AppUser,
   task: { id: string; title: string },
   excerpt: string
 ) {
   return bestEffort('task comment', async () => {
-    const assigned = await db
-      .select({ userId: taskAssignees.userId })
-      .from(taskAssignees)
-      .where(
-        and(eq(taskAssignees.taskId, task.id), isNull(taskAssignees.deletedAt))
-      )
-    const staff = await staffRecipients(assigned.map(row => row.userId))
-    // An assignee who can no longer open the task (removed from its project,
-    // or without lead task access) isn't told about the comment.
-    const [row] = await db
-      .select({ projectId: tasks.projectId })
-      .from(tasks)
-      .where(eq(tasks.id, task.id))
-      .limit(1)
-    if (!row) return
-    const recipients: string[] = []
-    for (const userId of staff) {
-      const blocked = await findAssigneesWithoutAccess(row.projectId, [userId])
-      if (!blocked.length) recipients.push(userId)
-    }
+    const recipients = await taskFollowers(task.id)
     await createNotifications(
       recipients.map(userId => ({
         userId,
@@ -100,6 +116,98 @@ export function notifyTaskComment(
         title: `${actorName(actor)} commented on ${task.title}`,
         body: excerpt,
         href: myTaskHref(task.id),
+        actorId: actor.id,
+      }))
+    )
+  })
+}
+
+/** The task statuses worth a notification: work stopped, or work finished. */
+const NOTIFIED_TASK_STATUSES = { BLOCKED: 'blocked', DONE: 'done' } as const
+
+/** Someone else marked a task you're on, or made, Blocked or Done. */
+export function notifyTaskStatusChanged(
+  actor: AppUser,
+  task: { id: string; title: string },
+  toStatus: string
+) {
+  const word =
+    NOTIFIED_TASK_STATUSES[toStatus as keyof typeof NOTIFIED_TASK_STATUSES]
+  if (!word) return Promise.resolve()
+  return bestEffort('task status', async () => {
+    const recipients = await taskFollowers(task.id)
+    await createNotifications(
+      recipients.map(userId => ({
+        userId,
+        type: 'task_status',
+        title: `${actorName(actor)} marked ${task.title} ${word}`,
+        href: myTaskHref(task.id),
+        actorId: actor.id,
+      }))
+    )
+  })
+}
+
+/** A lead's owner and how to name it in a notification. */
+async function leadNotice(leadId: string) {
+  const [row] = await db
+    .select({
+      assigneeId: leads.assigneeId,
+      contactName: contacts.name,
+      companyName: companies.name,
+    })
+    .from(leads)
+    .leftJoin(contacts, eq(contacts.id, leads.contactId))
+    .leftJoin(companies, eq(companies.id, leads.companyId))
+    .where(and(eq(leads.id, leadId), isNull(leads.deletedAt)))
+    .limit(1)
+  if (!row?.assigneeId) return null
+  const name = row.contactName ?? row.companyName ?? 'a lead'
+  return { assigneeId: row.assigneeId, name }
+}
+
+/** Someone else logged an update (a call, an email, a note) on your lead. */
+export function notifyLeadUpdate(
+  actor: AppUser,
+  leadId: string,
+  typeLabel: string,
+  excerpt: string
+) {
+  return bestEffort('lead update', async () => {
+    const lead = await leadNotice(leadId)
+    if (!lead) return
+    const recipients = await staffRecipients([lead.assigneeId])
+    const kind = typeLabel.toLowerCase()
+    const article = /^[aeiou]/.test(kind) ? 'an' : 'a'
+    await createNotifications(
+      recipients.map(userId => ({
+        userId,
+        type: 'lead_update',
+        title: `${actorName(actor)} logged ${article} ${kind} on ${lead.name}`,
+        body: excerpt || null,
+        href: leadHref(leadId),
+        actorId: actor.id,
+      }))
+    )
+  })
+}
+
+/** Someone else moved your lead to another stage. */
+export function notifyLeadStageMoved(
+  actor: AppUser,
+  leadId: string,
+  toStatus: LeadStatusValue
+) {
+  return bestEffort('lead stage', async () => {
+    const lead = await leadNotice(leadId)
+    if (!lead) return
+    const recipients = await staffRecipients([lead.assigneeId])
+    await createNotifications(
+      recipients.map(userId => ({
+        userId,
+        type: 'lead_stage',
+        title: `${actorName(actor)} moved ${lead.name} to ${LEAD_STATUS_LABELS[toStatus]}`,
+        href: leadHref(leadId),
         actorId: actor.id,
       }))
     )

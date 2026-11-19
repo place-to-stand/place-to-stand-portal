@@ -22,7 +22,10 @@ import { cn } from '@/lib/utils'
 import { EndpointList } from './_components/endpoint-list'
 import { PagePanel, pagePanelClass } from '@/components/layout/page-panel'
 
-import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
+import {
+  referenceCrumbs,
+  referenceTabsFor,
+} from '@/lib/navigation/reference-tabs'
 
 export const metadata: Metadata = {
   title: 'Roles & permissions | Reference',
@@ -44,7 +47,7 @@ const GRID =
  * `npm run lint`). Changing a permission is a code change; this page follows.
  */
 export default async function PermissionsPage() {
-  await requirePage('settings.permissions')
+  const user = await requirePage('settings.permissions')
   const registry = buildPermissionsRegistry()
   const roleTotals = PERMISSION_ROLES.map(role => ({
     role,
@@ -55,7 +58,11 @@ export default async function PermissionsPage() {
   const capabilityCount = Object.keys(CAPABILITIES).length
 
   return (
-    <PageShell breadcrumbs={crumbsForNav('/reference/permissions')}>
+    <PageShell
+      breadcrumbs={referenceCrumbs('permissions')}
+      tabs={referenceTabsFor(user.role)}
+      activeTab='permissions'
+    >
       <div className='w-full space-y-6'>
         <section className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
           {roleTotals.map(({ role, count }) => (

@@ -10,6 +10,7 @@ import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { leads } from '@/lib/db/schema'
 import { recordLeadStageMove } from '@/lib/leads/record-stage-move'
+import { notifyLeadStageMoved } from '@/lib/notifications/in-app/events'
 import { leadStageMoveFields } from '@/lib/leads/stage-rules'
 import { leadContactNameSql } from '@/lib/leads/lead-display'
 import { LEAD_STATUS_VALUES, type LeadStatusValue } from '@/lib/leads/constants'
@@ -189,6 +190,7 @@ async function applyLeadMove(
   }
 
   if (outcome.statusChange) {
+    await notifyLeadStageMoved(user, leadId, targetStatus)
     try {
       await logActivity({
         actorId: user.id,
