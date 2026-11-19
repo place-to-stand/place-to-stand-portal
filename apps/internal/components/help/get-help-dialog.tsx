@@ -72,10 +72,10 @@ function GetHelpDialog({
       <DialogContent className='max-h-[calc(100dvh-4rem)] overflow-y-auto sm:max-w-md'>
         <DialogHeader className='gap-4'>
           <BrandLogo size='lg' />
-          <DialogTitle>Built by {PTS_CONTACT.name}</DialogTitle>
+          <DialogTitle>Get help</DialogTitle>
           <DialogDescription>
-            Want something in this portal changed, added or set up? Talk to the
-            engineers who built it.
+            {PTS_CONTACT.name} built this portal. Want something changed, added
+            or set up? Talk to the engineers who built it.
           </DialogDescription>
         </DialogHeader>
         <div className='flex flex-col gap-2'>

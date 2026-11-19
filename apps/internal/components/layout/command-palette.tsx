@@ -265,6 +265,16 @@ function CommandPalette() {
         </CommandGroup>
         <CommandGroup heading='Help'>
           <CommandItem
+            value='Help get help contact support book a call email place to stand'
+            onSelect={() => {
+              handleOpenChange(false)
+              setGetHelpOpen(true)
+            }}
+          >
+            <LifeBuoy className='size-4' />
+            <span>Get help</span>
+          </CommandItem>
+          <CommandItem
             value='Help keyboard shortcuts keys'
             onSelect={() => {
               handleOpenChange(false)
@@ -278,16 +288,6 @@ function CommandPalette() {
               size='sm'
               className='ml-auto'
             />
-          </CommandItem>
-          <CommandItem
-            value='Help get help contact support book a call email place to stand'
-            onSelect={() => {
-              handleOpenChange(false)
-              setGetHelpOpen(true)
-            }}
-          >
-            <LifeBuoy className='size-4' />
-            <span>Get help</span>
           </CommandItem>
         </CommandGroup>
       </CommandList>
