@@ -8,7 +8,7 @@ import { authorizeRoute } from '@/lib/auth/guard'
  * GET /api/templates/pdf/[id]?variant=<key>
  *
  * Serves a PDF template rendered with placeholder data, inline, for the
- * Reference → Templates preview. Never touches real records.
+ * Reference → PDFs preview. Never touches real records.
  */
 export async function GET(
   request: Request,

@@ -48,7 +48,10 @@ import {
 import { GuideShell } from './_components/guide-shell'
 import { PatternsCopy, PatternsHouseRules } from './_components/patterns'
 
-import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
+import {
+  referenceCrumbs,
+  referenceTabsFor,
+} from '@/lib/navigation/reference-tabs'
 
 export const metadata: Metadata = {
   title: 'Design system | Reference',
@@ -59,10 +62,14 @@ export const metadata: Metadata = {
  * renders the real component with inline sample data; nothing here writes.
  */
 export default async function DesignPage() {
-  await requirePage('settings.design')
+  const user = await requirePage('settings.design')
 
   return (
-    <PageShell breadcrumbs={crumbsForNav('/reference/design-system')}>
+    <PageShell
+      breadcrumbs={referenceCrumbs('design-system')}
+      tabs={referenceTabsFor(user.role)}
+      activeTab='design-system'
+    >
       <GuideShell>
         <FoundationsColour />
         <FoundationsEntities />

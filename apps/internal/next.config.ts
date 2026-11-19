@@ -44,7 +44,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: '/(.*)', headers: securityHeaders },
-      // The Reference → Templates page frames its own PDF previews. Later
+      // The Reference → PDFs tab frames its own PDF previews. Later
       // entries override earlier ones for the same header key, so this route
       // alone may be framed, and only by this origin.
       {
@@ -78,6 +78,7 @@ const nextConfig: NextConfig = {
       to('/reports', '/reports/monthly-close'),
       to('/settings', '/settings/business'),
       to('/reference/templates', '/reference/templates/emails'),
+      to('/reference/templates/notifications', '/reference/templates/chat'),
       // Reference pages, once under Admin.
       to('/settings/permissions', '/reference/permissions'),
       to('/settings/templates', '/reference/templates/emails'),

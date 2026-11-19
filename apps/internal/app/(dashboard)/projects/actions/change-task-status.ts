@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 import { logActivity } from '@/lib/activity/logger'
 import { taskStatusChangedEvent } from '@/lib/activity/events'
+import { notifyTaskStatusChanged } from '@/lib/notifications/in-app/events'
 import { requirePage } from '@/lib/auth/session'
 import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
@@ -103,15 +104,21 @@ export async function changeTaskStatus(input: {
 
     // The reorder route calls this first and then writes the dropped
     // position over it, so drag-and-drop still lands exactly where dropped.
+    // The status is saved either way, so a failed pin still notifies and
+    // logs below before it reports the error.
+    let pinFailed = false
     try {
       await pinTaskToTopOfAssigneeBoards(taskId, status)
     } catch (sortError) {
       console.error('Failed to pin task on assignee boards', sortError)
-      return {
-        error:
-          'Status saved but the task could not be moved to the top of My Tasks.',
-      }
+      pinFailed = true
     }
+
+    await notifyTaskStatusChanged(
+      user,
+      { id: taskId, title: task.title ?? 'Task' },
+      status
+    )
 
     const event = taskStatusChangedEvent({
       title: task.title ?? 'Task',
@@ -130,6 +137,14 @@ export async function changeTaskStatus(input: {
       targetCompanyId: task.companyId ?? null,
       metadata: event.metadata,
     })
+
+    if (pinFailed) {
+      await revalidateProjectTaskViews()
+      return {
+        error:
+          'Status saved but the task could not be moved to the top of My Tasks.',
+      }
+    }
   }
 
   await revalidateProjectTaskViews()

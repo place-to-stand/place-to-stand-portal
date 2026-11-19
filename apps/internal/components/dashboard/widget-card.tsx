@@ -6,13 +6,14 @@ import { pagePanelClass } from '@/components/layout/page-panel'
 /** Every home widget's frame (the card behind list pages' background). */
 export const WIDGET_FRAME_CLASS = `${pagePanelClass} flex flex-col overflow-hidden`
 
-/** The shared frame for home widgets: titled header, meta/action slot, body. Same background as the card that holds list-page tables (bg-background). */
+/** The shared frame for home widgets: titled header, meta/action slot, body, optional footer. Same background as the card that holds list-page tables (bg-background). */
 export function WidgetCard({
   id,
   title,
   meta,
   action,
   titleAddon,
+  footer,
   children,
   className,
 }: {
@@ -22,6 +23,8 @@ export function WidgetCard({
   action?: ReactNode
   /** Beside the title on the left (e.g. a view toggle); `action` stays right. */
   titleAddon?: ReactNode
+  /** Under the body, e.g. bulk actions; brings its own top border. */
+  footer?: ReactNode
   children: ReactNode
   className?: string
 }) {
@@ -45,6 +48,7 @@ export function WidgetCard({
         </div>
       </header>
       <div className='flex-1'>{children}</div>
+      {footer}
     </section>
   )
 }

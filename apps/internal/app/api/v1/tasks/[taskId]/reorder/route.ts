@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import { taskStatusChangedEvent } from '@/lib/activity/events'
+import { notifyTaskStatusChanged } from '@/lib/notifications/in-app/events'
 import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
@@ -153,6 +154,11 @@ export async function PATCH(
   }
 
   if (statusChanged) {
+    await notifyTaskStatusChanged(
+      user,
+      { id: taskId, title: task.title ?? 'Task' },
+      parsedPayload.status!
+    )
     try {
       const event = taskStatusChangedEvent({
         title: task.title ?? 'Task',

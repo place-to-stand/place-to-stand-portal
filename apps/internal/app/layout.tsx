@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Space_Grotesk } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react'
 
 import { AppProviders } from '@/components/providers/app-providers'
+import { NewVersionReload } from '@/components/providers/new-version-reload'
 import { SupabaseListener } from '@/components/providers/supabase-listener'
 import { ViewportScrollReset } from '@/components/layout/viewport-scroll-reset'
 import { DEFAULT_BUSINESS_NAME } from '@pts/db/business'
@@ -90,6 +91,7 @@ export default async function RootLayout({
         <AppProviders>
           {business ? <CompanyTimeZone timeZone={business.timeZone} /> : null}
           <SupabaseListener />
+          <NewVersionReload />
           <ViewportScrollReset />
           <BusinessBrandProvider
             brand={business ? brandPropsFor(business) : null}

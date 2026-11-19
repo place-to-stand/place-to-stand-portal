@@ -240,7 +240,7 @@ export async function findActiveLeadIdByEmail(
  * audit captured without a stored result has nothing to confirm, and must not
  * sit in the retry batch forever looking like a failed send.
  */
-const confirmationApplies = or(
+export const confirmationApplies = or(
   eq(formSubmissions.kind, 'contact'),
   isNotNull(formSubmissions.result)
 )

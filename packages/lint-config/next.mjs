@@ -139,6 +139,9 @@ const HARD_DELETE_ALLOW = [
   'tagLinkTable',
   'companyTags',
   'company_tags',
+  // In-app notifications: messages to one person, not records. Archived ones
+  // are pruned after 90 days by the weekly cron, like activity logs.
+  'notifications',
 ]
 
 /** Files that may read process.env: the env schemas, build config, scripts. */

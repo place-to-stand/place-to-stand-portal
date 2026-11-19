@@ -46,7 +46,10 @@ import {
   readSavedVersion,
   SaveConflictError,
 } from '@/lib/sheets/save-conflict/server'
-import { notifyTaskAssigned } from '@/lib/notifications/in-app/events'
+import {
+  notifyTaskAssigned,
+  notifyTaskStatusChanged,
+} from '@/lib/notifications/in-app/events'
 import { roleCan } from '@/lib/auth/capabilities'
 
 export async function updateTaskForActor(
@@ -277,6 +280,10 @@ export async function updateTaskForActor(
     { id: taskId, title },
     assigneeIds.filter(id => !existingAssigneeIds.includes(id))
   )
+
+  if (existingTask.status !== status) {
+    await notifyTaskStatusChanged(actor, { id: taskId, title }, status)
+  }
 
   const event = buildTaskUpdateEvent(
     {

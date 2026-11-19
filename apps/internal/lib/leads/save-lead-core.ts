@@ -28,7 +28,10 @@ import {
   LEAD_WON_NEEDS_COMPANY_MESSAGE,
   breaksWonNeedsCompany,
 } from '@/lib/leads/won-rule'
-import { notifyLeadAssigned } from '@/lib/notifications/in-app/events'
+import {
+  notifyLeadAssigned,
+  notifyLeadStageMoved,
+} from '@/lib/notifications/in-app/events'
 import {
   fillCompanyWebsiteIfBlank,
   type DeferActivity,
@@ -420,6 +423,15 @@ async function updateLead(
         ...event,
       })
     )
+  }
+
+  const assigneeChanged = Boolean(
+    normalized.assigneeId && normalized.assigneeId !== existing.assigneeId
+  )
+  // A new owner hears "assigned you", not also "moved": one save, one notice.
+  if (statusChanged && !assigneeChanged) {
+    const toStatus = normalized.status
+    defer(() => notifyLeadStageMoved(actor, leadId, toStatus))
   }
 
   const assigneeId = normalized.assigneeId

@@ -2,6 +2,7 @@
 
 import { EmptyState } from '@pts/ui/empty-state'
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
+
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import type { TemplateAudience } from '@/lib/templates/audience'

@@ -7,7 +7,10 @@ export const NOTIFICATION_TYPES = [
   'task_comment',
   'task_due_today',
   'task_overdue',
+  'task_status',
   'lead_assigned',
+  'lead_update',
+  'lead_stage',
 ] as const
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
@@ -26,6 +29,8 @@ export type NotificationItem = {
 export type NotificationFeed = {
   items: NotificationItem[]
   unreadCount: number
+  /** Pass as `before` for the next (older) page; null on the last page. */
+  nextCursor: string | null
 }
 
-export type NotificationFilter = 'all' | 'unread'
+export type NotificationFilter = 'all' | 'unread' | 'archived'

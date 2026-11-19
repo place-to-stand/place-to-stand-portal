@@ -10,6 +10,8 @@ import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { leadUpdates } from '@/lib/db/schema'
 import { LEAD_UPDATE_LABELS } from '@/lib/leads/updates'
+import { notifyLeadUpdate } from '@/lib/notifications/in-app/events'
+import { htmlToPlainText } from '@/lib/activity/text-diff'
 import type { ActivitySourceValue } from '@/lib/types'
 
 import {
@@ -103,6 +105,14 @@ export async function createLeadUpdateForActor(
       }),
     })
 
+    const text = htmlToPlainText(body ?? '').trim()
+    await notifyLeadUpdate(
+      actor,
+      leadId,
+      LEAD_UPDATE_LABELS[type],
+      excerpt(text)
+    )
+
     return { success: true, leadId, updateId: inserted.id }
   } catch (error) {
     console.error('Failed to create lead update:', error)
@@ -111,4 +121,10 @@ export async function createLeadUpdateForActor(
       error: 'Unable to log update. Please try again.',
     }
   }
+}
+
+/** Up to 140 characters, cut on a whole character (never half an emoji). */
+function excerpt(text: string) {
+  const chars = Array.from(text)
+  return chars.length > 140 ? `${chars.slice(0, 139).join('')}…` : text
 }
