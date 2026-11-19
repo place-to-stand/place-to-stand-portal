@@ -35,10 +35,10 @@ export default async function NotificationsReferencePage() {
     >
       <div className='w-full space-y-6'>
         <p className='text-muted-foreground text-sm'>
-          What shows up in the bell and on Home. Each one is about something
-          someone else did to your work. Archive keeps a notification under
-          Archived until you restore it. Emails and chat messages are under
-          Templates.
+          What shows up in the bell and on Home. Each one is about your work:
+          something someone else did to it, or a task gone overdue. Archive
+          keeps a notification under Archived until you restore it. Emails and
+          chat messages are under Templates.
         </p>
 
         {IN_APP_NOTIFICATIONS.map(group => (

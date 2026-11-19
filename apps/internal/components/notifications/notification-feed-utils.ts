@@ -71,13 +71,10 @@ export function applyLocally(
   const changedUnread = feed.items.filter(
     item => hits(item) && !item.readAt
   ).length
-  const restoredUnread =
-    action === 'restore'
-      ? feed.items.filter(item => hits(item) && !item.readAt).length
-      : 0
+  // Archived rows are always read, so restoring one leaves the count alone.
   const unreadCount =
     action === 'restore'
-      ? feed.unreadCount + restoredUnread
+      ? feed.unreadCount
       : action === 'unread'
         ? feed.unreadCount +
           feed.items.filter(item => hits(item) && item.readAt).length

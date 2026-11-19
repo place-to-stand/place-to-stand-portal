@@ -110,7 +110,7 @@ export async function createLeadUpdateForActor(
       actor,
       leadId,
       LEAD_UPDATE_LABELS[type],
-      text.length > 140 ? `${text.slice(0, 139)}…` : text
+      excerpt(text)
     )
 
     return { success: true, leadId, updateId: inserted.id }
@@ -121,4 +121,10 @@ export async function createLeadUpdateForActor(
       error: 'Unable to log update. Please try again.',
     }
   }
+}
+
+/** Up to 140 characters, cut on a whole character (never half an emoji). */
+function excerpt(text: string) {
+  const chars = Array.from(text)
+  return chars.length > 140 ? `${chars.slice(0, 139).join('')}…` : text
 }

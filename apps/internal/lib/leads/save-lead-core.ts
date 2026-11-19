@@ -425,7 +425,11 @@ async function updateLead(
     )
   }
 
-  if (statusChanged) {
+  const assigneeChanged = Boolean(
+    normalized.assigneeId && normalized.assigneeId !== existing.assigneeId
+  )
+  // A new owner hears "assigned you", not also "moved": one save, one notice.
+  if (statusChanged && !assigneeChanged) {
     const toStatus = normalized.status
     defer(() => notifyLeadStageMoved(actor, leadId, toStatus))
   }

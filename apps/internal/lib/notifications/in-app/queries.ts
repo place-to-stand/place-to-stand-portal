@@ -229,7 +229,7 @@ export async function archiveNotifications(userId: string, ids?: string[]) {
     .where(and(live(userId), ids ? inArray(notifications.id, ids) : undefined))
 }
 
-/** Brings archived notifications back to All (and Unread when unread). */
+/** Brings archived notifications back to All, as read (archive marks them read). */
 export async function restoreNotifications(userId: string, ids: string[]) {
   await db
     .update(notifications)

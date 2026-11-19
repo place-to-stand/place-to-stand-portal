@@ -145,8 +145,9 @@ export function NotificationActions({ feed }: { feed: NotificationFeedState }) {
         onClick={() =>
           mutation.mutate({
             action: 'archive',
-            // Unread archives only what it shows; All archives everything.
-            ids: filter === 'unread' ? items.map(item => item.id) : undefined,
+            // Only what's on screen, so one that arrived since the last
+            // poll isn't archived unseen.
+            ids: items.map(item => item.id),
           })
         }
       >
