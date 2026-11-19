@@ -119,15 +119,16 @@ export function NotificationFilterToggle({
 }
 
 /**
- * Mark all read and Archive all, as matching text buttons at the right end of
- * the title row, in the bell and the home widget. Archive is undone from the
- * Archived tab, so it needs no confirm. Archived has nothing to act on in bulk.
+ * Mark all read and Archive all, as matching text buttons in a footer row
+ * under the list, in the bell and the home widget (the title row holds the
+ * title and tabs). Archive is undone from the Archived tab, so it needs no
+ * confirm. Archived has nothing to act on in bulk, so it has no footer.
  */
 export function NotificationActions({ feed }: { feed: NotificationFeedState }) {
   const { filter, items, unread, mutation } = feed
   if (filter === 'archived') return null
   return (
-    <div className='flex items-center gap-1'>
+    <footer className='flex items-center justify-end gap-1 border-t px-4 py-1.5'>
       <Button
         type='button'
         variant='ghost'
@@ -153,7 +154,7 @@ export function NotificationActions({ feed }: { feed: NotificationFeedState }) {
       >
         Archive all
       </Button>
-    </div>
+    </footer>
   )
 }
 

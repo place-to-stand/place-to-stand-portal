@@ -58,9 +58,6 @@ export function NotificationsBell() {
             <h2 className='text-sm font-semibold'>Notifications</h2>
             <NotificationFilterToggle feed={feed} />
           </div>
-          <div className='ml-auto'>
-            <NotificationActions feed={feed} />
-          </div>
         </div>
         <div
           onClickCapture={event => {
@@ -74,6 +71,7 @@ export function NotificationsBell() {
         >
           <NotificationList feed={feed} className='max-h-[60vh]' />
         </div>
+        <NotificationActions feed={feed} />
       </PopoverContent>
     </Popover>
   )
