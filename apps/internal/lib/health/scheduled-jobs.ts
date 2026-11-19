@@ -15,8 +15,8 @@ const JOB_DESCRIPTIONS: Record<string, { name: string; does: string }> = {
     does: 'Switches people to a new role on the month it starts.',
   },
   '/api/cron/prune-activity-logs': {
-    name: 'Prune activity logs',
-    does: 'Deletes old activity log rows past their keep date.',
+    name: 'Prune old records',
+    does: 'Deletes activity log rows past their keep date and notifications archived over 90 days ago.',
   },
 }
 

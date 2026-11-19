@@ -23,7 +23,9 @@ test('Reference is one tabbed page; /reference lands on its first tab', async ({
   for (const tab of [
     'Roles & permissions',
     'Notifications',
-    'Templates',
+    'Emails',
+    'PDFs',
+    'Chat messages',
     'Design system',
     'System health',
   ]) {
@@ -66,16 +68,13 @@ test('Get help opens from the user menu', async ({ page }) => {
   await expect(dialog.getByRole('link', { name: 'Book a call' })).toBeVisible()
 })
 
-test('Templates switches kind and stays on the Templates tab', async ({
+test('template kinds are Reference tabs; old links still land', async ({
   page,
 }) => {
   await page.goto('/reference/templates/emails')
-  await page
-    .getByRole('tablist', { name: 'Template kind' })
-    .getByRole('tab', { name: 'PDFs' })
-    .click()
+  await page.getByRole('tab', { name: 'PDFs' }).click()
   await expect(page).toHaveURL(/\/reference\/templates\/pdfs$/)
-  await expect(page.getByRole('tab', { name: 'Templates' })).toHaveAttribute(
+  await expect(page.getByRole('tab', { name: 'PDFs' })).toHaveAttribute(
     'aria-selected',
     'true'
   )

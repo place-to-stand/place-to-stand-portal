@@ -22,9 +22,9 @@ export default async function ChatTemplatesPage() {
 
   return (
     <PageShell
-      breadcrumbs={referenceCrumbs('templates')}
+      breadcrumbs={referenceCrumbs('chat')}
       tabs={referenceTabsFor(user.role)}
-      activeTab='templates'
+      activeTab='chat'
       count={{ label: 'templates', total: entries.length }}
     >
       <NotificationsGallery entries={entries} />

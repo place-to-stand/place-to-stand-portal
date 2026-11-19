@@ -140,11 +140,31 @@ async function syncDueTaskNotificationsThrottled(user: AppUser) {
   lastDueSync.set(user.id, { at: now, date })
 }
 
+/**
+ * A page boundary: the last row's sort time and id. Paging by position would
+ * skip or repeat rows as new notifications arrive; this never does.
+ */
+export function encodeFeedCursor(sortAt: string, id: string) {
+  return `${sortAt}_${id}`
+}
+
+function decodeFeedCursor(cursor: string) {
+  const split = cursor.lastIndexOf('_')
+  return { sortAt: cursor.slice(0, split), id: cursor.slice(split + 1) }
+}
+
 export async function fetchNotificationFeed(
   user: AppUser,
-  filter: NotificationFilter
+  filter: NotificationFilter,
+  before?: string
 ): Promise<NotificationFeed> {
-  await syncDueTaskNotificationsThrottled(user)
+  // Only the first page syncs; older pages are history.
+  if (!before) await syncDueTaskNotificationsThrottled(user)
+
+  // Archived sorts by when it was archived; All and Unread by when it came.
+  const sortColumn =
+    filter === 'archived' ? notifications.clearedAt : notifications.createdAt
+  const cursor = before ? decodeFeedCursor(before) : null
 
   const where =
     filter === 'archived'
@@ -155,6 +175,9 @@ export async function fetchNotificationFeed(
       : filter === 'unread'
         ? and(live(user.id), isNull(notifications.readAt))
         : live(user.id)
+  const olderThanCursor = cursor
+    ? sql`(${sortColumn}, ${notifications.id}) < (${cursor.sortAt}::timestamptz, ${cursor.id}::uuid)`
+    : undefined
 
   const [rows, [unread]] = await Promise.all([
     db
@@ -166,31 +189,41 @@ export async function fetchNotificationFeed(
         href: notifications.href,
         readAt: notifications.readAt,
         createdAt: notifications.createdAt,
+        sortAt: sql<string>`${sortColumn}::text`,
         actorName: sql<
           string | null
         >`coalesce(${personNameSql}, ${users.email})`,
       })
       .from(notifications)
       .leftJoin(users, eq(users.id, notifications.actorId))
-      .where(where)
-      .orderBy(
-        filter === 'archived'
-          ? desc(notifications.clearedAt)
-          : desc(notifications.createdAt)
-      )
-      .limit(FEED_LIMIT),
+      .where(and(where, olderThanCursor))
+      .orderBy(desc(sortColumn), desc(notifications.id))
+      // One extra row says whether there's another page.
+      .limit(FEED_LIMIT + 1),
     db
       .select({ value: count() })
       .from(notifications)
       .where(and(live(user.id), isNull(notifications.readAt))),
   ])
 
+  const page = rows.slice(0, FEED_LIMIT)
+  const last = page.at(-1)
   return {
-    items: rows.map(row => ({
-      ...row,
+    items: page.map(row => ({
+      id: row.id,
       type: row.type as NotificationItem['type'],
+      title: row.title,
+      body: row.body,
+      href: row.href,
+      actorName: row.actorName,
+      readAt: row.readAt,
+      createdAt: row.createdAt,
     })),
     unreadCount: Number(unread?.value ?? 0),
+    nextCursor:
+      rows.length > FEED_LIMIT && last
+        ? encodeFeedCursor(last.sortAt, last.id)
+        : null,
   }
 }
 
@@ -241,4 +274,34 @@ export async function restoreNotifications(userId: string, ids: string[]) {
         inArray(notifications.id, ids)
       )
     )
+}
+
+/** How long an archived notification is kept before the weekly prune. */
+export const ARCHIVED_NOTIFICATION_DAYS = 90
+const PRUNE_BATCH = 1000
+
+/**
+ * Deletes notifications archived more than 90 days ago, in batches. Unread
+ * and unarchived ones are never touched. Returns how many went.
+ */
+export async function pruneArchivedNotifications(): Promise<number> {
+  let deletedCount = 0
+  for (;;) {
+    const batch = db
+      .select({ id: notifications.id })
+      .from(notifications)
+      .where(
+        lt(
+          notifications.clearedAt,
+          sql`now() - make_interval(days => ${ARCHIVED_NOTIFICATION_DAYS})`
+        )
+      )
+      .limit(PRUNE_BATCH)
+    const deleted = await db
+      .delete(notifications)
+      .where(inArray(notifications.id, batch))
+      .returning({ id: notifications.id })
+    deletedCount += deleted.length
+    if (deleted.length < PRUNE_BATCH) return deletedCount
+  }
 }

@@ -3,7 +3,6 @@
 import { EmptyState } from '@pts/ui/empty-state'
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 
-import { TemplateKindSwitch } from './template-kind-switch'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import type { TemplateAudience } from '@/lib/templates/audience'
@@ -47,7 +46,6 @@ export function TemplateFilters({
       showReset={Boolean(value.query) || value.audiences.length > 0}
       onReset={() => onChange(EMPTY_TEMPLATE_FILTERS)}
     >
-      <TemplateKindSwitch />
       <FilterSelect
         mode='multi'
         values={value.audiences}

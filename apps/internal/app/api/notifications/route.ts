@@ -18,6 +18,13 @@ import {
  */
 const querySchema = z.object({
   filter: z.enum(['all', 'unread', 'archived']).default('all'),
+  // A cursor from the previous page: "<timestamp>_<uuid>".
+  before: z
+    .string()
+    .regex(
+      /^[0-9T:.+\- ]{10,40}_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    )
+    .optional(),
 })
 
 const actionSchema = z.object({
@@ -51,7 +58,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const feed = await fetchNotificationFeed(user, parsed.data.filter)
+    const feed = await fetchNotificationFeed(
+      user,
+      parsed.data.filter,
+      parsed.data.before
+    )
     return NextResponse.json({ ok: true, data: feed })
   } catch (error) {
     console.error('Failed to load notifications', error)

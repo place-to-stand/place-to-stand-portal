@@ -7,7 +7,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+  type InfiniteData,
+} from '@tanstack/react-query'
 import { Archive, ArchiveRestore, Circle } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
@@ -23,7 +28,7 @@ import type {
 } from '@/lib/notifications/in-app/types'
 
 import {
-  applyLocally,
+  applyToPages,
   FAILURE_TITLES,
   fetchFeed,
   postAction,
@@ -42,9 +47,20 @@ export function useNotificationFeed() {
   const [filter, setFilter] = useState<NotificationFilter>('all')
   const key = [...QUERY_KEY, filter]
 
-  const { data, isLoading, isError } = useQuery({
+  // Pages of 50, newest first; "Show more" asks for the rows older than the
+  // last one shown. A poll refreshes every loaded page.
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: key,
-    queryFn: () => fetchFeed(filter),
+    queryFn: ({ pageParam }) => fetchFeed(filter, pageParam),
+    initialPageParam: null as string | null,
+    getNextPageParam: last => last.nextCursor,
     refetchInterval: POLL_MS,
   })
 
@@ -52,9 +68,12 @@ export function useNotificationFeed() {
     mutationFn: postAction,
     onMutate: async action => {
       await queryClient.cancelQueries({ queryKey: QUERY_KEY })
-      const previous = queryClient.getQueryData<NotificationFeed>(key)
+      const previous =
+        queryClient.getQueryData<InfiniteData<NotificationFeed, string | null>>(
+          key
+        )
       if (previous) {
-        queryClient.setQueryData(key, applyLocally(previous, action, filter))
+        queryClient.setQueryData(key, applyToPages(previous, action, filter))
       }
       return { previous }
     },
@@ -69,8 +88,8 @@ export function useNotificationFeed() {
     onSettled: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
   })
 
-  const items = data?.items ?? []
-  const unread = data?.unreadCount ?? 0
+  const items = data?.pages.flatMap(page => page.items) ?? []
+  const unread = data?.pages[0]?.unreadCount ?? 0
 
   const openItem = (item: NotificationItem) => {
     if (!item.readAt) mutation.mutate({ action: 'read', ids: [item.id] })
@@ -86,6 +105,9 @@ export function useNotificationFeed() {
     isError,
     mutation,
     openItem,
+    hasMore: Boolean(hasNextPage),
+    loadingMore: isFetchingNextPage,
+    showMore: () => void fetchNextPage(),
   }
 }
 
@@ -182,7 +204,7 @@ export function NotificationList({
               filter === 'unread'
                 ? 'All caught up.'
                 : filter === 'archived'
-                  ? 'Nothing archived. Archived notifications stay here until you restore them.'
+                  ? 'Nothing archived. Archived notifications stay here for 90 days.'
                   : 'No notifications. When someone assigns you work, comments on your tasks or moves your leads, it shows up here.'
             }
           />
@@ -271,6 +293,19 @@ export function NotificationList({
               </div>
             </li>
           ))}
+          {feed.hasMore ? (
+            <li className='flex justify-center px-4 py-2'>
+              <Button
+                type='button'
+                variant='ghost'
+                size='xs'
+                disabled={feed.loadingMore}
+                onClick={feed.showMore}
+              >
+                {feed.loadingMore ? 'Loading…' : 'Show more'}
+              </Button>
+            </li>
+          ) : null}
         </ul>
       )}
     </>

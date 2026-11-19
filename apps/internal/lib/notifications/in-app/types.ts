@@ -29,6 +29,8 @@ export type NotificationItem = {
 export type NotificationFeed = {
   items: NotificationItem[]
   unreadCount: number
+  /** Pass as `before` for the next (older) page; null on the last page. */
+  nextCursor: string | null
 }
 
 export type NotificationFilter = 'all' | 'unread' | 'archived'

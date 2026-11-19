@@ -37,8 +37,8 @@ export default async function NotificationsReferencePage() {
         <p className='text-muted-foreground text-sm'>
           What shows up in the bell and on Home. Each one is about your work:
           something someone else did to it, or a task gone overdue. Archive
-          keeps a notification under Archived until you restore it. Emails and
-          chat messages are under Templates.
+          keeps a notification under Archived for 90 days, and you can restore
+          it until then. Emails and chat messages have their own tabs.
         </p>
 
         {IN_APP_NOTIFICATIONS.map(group => (

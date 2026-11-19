@@ -23,9 +23,9 @@ export default async function EmailTemplatesPage() {
 
   return (
     <PageShell
-      breadcrumbs={referenceCrumbs('templates')}
+      breadcrumbs={referenceCrumbs('emails')}
       tabs={referenceTabsFor(user.role)}
-      activeTab='templates'
+      activeTab='emails'
       count={{ label: 'templates', total: entries.length }}
     >
       <EmailsGallery entries={entries} />

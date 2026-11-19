@@ -3,6 +3,8 @@
  * from the markup in `notification-feed.tsx`.
  */
 
+import type { InfiniteData } from '@tanstack/react-query'
+
 import type {
   NotificationFeed,
   NotificationFilter,
@@ -22,9 +24,12 @@ export type FeedAction = {
 }
 
 export async function fetchFeed(
-  filter: NotificationFilter
+  filter: NotificationFilter,
+  before: string | null
 ): Promise<NotificationFeed> {
-  const response = await fetch(`/api/notifications?filter=${filter}`)
+  const params = new URLSearchParams({ filter })
+  if (before) params.set('before', before)
+  const response = await fetch(`/api/notifications?${params}`)
   const payload = await response.json()
   if (!response.ok || !payload.ok) {
     throw new Error(payload.error ?? 'Unable to load notifications.')
@@ -32,7 +37,18 @@ export async function fetchFeed(
   return payload.data
 }
 
+/** The API takes at most this many ids per call. */
+const MAX_IDS = 200
+
+/** Sends an action, splitting a long id list into calls the API accepts. */
 export async function postAction(body: FeedAction) {
+  if (!body.ids || body.ids.length <= MAX_IDS) return postOne(body)
+  for (let start = 0; start < body.ids.length; start += MAX_IDS) {
+    await postOne({ ...body, ids: body.ids.slice(start, start + MAX_IDS) })
+  }
+}
+
+async function postOne(body: FeedAction) {
   const response = await fetch('/api/notifications', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -83,5 +99,39 @@ export function applyLocally(
             feed.unreadCount - (ids ? changedUnread : feed.unreadCount)
           )
 
-  return { items, unreadCount }
+  return { ...feed, items, unreadCount }
+}
+
+/**
+ * `applyLocally` across every loaded page: the counts come from all of them
+ * together, then each page keeps its own (changed) rows.
+ */
+export function applyToPages(
+  data: InfiniteData<NotificationFeed, string | null>,
+  action: FeedAction,
+  filter: NotificationFilter
+): InfiniteData<NotificationFeed, string | null> {
+  const first = data.pages[0]
+  if (!first) return data
+  const merged = applyLocally(
+    {
+      items: data.pages.flatMap(page => page.items),
+      unreadCount: first.unreadCount,
+      nextCursor: null,
+    },
+    action,
+    filter
+  )
+  const byId = new Map(merged.items.map(item => [item.id, item]))
+  return {
+    ...data,
+    pages: data.pages.map(page => ({
+      ...page,
+      unreadCount: merged.unreadCount,
+      items: page.items.flatMap(item => {
+        const next = byId.get(item.id)
+        return next ? [next] : []
+      }),
+    })),
+  }
 }

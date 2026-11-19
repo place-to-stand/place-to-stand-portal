@@ -22,10 +22,23 @@ export const REFERENCE_TABS = [
     href: '/reference/notifications',
     capability: 'settings.templates',
   },
+  // Each kind of template is its own tab (no tabs inside a tab).
   {
-    label: 'Templates',
-    value: 'templates',
+    label: 'Emails',
+    value: 'emails',
     href: '/reference/templates/emails',
+    capability: 'settings.templates',
+  },
+  {
+    label: 'PDFs',
+    value: 'pdfs',
+    href: '/reference/templates/pdfs',
+    capability: 'settings.templates',
+  },
+  {
+    label: 'Chat messages',
+    value: 'chat',
+    href: '/reference/templates/chat',
     capability: 'settings.templates',
   },
   {

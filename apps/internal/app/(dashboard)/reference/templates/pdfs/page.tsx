@@ -22,9 +22,9 @@ export default async function PdfTemplatesPage() {
 
   return (
     <PageShell
-      breadcrumbs={referenceCrumbs('templates')}
+      breadcrumbs={referenceCrumbs('pdfs')}
       tabs={referenceTabsFor(user.role)}
-      activeTab='templates'
+      activeTab='pdfs'
       count={{ label: 'templates', total: entries.length }}
     >
       <PdfsGallery entries={entries} />
