@@ -7,10 +7,7 @@ import {
 import { assertCan } from '@/lib/auth/permissions'
 import { authorizeRoute } from '@/lib/auth/guard'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
-import {
-  ensureLeadTaskAccess,
-  ensureProjectWorkAccess,
-} from '@/lib/projects/access'
+import { ensureTaskHomeAccess } from '@/lib/projects/access'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 
 const fail = (error: string, status: number) =>
@@ -38,14 +35,14 @@ export async function GET(request: NextRequest) {
 
   try {
     if (project) {
-      await ensureProjectWorkAccess(user, project)
+      await ensureTaskHomeAccess(user, { projectId: project, leadId: null })
       return NextResponse.json({
         ok: true,
         data: await loadTaskAssigneeOptions(project),
       })
     }
     if (leadTask) {
-      await ensureLeadTaskAccess(user, leadTask)
+      await ensureTaskHomeAccess(user, { projectId: null, leadId: leadTask })
       return NextResponse.json({
         ok: true,
         data: await loadTaskAssigneeOptions(null),
