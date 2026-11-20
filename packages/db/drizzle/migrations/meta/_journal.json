@@ -967,13 +967,6 @@
       "when": 1794978962779,
       "tag": "0138_business_profit_share",
       "breakpoints": true
-    },
-    {
-      "idx": 139,
-      "version": "7",
-      "when": 1795122438254,
-      "tag": "0139_system_runs",
-      "breakpoints": true
     }
   ]
 }

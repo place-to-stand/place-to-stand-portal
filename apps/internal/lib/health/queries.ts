@@ -1,15 +1,9 @@
 import 'server-only'
 
-import { personNameSql } from '@pts/db/names'
-import { and, count, eq, isNotNull, isNull, lt, ne, or, sql } from 'drizzle-orm'
+import { and, count, eq, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import {
-  formSubmissions,
-  notifications,
-  oauthConnections,
-  users,
-} from '@/lib/db/schema'
+import { formSubmissions, notifications } from '@/lib/db/schema'
 import {
   RETRY_MAX_AGE_HOURS,
   STUCK_ALERT_AFTER_MINUTES,
@@ -74,51 +68,4 @@ export async function countStaleUnreadNotifications(): Promise<number> {
       )
     )
   return Number(row?.value ?? 0)
-}
-
-export type ConnectionHealth = {
-  id: string
-  provider: 'GOOGLE' | 'GITHUB' | 'VERCEL' | 'SUPABASE'
-  ownerName: string
-  account: string | null
-  /** ACTIVE works; PENDING_REAUTH means the owner must reconnect. */
-  status: string
-  lastSyncAt: string | null
-  lastError: string | null
-}
-
-/**
- * Every live connected account (people's Google, GitHub, Vercel and
- * Supabase sign-ins), broken ones first. Google marks itself broken when a
- * refresh is refused; the others are checked when used.
- */
-export async function listConnectionHealth(): Promise<ConnectionHealth[]> {
-  const rows = await db
-    .select({
-      id: oauthConnections.id,
-      provider: oauthConnections.provider,
-      ownerName: sql<string>`coalesce(${personNameSql}, ${users.email})`,
-      account: sql<
-        string | null
-      >`coalesce(${oauthConnections.providerEmail}, ${oauthConnections.displayName})`,
-      status: oauthConnections.status,
-      lastSyncAt: oauthConnections.lastSyncAt,
-      lastError: sql<
-        string | null
-      >`${oauthConnections.syncState} ->> 'lastError'`,
-    })
-    .from(oauthConnections)
-    .innerJoin(users, eq(users.id, oauthConnections.userId))
-    .where(
-      and(
-        isNull(oauthConnections.deletedAt),
-        ne(oauthConnections.status, 'REVOKED'),
-        isNull(users.deletedAt)
-      )
-    )
-    .orderBy(
-      sql`case when ${oauthConnections.status} = 'ACTIVE' then 1 else 0 end`,
-      oauthConnections.provider
-    )
-  return rows
 }

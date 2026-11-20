@@ -117,13 +117,13 @@ export const IN_APP_NOTIFICATIONS: InAppNotificationGroup[] = [
     entries: [
       {
         type: 'connection_reauth',
-        name: 'Reconnect Google',
+        name: 'Reconnect',
         sample: {
-          title: 'Reconnect your Google account',
+          title: 'Reconnect Google',
           body: 'ada@example.com stopped working. Lead emails won’t sync until you reconnect it.',
         },
         recipients: 'The person who connected it.',
-        when: 'Google refuses the account’s saved sign-in (it expired or was revoked), so the portal can’t use it any more.',
+        when: 'Google, GitHub, Vercel or Supabase refuses a saved connection (it expired or was revoked), so the portal can’t use it any more.',
         notWhen:
           'Only once each time it breaks, not on every failed try. Not when you disconnect it yourself.',
       },

@@ -142,9 +142,6 @@ const HARD_DELETE_ALLOW = [
   // In-app notifications: messages to one person, not records. Archived ones
   // are pruned after 90 days by the weekly cron, like activity logs.
   'notifications',
-  // System health run records (lib/health/runs.ts): pruned after 90 days by
-  // the weekly cron, like activity logs.
-  'systemRuns',
 ]
 
 /** Files that may read process.env: the env schemas, build config, scripts. */

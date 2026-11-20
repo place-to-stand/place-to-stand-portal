@@ -102,7 +102,11 @@ export function ConnectedAccountsList({
     formatCalendarDate(dateString) ?? '—'
 
   const providerName = PROVIDER_NAMES[provider]
-  const activeAccounts = accounts.filter(a => a.status === 'ACTIVE')
+  // Working ones, plus ones the provider stopped accepting: those stay
+  // listed with Reconnect, which is where a "Reconnect" notice sends people.
+  const activeAccounts = accounts.filter(
+    a => a.status === 'ACTIVE' || a.status === 'PENDING_REAUTH'
+  )
 
   if (activeAccounts.length === 0) {
     return (
@@ -124,6 +128,7 @@ export function ConnectedAccountsList({
         {activeAccounts.map(account => {
           const isCurrentlyDisconnecting =
             disconnectingId === account.id || isDisconnecting === account.id
+          const broken = account.status === 'PENDING_REAUTH'
 
           return (
             <div key={account.id} className={INTEGRATION_ROW_CLASS}>
@@ -142,11 +147,24 @@ export function ConnectedAccountsList({
                       : ''}
                     Connected {formatDate(account.connectedAt)}
                   </span>
+                  {broken ? (
+                    <span className='text-destructive shrink-0 text-xs font-semibold'>
+                      Stopped working
+                    </span>
+                  ) : null}
                 </div>
               </div>
 
               <div className='flex shrink-0 items-center gap-1'>
-                {onUpdatePermissions && (
+                {broken ? (
+                  <RowActionButton
+                    label='Reconnect'
+                    icon={<RefreshCw />}
+                    className='text-destructive hover:text-destructive'
+                    onClick={onAddAccount}
+                  />
+                ) : null}
+                {onUpdatePermissions && !broken && (
                   <RowActionButton
                     label='Update permissions'
                     icon={<RefreshCw />}

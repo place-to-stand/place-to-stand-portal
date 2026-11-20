@@ -43,18 +43,12 @@ export async function POST(request: Request) {
 
   const login = (connection.providerMetadata as { login?: string })?.login
 
-  // Revoke token at GitHub (best effort)
+  // Read before the soft delete clears it; a bad ciphertext just skips the
+  // revoke, as before.
+  let revokedToken: string | null = null
   try {
-    const accessToken = decryptToken(connection.accessToken)
-    await revokeToken(accessToken)
-  } catch (error) {
-    // Log for monitoring but continue with soft delete - token will expire eventually
-    console.error('[OAuth Disconnect] Failed to revoke GitHub token:', {
-      userId: user.id,
-      connectionId,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    })
-  }
+    revokedToken = decryptToken(connection.accessToken)
+  } catch {}
 
   // Soft delete and drop the ciphertext: a disconnected row must not keep a
   // working credential around (matches lib/integrations/connections.ts).
@@ -67,6 +61,20 @@ export async function POST(request: Request) {
       deletedAt: new Date().toISOString(),
     })
     .where(eq(oauthConnections.id, connection.id))
+
+  // Then revoke the token at GitHub (best effort). After the soft delete, so a
+  // request that sees the revoked token can't read it as a broken connection
+  // and send its owner a Reconnect notice.
+  try {
+    if (revokedToken) await revokeToken(revokedToken)
+  } catch (error) {
+    // Log for monitoring but continue with soft delete - token will expire eventually
+    console.error('[OAuth Disconnect] Failed to revoke GitHub token:', {
+      userId: user.id,
+      connectionId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
 
   const event = oauthDisconnectedEvent({
     provider: 'GITHUB',

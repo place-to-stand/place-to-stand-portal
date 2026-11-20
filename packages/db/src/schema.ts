@@ -2527,38 +2527,6 @@ export const notifications = pgTable(
 )
 
 /**
- * What the portal did on its own, for System health: one row per scheduled
- * job run (`kind` 'job', `name` the job's path) and per Stripe event
- * (`kind` 'stripe', `name` the event type). `outcome` is 'ok', 'failed', or
- * for Stripe 'unmatched' (money the portal couldn't book). Pruned after 90
- * days by the weekly prune job.
- */
-export const systemRuns = pgTable(
-  'system_runs',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    kind: text().notNull(),
-    name: text().notNull(),
-    outcome: text().notNull(),
-    detail: text(),
-    /** Stripe's event id, so a failure Stripe later retried successfully clears. */
-    ref: text(),
-    durationMs: integer('duration_ms'),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`now()`)
-      .notNull(),
-  },
-  table => [
-    index('idx_system_runs_kind_name_created').using(
-      'btree',
-      table.kind.asc().nullsLast().op('text_ops'),
-      table.name.asc().nullsLast().op('text_ops'),
-      table.createdAt.desc().nullsFirst().op('timestamptz_ops')
-    ),
-  ]
-)
-
-/**
  * Per-user home dashboard widget arrangement. One row per user; absent row
  * means the default layout. `layout` is validated/normalized in
  * apps/internal/lib/dashboard/layout.ts (unknown widget ids are dropped,

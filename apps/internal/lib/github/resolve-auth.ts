@@ -21,11 +21,12 @@ export async function resolveRepoLinkAuth(
     oauthConnectionId: string | null
     githubAppInstallationId: string | null
   }
-): Promise<{ token: string }> {
+): Promise<{ token: string; connectionId?: string }> {
   // --- OAuth path ---
   if (repoLink.oauthConnectionId) {
     const [conn] = await db
       .select({
+        id: oauthConnections.id,
         accessToken: oauthConnections.accessToken,
         status: oauthConnections.status,
       })
@@ -46,7 +47,7 @@ export async function resolveRepoLinkAuth(
       )
     }
 
-    return { token: decryptToken(conn.accessToken) }
+    return { token: decryptToken(conn.accessToken), connectionId: conn.id }
   }
 
   // --- GitHub App installation path ---

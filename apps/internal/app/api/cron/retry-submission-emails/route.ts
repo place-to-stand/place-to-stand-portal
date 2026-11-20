@@ -11,7 +11,6 @@ import {
   listSubmissionsStuckAtThreshold,
 } from '@/lib/queries/form-submission-delivery'
 import { submissionHref } from '@/lib/sheets/hrefs'
-import { withJobRun } from '@/lib/health/runs'
 
 /**
  * Vercel Cron (see vercel.json): retries marketing form emails that failed to
@@ -36,64 +35,53 @@ import { withJobRun } from '@/lib/health/runs'
  */
 const BATCH_LIMIT = 25
 
-export const GET = withJobRun(
-  '/api/cron/retry-submission-emails',
-  async (request: NextRequest) => {
-    const authFailure = verifyIntakeToken(
-      request,
-      serverEnv.CRON_SECRET,
-      'Cron'
-    )
+export async function GET(request: NextRequest) {
+  const authFailure = verifyIntakeToken(request, serverEnv.CRON_SECRET, 'Cron')
 
-    if (authFailure) {
-      return authFailure
-    }
-
-    try {
-      const ids = await listSubmissionsAwaitingEmail({ limit: BATCH_LIMIT })
-
-      let stillQueued = 0
-
-      for (const id of ids) {
-        const outcome = await deliverSubmissionEmails(id)
-        if (outcome.team === 'queued' || outcome.confirmation === 'queued') {
-          stillQueued += 1
-        }
-      }
-
-      // Checked after the retries so a row that just went out is not reported.
-      const stuck = await listSubmissionsStuckAtThreshold()
-
-      if (stuck.length > 0) {
-        const origin = resolvePortalOrigin()
-        console.error(
-          `${stuck.length} submission email(s) still unsent after ${STUCK_ALERT_AFTER_MINUTES} minutes`,
-          stuck.map(row => row.id)
-        )
-        await notifyStuckSubmissionEmails({
-          thresholdMinutes: STUCK_ALERT_AFTER_MINUTES,
-          items: stuck.map(row => ({
-            label: row.contactName || row.contactEmail || row.id,
-            kind: row.kind,
-            url: origin ? `${origin}${submissionHref(row.id)}` : null,
-          })),
-        })
-      }
-
-      return NextResponse.json({
-        ok: true,
-        data: {
-          retriedCount: ids.length,
-          stillQueued,
-          stuckCount: stuck.length,
-        },
-      })
-    } catch (error) {
-      console.error('Failed to retry submission emails', error)
-      return NextResponse.json(
-        { ok: false, error: 'Unable to retry submission emails.' },
-        { status: 500 }
-      )
-    }
+  if (authFailure) {
+    return authFailure
   }
-)
+
+  try {
+    const ids = await listSubmissionsAwaitingEmail({ limit: BATCH_LIMIT })
+
+    let stillQueued = 0
+
+    for (const id of ids) {
+      const outcome = await deliverSubmissionEmails(id)
+      if (outcome.team === 'queued' || outcome.confirmation === 'queued') {
+        stillQueued += 1
+      }
+    }
+
+    // Checked after the retries so a row that just went out is not reported.
+    const stuck = await listSubmissionsStuckAtThreshold()
+
+    if (stuck.length > 0) {
+      const origin = resolvePortalOrigin()
+      console.error(
+        `${stuck.length} submission email(s) still unsent after ${STUCK_ALERT_AFTER_MINUTES} minutes`,
+        stuck.map(row => row.id)
+      )
+      await notifyStuckSubmissionEmails({
+        thresholdMinutes: STUCK_ALERT_AFTER_MINUTES,
+        items: stuck.map(row => ({
+          label: row.contactName || row.contactEmail || row.id,
+          kind: row.kind,
+          url: origin ? `${origin}${submissionHref(row.id)}` : null,
+        })),
+      })
+    }
+
+    return NextResponse.json({
+      ok: true,
+      data: { retriedCount: ids.length, stillQueued, stuckCount: stuck.length },
+    })
+  } catch (error) {
+    console.error('Failed to retry submission emails', error)
+    return NextResponse.json(
+      { ok: false, error: 'Unable to retry submission emails.' },
+      { status: 500 }
+    )
+  }
+}
