@@ -3,6 +3,8 @@
 import * as React from 'react'
 import { Popover as PopoverPrimitive } from '@base-ui/react/popover'
 
+import type { PopupAlign } from '@pts/ui/popup-align'
+
 import { cn } from '@/lib/utils'
 
 /**
@@ -17,8 +19,10 @@ const CLOSE_DELAY = 200
 type HoverCardContextValue = {
   open: boolean
   setOpen: (open: boolean) => void
-  openTimeoutRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>
-  closeTimeoutRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>
+  openTimeoutRef: React.RefObject<ReturnType<typeof setTimeout> | null>
+  closeTimeoutRef: React.RefObject<ReturnType<typeof setTimeout> | null>
+  /** A mouse or pen is over the trigger. */
+  hoveredRef: React.RefObject<boolean>
 }
 
 const HoverCardContext = React.createContext<HoverCardContextValue | null>(null)
@@ -62,6 +66,7 @@ function HoverCard({
   const closeTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
     null
   )
+  const hoveredRef = React.useRef(false)
 
   const setOpenState = React.useCallback(
     (nextOpen: boolean) => {
@@ -127,11 +132,23 @@ function HoverCard({
         setOpen: handleOpenChange,
         openTimeoutRef,
         closeTimeoutRef,
+        hoveredRef,
       }}
     >
       <PopoverPrimitive.Root
         open={open}
-        onOpenChange={nextOpen => setOpenState(nextOpen)}
+        onOpenChange={(nextOpen, details) => {
+          // A click on a trigger the mouse already opened keeps the card
+          // open: a press there means "show me", not "hide it".
+          if (
+            !nextOpen &&
+            details.reason === 'trigger-press' &&
+            hoveredRef.current
+          ) {
+            return
+          }
+          setOpenState(nextOpen)
+        }}
       >
         {children}
       </PopoverPrimitive.Root>
@@ -145,7 +162,7 @@ function HoverCardTrigger({
   asChild,
   ...props
 }: PopoverPrimitive.Trigger.Props & { asChild?: boolean }) {
-  const { setOpen } = useHoverCard()
+  const { setOpen, hoveredRef } = useHoverCard()
 
   // `asChild` maps onto Base UI's `render`; callers wrap links and table cells
   // so the trigger stays whatever element they already had.
@@ -158,21 +175,35 @@ function HoverCardTrigger({
     <PopoverPrimitive.Trigger
       data-slot='hover-card-trigger'
       className={className}
-      onPointerEnter={() => setOpen(true)}
-      onPointerLeave={() => setOpen(false)}
+      // Hover is for mice and pens. A finger fires enter and leave around
+      // every tap, and that leave would close the card the tap just opened;
+      // a tap (like Enter or Space) opens it as a press instead.
+      onPointerEnter={event => {
+        if (event.pointerType === 'touch') return
+        hoveredRef.current = true
+        setOpen(true)
+      }}
+      onPointerLeave={event => {
+        if (event.pointerType === 'touch') return
+        hoveredRef.current = false
+        setOpen(false)
+      }}
       {...renderProps}
       {...props}
     />
   )
 }
 
+/** Opens left-aligned to its trigger, like every popup (house rule 4). */
 function HoverCardContent({
   className,
-  align = 'center',
+  align,
   sideOffset = 4,
   ...props
 }: PopoverPrimitive.Popup.Props &
-  Pick<PopoverPrimitive.Positioner.Props, 'align' | 'sideOffset'>) {
+  Pick<PopoverPrimitive.Positioner.Props, 'sideOffset'> & {
+    align?: PopupAlign
+  }) {
   const { setOpen, closeTimeoutRef } = useHoverCard()
 
   const handlePointerEnter = React.useCallback(() => {
@@ -189,7 +220,7 @@ function HoverCardContent({
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Positioner
-        align={align}
+        align={align ?? 'start'}
         sideOffset={sideOffset}
         className='pointer-events-auto isolate z-50'
       >
