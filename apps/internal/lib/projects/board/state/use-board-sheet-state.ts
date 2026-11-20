@@ -22,7 +22,11 @@ const findTaskAcrossProjects = (
   if (!taskId) return undefined
 
   for (const project of projects) {
-    const match = project.tasks.find(task => task.id === taskId)
+    // Archived tasks too: a link to one opens its sheet (Review, or a
+    // board link the route hydrated it for).
+    const match =
+      project.tasks.find(task => task.id === taskId) ??
+      project.archivedTasks?.find(task => task.id === taskId)
     if (match) {
       return match
     }
@@ -55,17 +59,19 @@ export const useBoardSheetState = ({
   startTransition,
   currentView,
 }: UseBoardSheetStateArgs) => {
-  const [isSheetOpen, setIsSheetOpen] = useState(() => Boolean(activeTaskId))
   const [sheetTask, setSheetTask] = useState<TaskWithRelations | undefined>(
     () => findTaskAcrossProjects(projects, activeTaskId)
   )
+  // Open only on a task the board holds: an unknown id (another project's,
+  // a lead's, a typo) would otherwise open a blank create sheet.
+  const [isSheetOpen, setIsSheetOpen] = useState(() => Boolean(sheetTask))
   const [routeTaskId, setRouteTaskId] = useState<string | null>(activeTaskId)
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null)
   const [defaultTaskStatus, setDefaultTaskStatus] =
     useState<BoardColumnId>('ON_DECK')
   const [defaultTaskDueOn, setDefaultTaskDueOn] = useState<string | null>(null)
   const taskSheetInteractionRef = useRef<InteractionHandle | null>(null)
-  const previousSheetOpenRef = useRef<boolean>(Boolean(activeTaskId))
+  const previousSheetOpenRef = useRef<boolean>(isSheetOpen)
   // Raw `?task=` value: the server prop is uuid-guarded, so `new` (the
   // create-sheet convention) only reaches the client here.
   const { get: getSheetParam, close: closeSheetParam } = useSheetParams()

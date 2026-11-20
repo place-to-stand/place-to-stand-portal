@@ -186,6 +186,8 @@ export async function fetchProjectsWithRelationsByIds(
      * fields, members and hours are still complete.
      */
     taskIds?: string[]
+    /** Archived tasks to add without the whole archive (see relations). */
+    archivedTaskIds?: string[]
   } = {}
 ): Promise<ProjectWithRelations[]> {
   if (!projectIds.length) {
@@ -205,6 +207,7 @@ export async function fetchProjectsWithRelationsByIds(
       ownerIds: baseProjects.ownerIds,
       includeArchivedTasks: options.includeArchivedTasks,
       taskIds: options.taskIds,
+      archivedTaskIds: options.archivedTaskIds,
     }),
     getTimeLogSummariesForProjects(baseProjects.projectIds),
     getClientHoursTotals(db, baseProjects.companyIds),

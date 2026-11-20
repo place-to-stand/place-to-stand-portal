@@ -12,6 +12,8 @@ import { requirePage } from '@/lib/auth/session'
 import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
 import { buildQuerySuffix } from '@/lib/sheets/hrefs'
+import { UUID_PATTERN } from '@/lib/sheets/entities'
+import { pageSheetParam } from '@/lib/sheets/stack'
 import {
   listClientDirectory,
   toClientPickerRow,
@@ -121,9 +123,16 @@ export async function renderProjectTabRoute({
     )
   }
 
-  // Review lists archived tasks, so it hydrates them too.
+  // Review lists archived tasks, so it hydrates them too. The board loads
+  // only the archived task a link names, so its sheet opens instead of a
+  // blank create sheet. Only the bottom sheet: one above it loads itself.
+  const taskParam = pageSheetParam('task', query)
   const hydrated = await fetchProjectsWithRelationsByIds([project.id], {
     includeArchivedTasks: tab === 'review',
+    archivedTaskIds:
+      isBoard && taskParam && UUID_PATTERN.test(taskParam)
+        ? [taskParam]
+        : undefined,
   })
   const [hydratedProject] = isBoard
     ? await scopeProjectsForViewer(user, hydrated)
