@@ -9,7 +9,6 @@ import {
   useTransition,
 } from 'react'
 
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Label } from '@pts/ui/label'
 import {
   Select,
@@ -24,6 +23,7 @@ import { InlineFormActions } from '@/components/sheets/inline-form-actions'
 import { LeadUpdateTypeBadge } from './lead-update-type-badge'
 import { LazyRichTextEditor as RichTextEditor } from '@/components/ui/rich-text-editor/lazy'
 import { toastLink, useToast } from '@/components/ui/use-toast'
+import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import {
   isContentEmpty,
   sanitizeEditorHtml,
@@ -88,7 +88,16 @@ export function LeadUpdateDialog({
   // user transactions (external value syncs use setContent without emitting),
   // so this never trips on the dialog seeding its own fields.
   const [isDirty, setIsDirty] = useState(false)
-  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
+  // An update saves on its own click, so the lead's Save never sees it: the
+  // guard is a draft one, and closing the lead sheet asks about it too.
+  const { requestConfirmation, dialog: discardDialog } =
+    useUnsavedChangesWarning({
+      isDirty: open && isDirty,
+      draft: true,
+      title: 'Discard this update?',
+      description: "Your changes haven't been saved.",
+      cancelLabel: 'Cancel',
+    })
 
   // Re-seed the form each time the dialog opens (or switches target update):
   // prefilled from the update being edited, or reset to a fresh "log it now"
@@ -107,7 +116,6 @@ export function LeadUpdateDialog({
       )
       setError(null)
       setIsDirty(false)
-      setShowDiscardConfirm(false)
     }
   }
 
@@ -116,14 +124,17 @@ export function LeadUpdateDialog({
   // click silently eats a half-written update.
   const handleOpenChange = useCallback(
     (next: boolean) => {
-      if (!next && isDirty) {
-        setShowDiscardConfirm(true)
+      if (!next) {
+        requestConfirmation(() => {
+          setIsDirty(false)
+          onOpenChange(false)
+        })
         return
       }
 
       onOpenChange(next)
     },
-    [isDirty, onOpenChange]
+    [onOpenChange, requestConfirmation]
   )
 
   // The section's X asks to close, like Cancel.
@@ -284,19 +295,7 @@ export function LeadUpdateDialog({
         </div>
       </InlineReveal>
 
-      <ConfirmDialog
-        open={showDiscardConfirm}
-        title='Discard this update?'
-        description="Your changes haven't been saved."
-        confirmLabel='Discard'
-        confirmVariant='destructive'
-        onConfirm={() => {
-          setShowDiscardConfirm(false)
-          setIsDirty(false)
-          onOpenChange(false)
-        }}
-        onCancel={() => setShowDiscardConfirm(false)}
-      />
+      {discardDialog}
     </>
   )
 }

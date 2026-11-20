@@ -6,9 +6,18 @@
 
 type Confirm = (next: () => void, stay?: () => void) => void
 
-// A set per sheet: a dialog inside a sheet (emailing an invoice) guards its
-// own unsaved work under the same id.
-const guards = new Map<string, Set<Confirm>>()
+type Guard = {
+  confirm: Confirm
+  /**
+   * Work that saves on its own click inside a sheet (a comment, a lead
+   * update), outside the sheet's Save. The sheet's own close asks it too.
+   */
+  draft: boolean
+}
+
+// A set per sheet: a dialog inside a sheet (emailing an invoice) or a draft
+// comment guards its own unsaved work under the same id.
+const guards = new Map<string, Set<Guard>>()
 
 /**
  * The page's own form (`PageForm`) while it has unsaved changes. Leaving the
@@ -17,12 +26,17 @@ const guards = new Map<string, Set<Confirm>>()
 export const PAGE_FORM_GUARD_ID = 'page-form'
 
 /** Called by a sheet while it has unsaved changes. Returns the unregister. */
-export function registerDiscardGuard(id: string, confirm: Confirm) {
-  const set = guards.get(id) ?? new Set<Confirm>()
-  set.add(confirm)
+export function registerDiscardGuard(
+  id: string,
+  confirm: Confirm,
+  options: { draft?: boolean } = {}
+) {
+  const set = guards.get(id) ?? new Set<Guard>()
+  const guard: Guard = { confirm, draft: options.draft ?? false }
+  set.add(guard)
   guards.set(id, set)
   return () => {
-    set.delete(confirm)
+    set.delete(guard)
     if (set.size === 0 && guards.get(id) === set) {
       guards.delete(id)
     }
@@ -39,7 +53,30 @@ export function confirmDiscardAll(
   next: () => void,
   stay?: () => void
 ) {
-  const confirms = ids.flatMap(id => [...(guards.get(id) ?? [])])
+  const confirms = ids.flatMap(id =>
+    [...(guards.get(id) ?? [])].map(guard => guard.confirm)
+  )
+  runInTurn(confirms, next, stay)
+}
+
+/**
+ * Runs `next` once the drafts inside one sheet (comments, lead updates) are
+ * dealt with: the sheet's own close asks them before its form.
+ */
+export function confirmDiscardDrafts(
+  id: string | null | undefined,
+  next: () => void,
+  stay?: () => void
+) {
+  const confirms = id
+    ? [...(guards.get(id) ?? [])]
+        .filter(guard => guard.draft)
+        .map(guard => guard.confirm)
+    : []
+  runInTurn(confirms, next, stay)
+}
+
+function runInTurn(confirms: Confirm[], next: () => void, stay?: () => void) {
   const run = (index: number) => {
     const confirm = confirms[index]
     if (confirm) {

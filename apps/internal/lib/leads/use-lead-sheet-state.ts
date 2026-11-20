@@ -9,6 +9,7 @@ import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type { SheetSaveMode } from '@/lib/sheets/save-mode'
+import { useDraftsBeforeClose } from '@/lib/sheets/use-drafts-before-close'
 import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { archiveLead, saveLead } from '@/app/(dashboard)/leads/actions'
@@ -114,7 +115,7 @@ export function useLeadSheetState({
   const submitDisabled = isSaving || isArchiving || isReopening
   const historyKey = lead?.id ?? 'lead:new'
 
-  const handleFormSubmit = useCallback(
+  const submitForm = useCallback(
     (values: LeadFormValues, mode: SheetSaveMode = 'close') => {
       // Won needs a company. Say so on the field before asking
       // the server, which enforces the same rule.
@@ -206,6 +207,8 @@ export function useLeadSheetState({
       toast,
     ]
   )
+
+  const handleFormSubmit = useDraftsBeforeClose(submitForm)
 
   const handleSave = useCallback(
     (mode: SheetSaveMode) => {

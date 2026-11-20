@@ -30,6 +30,8 @@ export type UseTaskCommentsState = {
     isSubmitting: boolean
     canComment: boolean
   }
+  /** A typed comment or edit not yet posted (see `useTaskComments`). */
+  hasUnsentWork: boolean
   editing: {
     commentId: string | null
     draft: string

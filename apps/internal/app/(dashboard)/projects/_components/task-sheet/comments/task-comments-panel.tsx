@@ -8,6 +8,7 @@ import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 
 import { EntityList } from '@/components/sheets/entity-list'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'
+import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { useTaskComments } from '@/lib/projects/task-sheet/use-task-comments'
 import { isOptimisticComment } from '@/lib/projects/task-sheet/use-task-comments/mutations'
 
@@ -37,6 +38,15 @@ type TaskCommentsPanelProps = {
 export function TaskCommentsPanel(props: TaskCommentsPanelProps) {
   const state = useTaskComments(props)
   const { composer } = state
+  // A comment posts on its own click, so the task's Save never sees it:
+  // closing the sheet with one typed asks first.
+  const { dialog: discardDialog } = useUnsavedChangesWarning({
+    isDirty: state.hasUnsentWork,
+    draft: true,
+    title: 'Discard this comment?',
+    description: "Your comment hasn't been posted.",
+    cancelLabel: 'Keep writing',
+  })
   // The task's assignee options: the people who can open it.
   const mentionOptionsUrl = props.taskId
     ? taskCommentMentionOptionsUrl(props.taskId)
@@ -135,6 +145,7 @@ export function TaskCommentsPanel(props: TaskCommentsPanelProps) {
         onCancel={state.deletion.cancel}
         onConfirm={state.deletion.confirm}
       />
+      {discardDialog}
     </>
   )
 }

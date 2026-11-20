@@ -13,6 +13,7 @@ import type {
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { SheetSaveMode } from '@/lib/sheets/save-mode'
+import { useDraftsBeforeClose } from '@/lib/sheets/use-drafts-before-close'
 import { useReloadSheetRecord } from '@/lib/sheets/use-reload-sheet-record'
 import type { SaveConflictGuard } from '@/lib/sheets/save-conflict/use-save-conflict'
 import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
@@ -203,7 +204,7 @@ export const useTaskSheetState = ({
 
   const { stay, isReopening } = useSaveAndStay('task', task?.id ?? null, open)
 
-  const handleFormSubmit = useCallback(
+  const submitForm = useCallback(
     (values: TaskSheetFormValues, mode: SheetSaveMode = 'close') => {
       if (!canManage || submitLockRef.current) {
         return
@@ -392,6 +393,8 @@ export const useTaskSheetState = ({
     [admins, selectedProject, watchedAssigneeId]
   )
   const projectName = selectedProject?.name ?? null
+
+  const handleFormSubmit = useDraftsBeforeClose(submitForm)
 
   return {
     form,
