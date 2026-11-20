@@ -1,0 +1,34 @@
+name: Changelog
+
+# A pull request that changes the apps adds a line to What's new
+# (apps/internal/CHANGELOG.md) or says `Changelog: none` in its description.
+# Its own workflow, so editing the description re-runs only this check.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+concurrency:
+  group: changelog-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changelog:
+    name: Changelog
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      # The body comes in through env, never pasted into the script.
+      - env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/check-changelog.mjs "$BASE_SHA" "$HEAD_SHA"

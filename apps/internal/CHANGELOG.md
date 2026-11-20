@@ -7,7 +7,9 @@ changes nobody can see (dependencies, lint, tests).
 
 Format: a `## Week of <Month> <day>, <year>` heading (the Monday), then one
 `- **Area:** change` line per change, each on a single line, with no other
-Markdown (the dialog shows it as plain text). The tests check this.
+Markdown (the dialog shows it as plain text). The tests check this, and the
+Changelog check fails a pull request that changes the apps without a new line
+here, unless its description says `Changelog: none`.
 
 ## Week of November 16, 2026
 
