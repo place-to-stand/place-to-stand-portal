@@ -131,6 +131,8 @@ export function buildMentionExtension(optionsUrl: string | undefined) {
           onKeyDown: ({ event }) => {
             if (dismissed) return false
             if (event.key === 'Escape') {
+              // Only the list closes, not the sheet or form around it.
+              event.stopPropagation()
               dismissed = true
               popup?.remove()
               popup = null
