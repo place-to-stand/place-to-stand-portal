@@ -101,8 +101,6 @@
   /* Centres the 1em box on the item's first line (line-height 1.6). */
   padding-top: 0.3em;
   padding-right: 0.5rem;
-}
-.tiptap.ProseMirror ul[data-type='taskList'] li label {
   flex-shrink: 0;
 }
 /* Tiptap's task item view renders the checkbox and a screen-reader label
@@ -115,6 +113,7 @@
   height: 1em;
   margin: 0;
   cursor: pointer;
+  accent-color: var(--primary);
 }
 .tiptap.ProseMirror ul[data-type='taskList'] li div {
   flex: 1 1 0%;

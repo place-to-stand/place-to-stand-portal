@@ -32,7 +32,7 @@ const OPTIONS: sanitizeHtml.IOptions = {
     '*': { 'text-align': [/^(left|center|right|justify)$/] },
     mark: {
       'background-color': [
-        /^(var\(--tt-(color-highlight-[a-z]+|bg-color)\)|#[0-9a-f]{3,8})$/i,
+        /^(var\(--tt-(color-highlight-[a-z]+|bg-color)\)|#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8}))$/i,
       ],
       color: [/^inherit$/],
     },

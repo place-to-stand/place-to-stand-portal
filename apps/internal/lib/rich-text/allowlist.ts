@@ -59,7 +59,7 @@ const ALIGNMENTS = new Set(['left', 'center', 'right', 'justify'])
  * or `--tt-bg-color` for none) or a plain hex colour from older content.
  */
 const HIGHLIGHT_COLOR =
-  /^(var\(--tt-(color-highlight-[a-z]+|bg-color)\)|#[0-9a-f]{3,8})$/i
+  /^(var\(--tt-(color-highlight-[a-z]+|bg-color)\)|#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8}))$/i
 
 /** `a: b; c: d` as lower-cased property → trimmed value pairs. */
 function parseStyle(style: string): Map<string, string> {

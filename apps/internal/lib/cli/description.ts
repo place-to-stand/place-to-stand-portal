@@ -42,6 +42,12 @@ function inline(text: string): string {
 
 type ListKind = 'ul' | 'ol'
 
+/**
+ * Deepest nesting kept. Deeper items join the deepest list, so a staircase of
+ * indents can't recurse the renderer past the stack.
+ */
+const MAX_DEPTH = 8
+
 type ListItem = { html: string; children: List[] }
 type List = { kind: ListKind; indent: number; items: ListItem[] }
 
@@ -99,7 +105,7 @@ export function toRichTextHtml(input: string): string {
       return
     }
 
-    if (indent > current.indent) {
+    if (indent > current.indent && stack.length < MAX_DEPTH) {
       // Nest under the last item of the current list.
       const nested: List = { kind, indent, items: [item] }
       current.items.at(-1)?.children.push(nested)
@@ -107,7 +113,7 @@ export function toRichTextHtml(input: string): string {
       return
     }
 
-    if (current.kind === kind) {
+    if (current.kind === kind || indent > current.indent) {
       current.items.push(item)
       return
     }
@@ -124,11 +130,30 @@ export function toRichTextHtml(input: string): string {
     stack.push(sibling)
   }
 
-  for (const rawLine of input.replace(/\r\n/g, '\n').split('\n')) {
+  const lines = input.replace(/\r\n/g, '\n').split('\n')
+  // For each line, the next line with text on it (one pass, from the end).
+  const nextText: (string | undefined)[] = []
+  for (
+    let index = lines.length - 1, next: string | undefined;
+    index >= 0;
+    index -= 1
+  ) {
+    nextText[index] = next
+    if (lines[index].trim()) next = lines[index].trim()
+  }
+
+  for (const [index, rawLine] of lines.entries()) {
     const line = rawLine.trim()
 
     if (!line) {
-      flushList()
+      // A blank line between items keeps the list going (a loose list, as
+      // agents often write); anywhere else it ends the list.
+      const next = nextText[index]
+      const continues =
+        stack.length > 0 &&
+        next !== undefined &&
+        (BULLET.test(next) || NUMBERED.test(next))
+      if (!continues) flushList()
       continue
     }
 

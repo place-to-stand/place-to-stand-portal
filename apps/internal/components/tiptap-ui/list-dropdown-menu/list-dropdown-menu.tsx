@@ -13,7 +13,7 @@ import { ChevronDownIcon } from '@/components/tiptap-icons/chevron-down-icon'
 import { ListButton, type ListType } from '@/components/tiptap-ui/list-button'
 import {
   ListIndentButton,
-  canChangeListIndent,
+  useListIndent,
 } from '@/components/tiptap-ui/list-indent-button'
 import type { ListIndentDirection } from '@/lib/tiptap/list-indent'
 
@@ -124,19 +124,12 @@ export function ListDropdownMenu({
             <Separator orientation='horizontal' />
             <ButtonGroup>
               {INDENT_ITEMS.map(({ direction, label }) => (
-                <DropdownMenuItem
+                <ListIndentMenuItem
                   key={direction}
-                  asChild
-                  disabled={!canChangeListIndent(editor, direction)}
-                >
-                  <ListIndentButton
-                    editor={editor}
-                    direction={direction}
-                    text={label}
-                    showShortcut
-                    showTooltip={false}
-                  />
-                </DropdownMenuItem>
+                  editor={editor}
+                  direction={direction}
+                  label={label}
+                />
               ))}
             </ButtonGroup>
           </CardBody>
@@ -147,3 +140,31 @@ export function ListDropdownMenu({
 }
 
 export default ListDropdownMenu
+
+/**
+ * Indent or Outdent in the list menu. Reads the live state from the hook, so
+ * the item enables as the cursor moves; this menu doesn't re-render on every
+ * transaction, and a value computed here when it opened would go stale.
+ */
+function ListIndentMenuItem({
+  editor,
+  direction,
+  label,
+}: {
+  editor: Editor
+  direction: ListIndentDirection
+  label: string
+}) {
+  const { canChange } = useListIndent({ editor, direction })
+  return (
+    <DropdownMenuItem asChild disabled={!canChange}>
+      <ListIndentButton
+        editor={editor}
+        direction={direction}
+        text={label}
+        showShortcut
+        showTooltip={false}
+      />
+    </DropdownMenuItem>
+  )
+}

@@ -11,6 +11,7 @@ import { isMarkdownPaste, markdownToHtml } from './markdown'
 export function toEditorHtml(html: string): string {
   const doc = new DOMParser().parseFromString(html, 'text/html')
   convertTaskLists(doc)
+  dropUnsupported(doc)
   const blocks = Array.from(doc.body.children)
   const onlyText = Array.from(doc.body.childNodes).every(
     node => node.nodeType !== Node.TEXT_NODE || !node.textContent?.trim()
@@ -22,21 +23,74 @@ export function toEditorHtml(html: string): string {
 }
 
 /**
+ * What the editor can't keep: an image becomes its link (the editor would
+ * load it, and saving a comment strips it), and a table becomes one
+ * paragraph per row with its cells joined by a bar.
+ */
+function dropUnsupported(doc: Document) {
+  for (const image of Array.from(doc.querySelectorAll('img'))) {
+    const src = image.getAttribute('src') ?? ''
+    const link = doc.createElement('a')
+    link.setAttribute('href', src)
+    link.textContent = image.getAttribute('alt') || src
+    image.replaceWith(link)
+  }
+  for (const table of Array.from(doc.querySelectorAll('table'))) {
+    const rows = Array.from(table.querySelectorAll('tr')).map(row => {
+      const paragraph = doc.createElement('p')
+      paragraph.textContent = Array.from(row.querySelectorAll('th, td'))
+        .map(cell => cell.textContent?.trim() ?? '')
+        .join(' | ')
+      return paragraph
+    })
+    table.replaceWith(...rows)
+  }
+}
+
+/**
  * GitHub's task list markup (`<li class="task-list-item"><input
  * type="checkbox" checked> text`) in the shape the editor's checklist reads:
  * `<ul data-type="taskList"><li data-type="taskItem" data-checked>`.
  */
 function convertTaskLists(doc: Document) {
-  for (const item of Array.from(doc.querySelectorAll('li'))) {
-    const box = item.querySelector(
-      ':scope > input[type="checkbox"], :scope > p > input[type="checkbox"]'
+  const boxOf = (item: Element) =>
+    item.querySelector(
+      ':scope > input[type="checkbox"], :scope > p:first-child > input[type="checkbox"]'
     )
-    if (!box) continue
-    const checked = box.hasAttribute('checked')
-    box.remove()
-    item.setAttribute('data-type', 'taskItem')
-    item.setAttribute('data-checked', checked ? 'true' : 'false')
-    item.parentElement?.setAttribute('data-type', 'taskList')
+  for (const list of Array.from(doc.querySelectorAll('ul, ol'))) {
+    const items = Array.from(list.children).filter(
+      child => child.tagName === 'LI'
+    )
+    const boxes = items.map(boxOf)
+    if (!boxes.some(Boolean)) continue
+    // A checklist holds only checklist items and is never numbered, so a
+    // list mixing ticked and plain items (Markdown reads a checklist and a
+    // bullet list split by a blank line as one list) splits into runs.
+    const runs: { checklist: boolean; items: Element[] }[] = []
+    items.forEach((item, index) => {
+      const checklist = Boolean(boxes[index])
+      const last = runs.at(-1)
+      if (last && last.checklist === checklist) last.items.push(item)
+      else runs.push({ checklist, items: [item] })
+    })
+    const lists = runs.map(run => {
+      const next = doc.createElement(run.checklist ? 'ul' : list.tagName)
+      if (run.checklist) next.setAttribute('data-type', 'taskList')
+      run.items.forEach(item => {
+        const box = boxOf(item)
+        if (run.checklist) {
+          item.setAttribute('data-type', 'taskItem')
+          item.setAttribute(
+            'data-checked',
+            box?.hasAttribute('checked') ? 'true' : 'false'
+          )
+          box?.remove()
+        }
+        next.append(item)
+      })
+      return next
+    })
+    list.replaceWith(...lists)
   }
 }
 
@@ -72,9 +126,15 @@ export const MarkdownPaste = Extension.create({
             if (!isMarkdownPaste(text, html)) return false
 
             const converted = toEditorHtml(markdownToHtml(text))
-            return editor.commands.insertContent(converted, {
-              parseOptions: { preserveWhitespace: false },
-            })
+            try {
+              return editor.commands.insertContent(converted, {
+                parseOptions: { preserveWhitespace: false },
+              })
+            } catch (error) {
+              // Content the schema won't take: fall back to the normal paste.
+              console.warn('Markdown paste failed; pasting as text', error)
+              return false
+            }
           },
         },
       }),

@@ -80,3 +80,48 @@ test('task lists come out as checkboxes', () => {
     /<input type="checkbox" disabled="" checked="" \/>/
   )
 })
+
+test('Word, Google Docs and code editors keep their own paste', () => {
+  assert.equal(
+    isMarkdownPaste('1.\tItem', '<p class=MsoListParagraph>1. Item</p>'),
+    false
+  )
+  assert.equal(
+    isMarkdownPaste(
+      '- a',
+      '<b id="docs-internal-guid-1" style="font-weight:normal"><p>- a</p></b>'
+    ),
+    false
+  )
+  assert.equal(
+    isMarkdownPaste('**a**', '<span style="font-weight:700">a</span>'),
+    false
+  )
+  assert.equal(
+    isMarkdownPaste(
+      '# x',
+      '<div style="font-family: Menlo, monospace; white-space: pre;"># x</div>'
+    ),
+    false
+  )
+})
+
+test('dunder names and lone fences are not Markdown', () => {
+  assert.equal(isMarkdownPaste('call __init__ here', null), false)
+  assert.equal(isMarkdownPaste('```', null), false)
+  assert.equal(isMarkdownPaste('```\nx\n```', null), true)
+})
+
+test('line breaks the writer typed stay', () => {
+  assert.equal(
+    markdownToHtml('Line one\nLine two has `code`\nLine three').replace(
+      /\n(?!<)/g,
+      '⏎'
+    ),
+    '<p>Line one<br />Line two has <code>code</code><br />Line three</p>'
+  )
+  assert.equal(
+    markdownToHtml('Steps:\n1. open\n2. close\nThanks').replace(/\n/g, ''),
+    '<p>Steps:</p><ol><li>open</li><li>close</li></ol><p>Thanks</p>'
+  )
+})

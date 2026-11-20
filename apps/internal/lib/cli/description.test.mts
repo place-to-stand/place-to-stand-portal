@@ -77,3 +77,21 @@ test('HTML passes through untouched', () => {
   const html = '<ul><li><p>a</p><ul><li><p>b</p></li></ul></li></ul>'
   assert.equal(toRichTextHtml(html), html)
 })
+
+test('nesting stops at eight levels instead of overflowing', () => {
+  const lines = Array.from({ length: 5000 }, (_, i) => `${' '.repeat(i)}- x`)
+  const html = toRichTextHtml(lines.join('\n'))
+  assert.equal(html.match(/<ul>/g)?.length, 8)
+  assert.equal(html.match(/<li>/g)?.length, 5000)
+})
+
+test('blank lines between items keep one list and its nesting', () => {
+  assert.equal(
+    toRichTextHtml('- a\n\n  - b\n\n- c'),
+    '<ul><li><p>a</p><ul><li><p>b</p></li></ul></li><li><p>c</p></li></ul>'
+  )
+  assert.equal(
+    toRichTextHtml('1. a\n\n2. b'),
+    '<ol><li><p>a</p></li><li><p>b</p></li></ol>'
+  )
+})
