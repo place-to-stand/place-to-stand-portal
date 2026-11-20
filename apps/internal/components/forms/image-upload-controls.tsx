@@ -14,7 +14,7 @@ import { RowActionButton } from '@pts/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { cn } from '@/lib/utils'
 
-export type ImageUploadShape = 'square' | 'wide' | 'circle'
+type ImageUploadShape = 'square' | 'wide' | 'circle'
 
 type ImageUploadControlsProps = {
   /** Square for an icon, wide for a logo, circle for a person's photo. */

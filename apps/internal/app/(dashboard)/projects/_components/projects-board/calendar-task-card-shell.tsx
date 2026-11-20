@@ -87,7 +87,7 @@ export const CalendarTaskCardShell = forwardRef<
   )
 })
 
-export type CalendarTaskCardPreviewProps = {
+type CalendarTaskCardPreviewProps = {
   task: TaskWithRelations
   assignees: Array<{ id: string; name: string; avatarUrl: string | null }>
 }

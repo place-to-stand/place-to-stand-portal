@@ -1,6 +1,6 @@
 import type { TaskWithRelations } from '@/lib/types'
 
-export type ProjectsBoardDerivedStateArgs = {
+type ProjectsBoardDerivedStateArgs = {
   activeProjectTasks: TaskWithRelations[]
   activeProjectArchivedTasks: TaskWithRelations[]
   activeProjectAcceptedTasks: TaskWithRelations[]
@@ -13,7 +13,7 @@ export type ProjectsBoardDerivedStateArgs = {
   allDoneTasks: TaskWithRelations[]
 }
 
-export type ProjectsBoardDerivedState = {
+type ProjectsBoardDerivedState = {
   tasksByColumnToRender: Map<string, TaskWithRelations[]>
   acceptedTasks: TaskWithRelations[]
   archivedTasks: TaskWithRelations[]

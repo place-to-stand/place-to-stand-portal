@@ -41,8 +41,8 @@ export default async function ProjectsPage({
     return renderMemberLanding(user, { statuses, search, filtersActive })
   }
 
-  // One wave: nothing below depends on anything else here, and the old
-  // second Promise.all added a full serial round-trip level per request.
+  // One wave: nothing below depends on anything else here, so a second
+  // Promise.all would add a serial round trip per request.
   const [
     projects,
     unfilteredCounts,

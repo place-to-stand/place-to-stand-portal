@@ -47,7 +47,7 @@ function monthName(offset: number): string {
 
 /**
  * Billing stopped. `current_month` bills last month last; `next_month` bills
- * through this month. (Stored under the CLIENT_ARCHIVED verb, as before.)
+ * through this month. Stored under the CLIENT_ARCHIVED verb.
  */
 export const clientBillingStoppedEvent = (args: {
   name: string
@@ -61,7 +61,7 @@ export const clientBillingStoppedEvent = (args: {
   }
 }
 
-/** Billing restarted, or a scheduled stop cancelled. */
+/** Billing restarted, or a scheduled stop cancelled (the CLIENT_RESTORED verb). */
 export const clientBillingRestartedEvent = (args: {
   name: string
   effective: 'current_month' | 'next_month'

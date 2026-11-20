@@ -4,8 +4,7 @@ import * as React from 'react'
 
 import { cn } from './cn'
 
-// PRD 004 §04 (D10): density variant. 'compact' = h-8 text-xs heads +
-// py-1.5 cells, promoted from the monthly-close tableClasses experiment.
+// Density variant. 'compact' = h-8 text-xs heads + py-1.5 cells.
 type TableDensity = 'default' | 'compact'
 
 // 'fixed' opts into table-layout: fixed so column widths come from the

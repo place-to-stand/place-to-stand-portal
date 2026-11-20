@@ -22,7 +22,6 @@ function PhoneInput({
   storeFormatted = false,
   ...props
 }: PhoneInputProps) {
-  // Display formatted value
   const displayValue = React.useMemo(() => {
     const raw = value ?? ''
     return formatPhoneUS(raw)

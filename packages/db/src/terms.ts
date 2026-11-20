@@ -1,9 +1,8 @@
 import { sql, type SQL } from 'drizzle-orm'
 
 /**
- * Billing and commission terms, read "as of" a date in one place (D2 / D24).
- * Both go through SQL functions that take the company id (migration 0117),
- * like `client-state.ts`, so no query correlates a subquery with an outer
+ * Billing and commission terms, read "as of" a date in one place.
+ * Both go through SQL functions that take the company id, like `client-state.ts`, so no query correlates a subquery with an outer
  * column. Pass `CURRENT_TERM` for the newest term, even one scheduled ahead:
  * that is what the company sheet last saved.
  */

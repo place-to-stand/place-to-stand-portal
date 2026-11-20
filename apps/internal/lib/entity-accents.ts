@@ -90,7 +90,7 @@ type EntityAccent = {
   badge: string
 }
 
-export type EntityDefinition = {
+type EntityDefinition = {
   /** UI name. The person record is a "Person", a user is a "Sign-in". */
   label: string
   /**

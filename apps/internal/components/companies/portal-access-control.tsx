@@ -8,7 +8,7 @@ import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { canHavePortalAccess } from '@/lib/people/portal-eligibility'
 
 /** A person on the company's People list, as the Portal switch needs them. */
-export type PortalAccessPerson = {
+type PortalAccessPerson = {
   id: string
   name: string
   email: string | null

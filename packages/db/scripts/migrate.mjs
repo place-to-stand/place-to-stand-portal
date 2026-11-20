@@ -5,9 +5,8 @@
 // Usage: node scripts/migrate.mjs [env file]. With a file (as
 // `npm run db:migrate:prod` passes apps/internal/.env.prod), its DATABASE_URL
 // wins over one already in the shell, so a prod run can't hit another database.
-// Works through Supabase's pooler: the
-// `pgbouncer=true` flag is Prisma's, not Postgres's, so it is dropped, and
-// prepared statements are off.
+// Works through Supabase's pooler: the `pgbouncer=true` flag is Prisma's, not
+// Postgres's, so it is dropped, and prepared statements are off.
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 

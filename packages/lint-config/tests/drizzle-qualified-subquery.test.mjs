@@ -23,14 +23,14 @@ tester.run('drizzle-qualified-subquery', rule, {
   ],
   invalid: [
     {
-      // Historical case 1: the project owner's contact id (always null).
+      // A person's contact id looked up from the outer users row.
       code:
         imports +
         'sql`(select ${contacts.id} from ${contacts} where ${contacts.userId} = ${users.id} and ${contacts.deletedAt} is null limit 1)`',
       errors: [{ messageId: 'outer' }],
     },
     {
-      // Historical case 2: billingTypeAsOfSql.
+      // A billing term looked up for the outer company (billingTypeAsOfSql's shape).
       code:
         imports +
         `sql\`(
@@ -42,7 +42,7 @@ tester.run('drizzle-qualified-subquery', rule, {
       errors: [{ messageId: 'outer' }],
     },
     {
-      // Historical case 3: commissionColumnAsOfSql (computed inner column).
+      // A computed inner column (commissionColumnAsOfSql's shape).
       code:
         imports +
         'function f(column) { return sql`(SELECT ${commissionTerms[column]} FROM ${commissionTerms} WHERE ${commissionTerms.companyId} = ${companies.id} LIMIT 1)` }',

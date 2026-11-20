@@ -197,7 +197,6 @@ export function InvoiceSheet({
     [productCatalogOptions]
   )
 
-  // dnd-kit sensors for line item reorder
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, {
@@ -225,14 +224,10 @@ export function InvoiceSheet({
     [lineItemIds, handleMoveLineItem]
   )
 
-  // ── Right-column action handlers ──────────────────────────────────────
-
   // Shared with the invoices list's row buttons.
   const statusActions = useInvoiceStatusActions({
     linkHint: 'Copy the public link from the top of this panel.',
   })
-
-  // ── Titles ────────────────────────────────────────────────────────────
 
   // The invoice's name is its number; a draft may not have one yet.
   const sheetTitle = isEditing
@@ -261,9 +256,6 @@ export function InvoiceSheet({
                 handleSubmit(values)
               )}
             >
-              {/* ────────────────────────────────────────────────────── */}
-              {/* Header (full width)                                   */}
-              {/* ────────────────────────────────────────────────────── */}
               <SheetFormHeader
                 entity='invoice'
                 presence={
@@ -296,11 +288,8 @@ export function InvoiceSheet({
                 }
               />
 
-              {/* ────────────────────────────────────────────────────── */}
-              {/* Two-column body                                       */}
-              {/* ────────────────────────────────────────────────────── */}
               {/* Below lg the columns stack into one scroll with the footer
-                  pinned to the bottom: side by side, the form column was too
+                  pinned to the bottom: side by side, the form column is too
                   narrow to use. */}
               <div className='flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto'>
                 {/* Left Column - Form Fields */}
@@ -309,7 +298,6 @@ export function InvoiceSheet({
                   <div className='flex-1 p-6 lg:overflow-y-auto'>
                     <div className='flex flex-col gap-6'>
                       <SheetNoticeSlot />
-                      {/* ───── Header Fields ───── */}
                       <div className='grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2'>
                         <FormField
                           control={form.control}
@@ -370,7 +358,6 @@ export function InvoiceSheet({
                         )}
                       />
 
-                      {/* ───── Line Items ───── */}
                       {/* Never empty: an invoice keeps at least one line. */}
                       <EntityList
                         title='Line items'
@@ -430,7 +417,7 @@ export function InvoiceSheet({
                         </DndContext>
                       </EntityList>
 
-                      {/* ───── Tax Rate (read-only, driven by client state) ───── */}
+                      {/* Tax rate: read-only, set by the client's state. */}
                       <div className='grid grid-cols-1 items-center gap-4 sm:grid-cols-2'>
                         <span className='text-sm font-medium sm:text-right'>
                           {taxRateLabel ?? 'Tax rate'}
@@ -447,7 +434,6 @@ export function InvoiceSheet({
                         </div>
                       </div>
 
-                      {/* ───── Totals ───── */}
                       <div className='bg-muted/50 space-y-2 rounded-lg border p-4'>
                         <div className='flex justify-between text-sm'>
                           <span className='text-muted-foreground'>
@@ -492,9 +478,7 @@ export function InvoiceSheet({
                   ) : null}
                 </div>
 
-                {/* ────────────────────────────────────────────────────── */}
-                {/* Right Column - Actions & Metadata / Placeholder       */}
-                {/* ────────────────────────────────────────────────────── */}
+                {/* Right column: actions and metadata once the invoice exists. */}
                 {isEditing && invoice ? (
                   <InvoiceSheetRightColumn
                     invoice={invoice}
@@ -533,7 +517,6 @@ export function InvoiceSheet({
         </SheetContent>
       </Sheet>
 
-      {/* Dialogs */}
       <InvoiceArchiveDialog
         open={isDeleteDialogOpen}
         confirmDisabled={isPending}

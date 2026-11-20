@@ -53,8 +53,8 @@ export const fetchAdminUsers = cache((): Promise<DbUser[]> =>
 )
 
 /**
- * Staff who can work leads: admins plus SALES-role CRM staff. Used for lead
- * assignee pickers; everything else that lists staff stays admin-only.
+ * CRM staff: admins plus SALES-role users. Used for lead and task assignee
+ * pickers.
  */
 export const fetchCrmUsers = cache((): Promise<DbUser[]> =>
   fetchStaffUsers({ roles: ['ADMIN', 'SALES'] })

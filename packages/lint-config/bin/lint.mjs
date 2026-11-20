@@ -101,8 +101,8 @@ export function suppressionsFor(problems) {
 // everything else: it is caught here instead, outside Oxlint.
 const BLANKET_DISABLE =
   /^[\t ]*\{?\/(?:\*|\/)\s*(?:eslint|oxlint)-disable(?=\s*(?:\*\/|--|$))/gm
-// An inline rule config (`/* eslint no-console: off */`), which Oxlint
-// ignores: ESLint's reportUnusedInlineConfigs used to flag the stale ones.
+// An inline rule config (`/* eslint no-console: off */`). Oxlint ignores it,
+// so it would look like it does something when it does nothing.
 const INLINE_CONFIG = /^[\t ]*\{?\/\*\s*(?:eslint|oxlint)\s+[\w@/-]+\s*:/gm
 const SOURCE = /\.(?:[cm]?[jt]sx?)$/
 

@@ -19,7 +19,7 @@ import { PagePanel } from '@/components/layout/page-panel'
 import type { RawSearchParams } from '@/lib/pagination/params'
 import { pageSheetParam } from '@/lib/sheets/stack'
 
-export type ListMode = 'active' | 'archive'
+type ListMode = 'active' | 'archive'
 
 const MODES = {
   active: {

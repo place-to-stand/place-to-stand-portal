@@ -7,7 +7,7 @@ import {
 } from '@/lib/queries/companies/billing/settings/client-contacts'
 
 /**
- * Fetches all data needed for the company's billing (its sheet's Client column) pickers.
+ * Loads the options for the billing pickers in the company sheet's Client column.
  */
 export async function getClientSheetContactData(
   companyId?: string

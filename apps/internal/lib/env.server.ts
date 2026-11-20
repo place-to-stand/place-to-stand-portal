@@ -10,7 +10,7 @@ const schema = z.object({
   NEXT_PUBLIC_POSTHOG_HOST: z.url(),
   RESEND_API_KEY: z.string().min(1),
   RESEND_FROM_EMAIL: z.email(),
-  // Marketing form email (PRD 008). All optional with fallbacks: the sender
+  // Marketing form email. All optional with fallbacks: the sender
   // falls back to RESEND_FROM_EMAIL and the team inbox to the inbox email on
   // Settings → Business, and no audience id means the opt-in add is skipped.
   RESEND_FORMS_FROM_EMAIL: z.email().optional(),
@@ -34,8 +34,9 @@ const schema = z.object({
   GITHUB_REDIRECT_URI: z.string().url().optional(),
   STRIPE_SECRET_KEY: z.string().min(1).optional(),
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
-  // Read-only token for the monthly close profit share. Unset turns profit
-  // share off rather than failing boot.
+  // Read-only token for the monthly close profit share. Unset leaves the
+  // Mercury balance unreadable (the profit share shows as unavailable) rather
+  // than failing boot.
   MERCURY_API_TOKEN: z.string().min(1).optional(),
   GITHUB_APP_ID: z.string().min(1).optional(),
   GITHUB_APP_PRIVATE_KEY: z.string().min(1).optional(),

@@ -2,12 +2,10 @@
 
 import { forwardRef } from 'react'
 
-// --- Shared UI ---
 // Toolbar tooltips use the portal-wide tooltip so their offset, arrow and
-// colours match every other tooltip instead of a separate floating-ui copy.
+// colours match every other tooltip.
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
-// --- Lib ---
 import { KeyCaps } from '@/components/keyboard/shortcut-keys'
 import { cn } from '@/lib/tiptap-utils'
 

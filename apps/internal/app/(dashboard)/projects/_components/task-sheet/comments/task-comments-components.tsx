@@ -27,7 +27,7 @@ import { getInitials } from '@/lib/users/initials'
 import { cn } from '@/lib/utils'
 import { RowActionButton } from '@pts/ui/row-action-button'
 
-export type TaskCommentComposerProps = {
+type TaskCommentComposerProps = {
   value: string
   onChange: (value: string) => void
   onSubmit: () => void
@@ -117,7 +117,7 @@ export function TaskCommentComposer(props: TaskCommentComposerProps) {
   )
 }
 
-export type TaskCommentItemProps = {
+type TaskCommentItemProps = {
   comment: TaskCommentWithAuthor
   isAuthor: boolean
   isEditing: boolean
@@ -144,8 +144,8 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
     disableActions,
   } = props
 
-  // Matches the time-log history component: a user with no display name
-  // still has an email, which identifies them far better than 'Unknown person'.
+  // A user with no display name still has an email, which identifies them
+  // far better than 'Unknown person'.
   const authorName =
     comment.author?.full_name ?? comment.author?.email ?? 'Unknown person'
   const createdAgo = formatRelativeTime(comment.created_at)
@@ -248,7 +248,7 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
   )
 }
 
-export type TaskCommentsErrorStateProps = {
+type TaskCommentsErrorStateProps = {
   onRetry: () => void
 }
 

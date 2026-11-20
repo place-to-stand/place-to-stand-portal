@@ -15,7 +15,7 @@ import {
 
 type DbOrTransaction = typeof db | DbTx
 
-export type SnapshotRow = {
+type SnapshotRow = {
   id: string
   year: number
   month: number
@@ -129,7 +129,7 @@ export async function updateSnapshotReport(
   return Boolean(updated)
 }
 
-export type LateRecordRow = {
+type LateRecordRow = {
   kind: 'time_log' | 'hour_block'
   id: string
   clientName: string | null

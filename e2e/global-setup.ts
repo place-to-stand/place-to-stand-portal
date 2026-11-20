@@ -8,8 +8,8 @@ import { chromium, type FullConfig } from '@playwright/test'
  * Supabase and saves each session. Refuses anything but a local Supabase.
  */
 const ACCOUNTS = {
-  admin: process.env.E2E_ADMIN_EMAIL ?? 'jason@local.test',
-  sales: process.env.E2E_SALES_EMAIL ?? 'dave@local.test',
+  admin: process.env.E2E_ADMIN_EMAIL ?? 'ada@example.com',
+  sales: process.env.E2E_SALES_EMAIL ?? 'miles@example.com',
 }
 
 function localEnv() {

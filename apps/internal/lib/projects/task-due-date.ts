@@ -12,7 +12,7 @@ export const TASK_DUE_TONE_CLASSES = {
 
 type TaskDueTone = keyof typeof TASK_DUE_TONE_CLASSES
 
-export type TaskDueMeta = {
+type TaskDueMeta = {
   label: string
   tone: TaskDueTone
 }
@@ -50,7 +50,7 @@ export function getTaskDueMeta(
   // Today in the company's time zone, not the machine's: the server (UTC)
   // and the browser must agree, or the label differs between the server
   // render and hydration. In the evening UTC is already tomorrow, and that
-  // mismatch made React render the whole page again, wiping dark mode.
+  // mismatch makes React render the whole page again, which wipes dark mode.
   const today = parseISO(companyCalendarDate(options.now))
   const daysUntilDue = differenceInCalendarDays(parsed, today)
 

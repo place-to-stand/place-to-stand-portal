@@ -13,7 +13,7 @@ import type { ProjectTypeValue } from '@/lib/types'
 export const HIDE_PARAM = 'hide'
 
 /** URL tokens in canonical order — the order the URL and trigger hint use. */
-export const HIDEABLE_PROJECT_TYPE_TOKENS = ['personal', 'internal'] as const
+const HIDEABLE_PROJECT_TYPE_TOKENS = ['personal', 'internal'] as const
 
 export type HideableProjectTypeToken =
   (typeof HIDEABLE_PROJECT_TYPE_TOKENS)[number]

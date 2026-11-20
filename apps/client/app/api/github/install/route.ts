@@ -36,7 +36,7 @@ export async function GET(request: Request) {
   const denied = await clientAccessDenied(user, companyId)
   if (denied) return denied
 
-  getGitHubAppEnv() // validate env vars are present
+  getGitHubAppEnv() // throws when the GitHub App env is missing
   const state = nanoid(32)
 
   const cookieStore = await cookies()
@@ -85,7 +85,6 @@ export async function GET(request: Request) {
     })
   }
 
-  // Redirect to GitHub App installation page
   const installUrl = `https://github.com/apps/place-to-stand/installations/new?state=${state}`
 
   return NextResponse.redirect(installUrl)

@@ -12,7 +12,8 @@ import {
 } from '@/lib/notifications/in-app/queries'
 
 /**
- * The viewer's notification stream for the home Notifications widget.
+ * The viewer's notification stream for the home Notifications widget and
+ * the header bell.
  * GET returns the feed; POST changes read/archived state for some (`ids`) or
  * all of the viewer's notifications. Everything is scoped to the viewer.
  */

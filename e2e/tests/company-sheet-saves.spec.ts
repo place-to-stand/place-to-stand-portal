@@ -252,12 +252,15 @@ test('a billed company is not archived: stop billing first', async ({
   ).toBeVisible()
   await page.keyboard.press('Escape')
 
-  // So is the list's.
+  // So is the list row's (in its right-click menu).
   await page.goto(`/companies?q=${encodeURIComponent(name)}`)
   const row = page.locator('tbody tr').filter({ hasText: name })
+  await row.click({ button: 'right' })
+  await expect(page.getByRole('menuitem', { name: 'Archive' })).toBeDisabled()
   await expect(
-    row.getByRole('button', { name: 'Archive company' })
-  ).toBeDisabled()
+    page.getByRole('menu').getByText('Stop billing first.')
+  ).toBeVisible()
+  await page.keyboard.press('Escape')
 
   // cleanUp stops billing ("last month") first, then archives.
   await cleanUp(page, name)
@@ -291,7 +294,7 @@ test('a save made since the sheet opened refuses the older sheet', async ({
   await second.getByRole('button', { name: /^Save and close/ }).click()
   // Nothing is written: the dialog asks, and the sheet stays open.
   const refused = other.getByRole('alertdialog')
-  await expect(refused).toContainText('Your changes weren’t saved')
+  await expect(refused).toContainText('aren’t saved yet')
   await refused.getByRole('button', { name: 'Keep editing' }).click()
   await expect(second).toBeVisible()
   await other.close()

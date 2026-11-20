@@ -21,7 +21,7 @@ export type ProjectGitHubLink = {
   viaClientInstallation: boolean
 }
 
-export type ProjectGitHubStatus = {
+type ProjectGitHubStatus = {
   /** The project's client has an active GitHub App installation. */
   hasInstallation: boolean
   /** Every repo linked to this project, however it was linked. */

@@ -42,7 +42,7 @@ export async function POST(request: Request) {
   }
 
   // Read before the soft delete clears it; a bad ciphertext just skips the
-  // revoke, as before.
+  // revoke.
   let revokedToken: string | null = null
   try {
     revokedToken = decryptToken(connection.accessToken)
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
   try {
     if (revokedToken) await revokeToken(revokedToken)
   } catch (error) {
-    // Log for monitoring but continue with soft delete - token will expire eventually
+    // Log for monitoring; the connection is already soft-deleted.
     console.error('[OAuth Disconnect] Failed to revoke Google token:', {
       userId: user.id,
       connectionId,

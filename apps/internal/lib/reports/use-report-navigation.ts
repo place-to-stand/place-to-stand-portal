@@ -136,8 +136,8 @@ export function useReportNavigation({
 
   // The label moves on every click, but the URL (and the server render behind
   // it) only follows once clicking settles. Next doesn't cancel superseded
-  // navigations, so a burst of arrow clicks used to stream a full report per
-  // month in parallel, and one dropped stream crashed the page.
+  // navigations: pushing on every click would stream a full report per month
+  // in parallel, and one dropped stream crashes the page.
   const pushTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(
     () => () => {

@@ -10,11 +10,11 @@ export function newRowId(): string {
   return `${NEW_ROW_PREFIX}${crypto.randomUUID()}`
 }
 
-export function isNewRowId(id: string): boolean {
+function isNewRowId(id: string): boolean {
   return id.startsWith(NEW_ROW_PREFIX)
 }
 
-export type RowChange = 'new' | 'edited' | null
+type RowChange = 'new' | 'edited' | null
 
 export function rowChange<T extends { id: string }>(
   row: T,

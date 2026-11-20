@@ -22,7 +22,7 @@ import { applyDueRoleTerms } from '@/lib/users/services/role'
 
 /**
  * The signed-in person: their sign-in row plus their name and photo, which
- * live on the person (contacts) since 0109 and 0112.
+ * live on the person (contacts).
  */
 export type AppUser = {
   id: string
@@ -60,8 +60,8 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
   // getClaims() verifies the session JWT's signature and expiry. With the
   // project on asymmetric signing keys (ES256) that happens in-process against
   // a JWKS cached for 10 minutes — no round trip to Supabase Auth per request.
-  // With the legacy HS256 secret it falls back to getUser() internally, so
-  // behaviour is unchanged until the key is rotated. The only claims trusted
+  // With a symmetric HS256 secret it falls back to getUser() internally (a
+  // round trip per request). The only claims trusted
   // here are `sub` and `email`; role, disabled and deleted state come from our
   // own users row below, on every request.
   const { data, error } = await supabase.auth.getClaims()
@@ -85,8 +85,9 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
     // One query: the profile plus whether the session still exists.
     // getClaims() checks only the JWT's signature and expiry, so a token
     // issued before its session ended (sign-out, or an orphaned sign-in
-    // re-linked to a person) would otherwise work until it expires. Fails closed: an error
-    // (the role can't read auth.sessions, say) lands in the catch below.
+    // re-linked to a person) would otherwise work until it expires. Fails
+    // closed: an error (the role can't read auth.sessions, say) lands in the
+    // catch below.
     const profile = await fetchUserProfile(authUserId, sessionId)
 
     if (!profile || !profile.sessionLive) {
@@ -139,7 +140,7 @@ export const getCurrentStaff = async (): Promise<AppUser | null> => {
 /**
  * The signed-in user when they are an ADMIN, else null. For API routes that
  * answer 401 themselves rather than redirecting: the internal portal also
- * admits SALES (CRM staff), so "has a session" no longer means "is an admin".
+ * admits SALES (CRM staff), so "has a session" does not mean "is an admin".
  */
 export const getCurrentAdmin = async (): Promise<AppUser | null> => {
   const user = await getCurrentUser()

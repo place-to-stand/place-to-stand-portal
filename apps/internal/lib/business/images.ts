@@ -11,7 +11,7 @@ export const BUSINESS_IMAGE_TYPES = [
   'image/svg+xml',
 ] as const
 
-export type BusinessImageType = (typeof BUSINESS_IMAGE_TYPES)[number]
+type BusinessImageType = (typeof BUSINESS_IMAGE_TYPES)[number]
 
 /** 256 KB: plenty for a logo, small enough to keep in a row. */
 export const BUSINESS_IMAGE_MAX_BYTES = 256 * 1024

@@ -3,9 +3,9 @@
  * read-only API token (MERCURY_API_TOKEN). Unlike Vercel/Supabase this is a
  * single shared connection: the bank balance is company data, not a person's.
  *
- * No `server-only` import: the August profit-share backfill script runs this
- * under tsx. Callers inside the app reach it through ./balance.ts, which is
- * server-only and reads the token from serverEnv.
+ * Every function takes the token as an argument; the server-side callers
+ * (`lib/data/reports/profit-share.ts`, `lib/integrations/company-services.ts`)
+ * read it from serverEnv.
  */
 
 const MERCURY_API = 'https://api.mercury.com/api/v1'
@@ -21,7 +21,7 @@ export class MercuryApiError extends Error {
   }
 }
 
-export type MercuryAccount = {
+type MercuryAccount = {
   id: string
   name: string
   kind: string

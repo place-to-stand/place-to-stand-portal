@@ -6,7 +6,7 @@ import { cn } from './cn'
  * Place To Stand brand marks, matching the marketing site.
  *
  * `BrandLogo` is the marketing header lockup: the blueprint mark (an
- * accent-bordered square holding an accent dot) beside "Place To Stand" in
+ * accent-bordered square holding an accent dot) beside the business name in
  * Space Grotesk. Every logo in both portals is this lockup — the signed-in
  * headers, the public share pages, and the auth screens. The "PTS" tile with
  * corner brackets is the favicon only (see `brand-icon-assets.ts`).

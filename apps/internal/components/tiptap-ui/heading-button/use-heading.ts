@@ -4,10 +4,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { type Editor } from '@tiptap/react'
 import { NodeSelection, TextSelection } from '@tiptap/pm/state'
 
-// --- Hooks ---
 import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
-// --- Lib ---
 import {
   findNodePosition,
   isNodeInSchema,
@@ -16,7 +14,6 @@ import {
   selectionWithinConvertibleTypes,
 } from '@/lib/tiptap-utils'
 
-// --- Icons ---
 import { HeadingOneIcon } from '@/components/tiptap-icons/heading-one-icon'
 import { HeadingTwoIcon } from '@/components/tiptap-icons/heading-two-icon'
 import { HeadingThreeIcon } from '@/components/tiptap-icons/heading-three-icon'
@@ -251,7 +248,7 @@ export function shouldShowButton(props: {
  *     level: 2,
  *     editor: myEditor,
  *     hideWhenUnavailable: true,
- *     onToggled: (isActive) => console.log('Heading toggled:', isActive)
+ *     onToggled: () => console.log('Heading toggled!')
  *   })
  *
  *   if (!isVisible) return null

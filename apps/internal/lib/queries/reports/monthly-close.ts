@@ -40,14 +40,14 @@ import {
 import type { MonthCursor } from '@/lib/data/reports/types'
 
 /**
- * Billing type is resolved AS OF the report period (PRD 002 D4) — the newest
+ * Billing type is resolved AS OF the report period — the newest
  * `billing_terms.effective_from` <= period start wins, so editing a
  * client's billing type never rewrites already-rendered historical months.
  * NULL resolution (no term at or before the period) fails both comparisons
  * and excludes the client from that month.
  *
  * Closers and origination resolve the same way from `commission_terms`
- * (PRD 007; closer rows hang off the resolved term): the commission joins
+ * (closer rows hang off the resolved term): the commission joins
  * below match on the as-of assignment, never on the newest term, so
  * reassigning a closer today leaves every closed month exactly as it was paid.
  */
@@ -83,7 +83,7 @@ type PayrollQueryRow = {
 
 type OriginatorKind = 'user' | 'contact'
 
-export type OriginationQueryRow = {
+type OriginationQueryRow = {
   originatorKind: OriginatorKind
   originatorId: string
   originatorName: string
@@ -97,7 +97,7 @@ export type OriginationQueryRow = {
   hours: string | null
 }
 
-export type CloserQueryRow = {
+type CloserQueryRow = {
   closerKind: 'user' | 'contact'
   closerId: string
   closerName: string
@@ -177,10 +177,10 @@ export async function fetchEmployeePayroll(
 
 /**
  * Fetches the total billable work hours (admin hours logged on CLIENT
- * projects) for the period — the "accrual" basis that grounds all partner
- * payouts. Like payroll, deliberately no `billedInMonth`: all client work
- * counts by the month it was worked, billed or not. This is the denominator for the work-billable reconciliation:
- * work_billable_total × billablePerHour = Payroll + Origination + Closer + House
+ * projects) for the period — the "accrual" basis behind the Work Billable
+ * card (`work_billable_total = hours × billablePerHour`), shown for payroll
+ * context. Like payroll, deliberately no `billedInMonth`: all client work
+ * counts by the month it was worked, billed or not.
  */
 export async function fetchBillableWorkHours(
   startDate: string,
@@ -216,12 +216,12 @@ export async function fetchBillableWorkHours(
  *   Prepaid → hour_blocks.hours_purchased (in the block's billing month)
  *   Net_30  → time_logs.hours on net_30 client projects (when work is logged)
  *
- * Payroll and Closer stay on a work-basis (time_logs on client projects);
- * Origination is bound to cash events because the firm pays originators
- * out of incoming billing, not out of accrued work. This means the payouts
- * side of the monthly close no longer perfectly reconciles with
- * work_billable_total — that's expected and is reflected in the House card
- * being a cash-flow residual of `Billing In − Total Payouts`.
+ * Payroll stays on a work basis (time_logs on client projects); origination
+ * and closer commission are bound to cash events because the firm pays them
+ * out of incoming billing, not out of accrued work. So the payouts side of
+ * the monthly close does not reconcile with work_billable_total in a single
+ * month — that's expected. House is the firm's nominal share of billing
+ * hours, not a cash residual.
  *
  * Runs 4 queries in parallel:
  *   1. Prepaid × user-originated (from hour_blocks)
@@ -626,7 +626,7 @@ export async function fetchPrepaidBilling(
   return rows as PrepaidBillingQueryRow[]
 }
 
-export type SalesTaxQueryRow = {
+type SalesTaxQueryRow = {
   invoiceId: string
   invoiceNumber: string | null
   companyId: string
@@ -724,16 +724,16 @@ export async function fetchReportDateBounds(): Promise<{
   max: MonthCursor
 }> {
   // UTC throughout, matching monthDateRange/isFuturePeriod/currentMonthStartUtc.
-  // Reading local getters here disagreed with those on the last hours of a
-  // month in a negative-offset timezone.
+  // Local getters would disagree with those on the last hours of a month in
+  // a negative-offset timezone.
   const now = new Date()
   const currentCursor: MonthCursor = {
     year: now.getUTCFullYear(),
     month: now.getUTCMonth() + 1, // Convert 0-indexed to 1-indexed
   }
 
-  // Earliest time log date and earliest hour block billing month (PRD 002
-  // D13 attribution), read in parallel.
+  // Earliest time log date and earliest hour block billing month, read in
+  // parallel.
   const [[timeLogRow], [hourBlockRow]] = await Promise.all([
     db
       .select({
@@ -756,8 +756,8 @@ export async function fetchReportDateBounds(): Promise<{
   // These come from raw `MIN(<date column>)` expressions, so postgres.js
   // applies its own date parser and hands back a Date at UTC midnight rather
   // than the declared string. Reading it with local getters rolls back a day
-  // in any negative-offset timezone, which moved the earliest cursor into the
-  // previous month whenever the first record fell on the 1st — silently
+  // in any negative-offset timezone, which moves the earliest cursor into the
+  // previous month whenever the first record falls on the 1st — silently
   // hiding a month from the report navigation. Read in UTC to match the
   // stored calendar date. (Handles a plain 'YYYY-MM-DD' string too: that also
   // parses as UTC midnight.)

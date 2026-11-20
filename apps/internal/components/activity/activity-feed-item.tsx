@@ -16,7 +16,7 @@ import type { ActivitySourceValue } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { UserAvatar } from '@/components/ui/user-avatar'
 
-export type ActivityFeedItemProps = {
+type ActivityFeedItemProps = {
   log: ActivityLogWithActor
 }
 

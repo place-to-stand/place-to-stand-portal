@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
 /**
- * The analytics / attribution / client blocks shared by both marketing intake
- * payloads. Defined once so the two routes cannot drift apart.
+ * The analytics / attribution / client blocks shared by the three marketing
+ * intake payloads. Defined once so the routes cannot drift apart.
  *
  * On the length caps: these exist purely as an abuse guard, NOT as validation.
  * The marketing site's own proxy route is the tighter gate, and the portal must

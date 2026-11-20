@@ -25,7 +25,7 @@ export function buildSystemPrompt(timeframe: ValidTimeframe): string {
     '- No H1/H2 headers (#), no code blocks, no free-standing sentences — just bold headings and bullets.',
     '',
     'Example:',
-    '**Jason**',
+    '**Alex**',
     '- Knocked out 5 tasks on the Acme dashboard redesign, moving it closer to launch.',
     '- Logged 3.5 hours on the WidgetCo API integration.',
     '',
@@ -133,7 +133,7 @@ export function enforceHighlightCharacterLimit(
   return trimmed.slice(0, limit - 1).trimEnd() + '…'
 }
 
-export function timeframeDaysLabel(timeframe: ValidTimeframe): string {
+function timeframeDaysLabel(timeframe: ValidTimeframe): string {
   switch (timeframe) {
     case 1:
       return 'last 1 day'

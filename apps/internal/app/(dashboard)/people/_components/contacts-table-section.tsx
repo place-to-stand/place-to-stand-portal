@@ -51,7 +51,7 @@ import {
 } from '@/components/table/bulk-select'
 import { SheetLink } from '@/components/ui/sheet-link'
 
-export type ContactsTableSectionProps = {
+type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
   selection: RowSelection
   mode: 'active' | 'archive'
@@ -64,7 +64,7 @@ export type ContactsTableSectionProps = {
   pendingDeleteId: string | null
   pendingRestoreId: string | null
   emptyMessage: string
-  /** Route the sort/filter params live on (PRD 004 §03). */
+  /** Route the sort/filter params live on. */
   basePath: string
 }
 

@@ -24,8 +24,9 @@ export const dynamic = 'force-dynamic'
 
 /**
  * Reference → System health: whether the work the portal does on its own is
- * keeping up. Today that's the website form email queue and the scheduled
- * jobs; job runs aren't recorded yet, so each job shows its schedule only.
+ * keeping up: the website form email queue, stale unread notifications and
+ * the scheduled jobs. Job runs aren't recorded, so each job shows its
+ * schedule only.
  */
 export default async function SystemHealthPage() {
   const user = await requirePage('settings.health')

@@ -59,7 +59,7 @@ type LeadsArchiveSectionProps = {
   leadNotFound?: boolean
 }
 
-// PRD 004 §03: per-view sort allowlist (D6). The table is in-memory, so the
+// The sortable columns. The table is in-memory, so the
 // parsed `?sort=` drives a client-side sort of the fetched array.
 const LEAD_ARCHIVE_SORT_FIELDS = [
   'name',

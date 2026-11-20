@@ -138,7 +138,7 @@ export async function ensureProjectWorkAccess(
  * Guard for a lead's tasks: NotFound when the lead is missing or archived,
  * Forbidden without `leads.tasks`.
  */
-export async function ensureLeadTaskAccess(
+async function ensureLeadTaskAccess(
   user: AppUser,
   leadId: string
 ): Promise<void> {

@@ -17,7 +17,7 @@ export type ClientTask = {
 export type ProjectTasks = {
   /** Work queued or underway: ON_DECK, IN_PROGRESS, BLOCKED. */
   current: ClientTask[]
-  /** DONE. ARCHIVED is never returned. */
+  /** DONE. Archived tasks (deletedAt set) are never returned. */
   completed: ClientTask[]
 }
 

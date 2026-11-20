@@ -90,7 +90,7 @@ async function resolveBillingTypeAsOf(
 }
 
 /**
- * Month a newly created hour block's hours are billed in (D13). Defaults to
+ * Month a newly created hour block's hours are billed in. Defaults to
  * the current month; when the client is still net_30-resolving with a prepaid
  * boundary ahead, clamps forward to that boundary so the block counts in the
  * first month it can actually be billed instead of being orphaned.

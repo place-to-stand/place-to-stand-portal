@@ -132,7 +132,9 @@ test('the user menu opens the Account sheet; Settings → Integrations is compan
   await page.getByRole('menuitem', { name: 'Account' }).click()
   await expect(page).toHaveURL(/[?&]account=profile/)
   const sheet = page.getByRole('dialog', { name: 'Account' })
-  for (const heading of ['Profile', 'Integrations', 'Preferences']) {
+  // The profile comes first, under the sheet's own title; then two sections.
+  await expect(sheet.getByLabel('Full name')).toBeVisible()
+  for (const heading of ['Integrations', 'Preferences']) {
     await expect(sheet.getByRole('heading', { name: heading })).toBeVisible()
   }
   await page.keyboard.press('Escape')

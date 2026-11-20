@@ -60,7 +60,7 @@ export function LeadSheetRightColumn({
           />
           {/* The viewer's own Gmail threads with the lead's contact. */}
           <LeadEmailsSection key={lead.id} lead={lead} />
-          {/* Updates sit below Tasks and Email threads (D6), not in tabs, so
+          {/* Updates sit below Tasks and Email threads, not in tabs, so
               "last touched 12 days ago, 2 open tasks" reads at a glance. */}
           <LeadUpdatesSection
             lead={lead}

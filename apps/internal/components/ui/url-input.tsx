@@ -6,7 +6,7 @@ import { SiteMark } from '@/components/ui/site-mark'
 import { cn } from '@/lib/utils'
 import { RowActionButton } from '@pts/ui/row-action-button'
 
-/** A safe https link from what was typed (scheme optional), or null. */
+/** A safe http(s) link from what was typed (https when no scheme), or null. */
 export function toSafeHref(value: string | null | undefined): string | null {
   const trimmed = value?.trim()
   if (!trimmed) return null
@@ -30,7 +30,7 @@ type UrlInputProps = Omit<React.ComponentProps<typeof Input>, 'type'> & {
 
 /**
  * A URL field with the same open button as the record pickers: beside the
- * field (4px gap, field height, tooltip), shown only while the value is a
+ * field (8px gap, field height, tooltip), shown only while the value is a
  * valid link, opening it in a new tab. Its icon is the site's mark
  * (`SiteMark`). Use for every URL field.
  */

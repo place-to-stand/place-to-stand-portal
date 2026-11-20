@@ -73,8 +73,8 @@ export async function consumeRateLimit(
 
 /**
  * First hop of `x-forwarded-for`, which on Vercel is the client address.
- * Falls back to a fixed bucket so a missing header still gets throttled
- * rather than skipping the limit.
+ * Falls back to `x-real-ip`, then to a fixed bucket, so a missing header
+ * still gets throttled rather than skipping the limit.
  */
 export function clientIpFromHeaders(headers: Headers): string {
   const forwarded = headers.get('x-forwarded-for')

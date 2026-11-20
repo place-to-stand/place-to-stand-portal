@@ -27,27 +27,24 @@ test('client portal: the menu is labelled with a first name', async ({
 test('client portal: a Net 30 client sees hours by month', async ({ page }) => {
   await page.goto(`${portal}/hours`)
   await expectHealthy(page)
-  const net30 = page.getByText('Hours logged on your projects, by month.')
-  const picker = page
+  // Preview a person at a Net 30 client (Nina, Fieldnote, in the seed). This
+  // changes only this browser's preview cookie, no data.
+  await page
     .getByText('Admin preview', { exact: true })
     .locator('..')
     .getByRole('button')
     .first()
-
-  // Preview people in turn until one sees only Net 30 clients. This changes
-  // only this browser's preview cookie, no data.
-  for (let i = 0; i < 15 && !(await net30.isVisible()); i++) {
-    await picker.click()
-    const people = page.getByRole('menuitem')
-    if (i >= (await people.count())) {
-      await page.keyboard.press('Escape')
-      break
-    }
-    await people.nth(i).click()
-    await page.waitForLoadState('networkidle')
-    await page.reload()
-  }
-  test.skip(!(await net30.isVisible()), 'no Net 30 client found to preview')
+    .click()
+  await page
+    .getByRole('menuitem')
+    .filter({ hasText: process.env.E2E_NET30_CONTACT ?? 'Nina Park' })
+    .first()
+    .click()
+  await page.waitForLoadState('networkidle')
+  await page.reload()
+  await expect(
+    page.getByText('Hours logged on your projects, by month.')
+  ).toBeVisible()
 
   const main = page.getByRole('main')
   // This month's hours lead.

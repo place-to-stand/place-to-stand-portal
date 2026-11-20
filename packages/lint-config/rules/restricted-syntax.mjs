@@ -2,7 +2,7 @@
  * `pts/restricted-syntax`: ESLint's `no-restricted-syntax`, which Oxlint
  * doesn't have. Takes the same options, `{ selector, message }` objects, and
  * reports every node a selector matches with that selector's message. The
- * selectors (house rules 4 and 11, the API route guard) live in next.mjs.
+ * selectors live in syntax-rules.mjs, and next.mjs applies them.
  */
 export const restrictedSyntax = {
   meta: {

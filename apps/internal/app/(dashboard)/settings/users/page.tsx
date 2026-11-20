@@ -7,7 +7,7 @@ import { firstParam } from '@/lib/pagination/params'
 
 /**
  * A user is a person's sign-in, so Users is the People list of sign-ins, and
- * a sign-in is managed on the person's sheet. Old links keep working:
+ * a sign-in is managed on the person's sheet. This route redirects there:
  * `?user=<id>` opens that person, `?user=new` the create-person sheet.
  */
 export default async function UsersSettingsPage({

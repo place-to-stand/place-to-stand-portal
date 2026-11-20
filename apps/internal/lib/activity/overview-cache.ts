@@ -6,7 +6,7 @@ import { db } from '@/lib/db'
 import { activityOverviewCache } from '@/lib/db/schema'
 import type { Json } from '@/lib/types/json'
 
-export type ActivityOverviewCacheRow = {
+type ActivityOverviewCacheRow = {
   id: string
   user_id: string
   timeframe_days: number

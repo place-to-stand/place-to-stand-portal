@@ -55,8 +55,9 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
   )
   const [isLoadingLogs, setIsLoadingLogs] = useState(false)
   const [logError, setLogError] = useState<string | null>(null)
-  // Edit context is fetched per row on demand; see the route's comment for why
-  // it isn't folded into the list payload.
+  // Edit context is fetched per row on demand; see
+  // `GET /api/dashboard/time-logs/[timeLogId]` for why it isn't folded into
+  // the list payload.
   const editor = useTimeLogEditContext()
   const { openingEntryId, editContext } = editor
 

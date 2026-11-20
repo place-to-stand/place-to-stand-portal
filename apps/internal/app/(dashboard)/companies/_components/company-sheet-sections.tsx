@@ -56,10 +56,9 @@ export function CompanyLeadsSection({
 /**
  * The Client column's billing (admins): the "Bill this company" switch is
  * always there. Switched on, a company becomes a client (or a former client
- * restarts) on Save and the billing fields appear under it; switched off, a
- * client stops billing on Save. When that takes effect and
- * the billing fields sit right under it. Everything saves with the sheet's
- * Save.
+ * restarts) on Save; switched off, a client stops billing on Save. When that
+ * takes effect, and the billing fields, sit right under the switch.
+ * Everything saves with the sheet's Save.
  */
 export function CompanyBillingSection({
   companyId,

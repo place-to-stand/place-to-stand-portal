@@ -14,7 +14,7 @@ export function appOrigin(): string {
   return resolveAppOrigin(serverEnv.APP_BASE_URL)
 }
 
-export function resolveAppOrigin(configured: string | undefined): string {
+function resolveAppOrigin(configured: string | undefined): string {
   const vercelHost =
     process.env.VERCEL_ENV === 'production'
       ? process.env.VERCEL_PROJECT_PRODUCTION_URL

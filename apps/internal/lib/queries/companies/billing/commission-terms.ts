@@ -26,7 +26,7 @@ type DbOrTransaction = typeof db | DbTx
  * is not paid out and is reported under House (estimated); origination user +
  * contact are mutually exclusive (CHECK constraint).
  */
-export type CommissionAssignment = {
+type CommissionAssignment = {
   closers: CloserShare[]
   originationUserId: string | null
   originationContactId: string | null

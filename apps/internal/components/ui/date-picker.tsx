@@ -44,10 +44,9 @@ export type DatePickerProps = TriggerProps & {
 
 /**
  * Single calendar-date field: the combobox-style trigger opening a calendar
- * popover. Values are `YYYY-MM-DD` strings, the same shape the old
- * `<input type='date'>` produced, so react-hook-form fields swap in directly.
- * `id`/`aria-*` props land on the trigger, so `FormControl` and `<label for>`
- * work unchanged.
+ * popover. Values are `YYYY-MM-DD` strings, the shape `<input type='date'>`
+ * uses, so react-hook-form fields need no conversion. `id`/`aria-*` props
+ * land on the trigger, so `FormControl` and `<label for>` work.
  */
 export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
   function DatePicker(

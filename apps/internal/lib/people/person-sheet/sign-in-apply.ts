@@ -92,7 +92,7 @@ export async function runSignInAuth(
   // A sign-in left behind with this email (no live person) is linked to
   // this person: whoever used it before may still know its password or
   // hold a session, so reset it and end its sessions first (as for an
-  // orphaned auth user above). Security review, Nov 2026.
+  // orphaned auth user above).
   if (create?.source === 'user') {
     const takeOverError = await takeOverExistingAuthUser(userId)
     if (takeOverError) return takeOverError

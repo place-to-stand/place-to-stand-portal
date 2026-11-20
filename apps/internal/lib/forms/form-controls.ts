@@ -3,16 +3,14 @@
  * "why is this disabled" tooltip that every sheet, table row, and dialog
  * shows while a mutation is in flight.
  *
- * These lived as 15 separate declarations of the same sentence and 6 separate
- * implementations of the same label logic, which is how the wording drifted
- * ("...request to finish" vs "...action to complete") and how sheets ended up
- * announcing "Saving..." for work that wasn't a save.
+ * Use these rather than local copies, so the wording can't drift between
+ * surfaces and no sheet announces "Saving..." for work that isn't a save.
  */
 
 /** Tooltip for a control disabled only because a request is in flight. */
 export const PENDING_REASON = 'Please wait for the current request to finish.'
 
-export type SubmitLabelArgs = {
+type SubmitLabelArgs = {
   /**
    * A save is genuinely in flight. Only ever pass the save/delete transition
    * here — a form reset or an open-time fetch is not a save, and a button

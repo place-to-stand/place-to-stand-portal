@@ -14,7 +14,7 @@ import { isUserAvatarPath } from '@/lib/storage/avatar'
  * Callers that hold a session must sign it out and send them to `/account-not-set-up`,
  * otherwise the session survives and every subsequent request re-runs the redirect.
  */
-export type EnsureProfileResult = 'ok' | 'not_provisioned'
+type EnsureProfileResult = 'ok' | 'not_provisioned'
 
 export async function ensureUserProfile(
   user: User
@@ -49,9 +49,10 @@ export async function ensureUserProfile(
   // there would let any account promote itself. The `users` row is the only
   // source of truth; admins change it on the person sheet.
 
-  // Name and avatar are seeded, never re-synced. Supabase merges the identity
-  // provider's own values into `user_metadata` at every sign-in, so mirroring
-  // them back would let Google overwrite the portal profile — and a Google
+  // The avatar is seeded once, never re-synced (the name is never read from
+  // here). Supabase merges the identity provider's own values into
+  // `user_metadata` at every sign-in, so mirroring them back would let
+  // Google overwrite the portal profile — and a Google
   // account with no picture (no `avatar_url` at all) would wipe the stored
   // avatar outright. The avatar column holds a bucket object path, not a URL,
   // so a provider CDN URL is rejected here rather than 404ing later in
@@ -77,7 +78,7 @@ export async function ensureUserProfile(
       .set({ email: nextEmail })
       .where(eq(usersTable.id, user.id))
   }
-  // The photo is the person's (contacts.avatar_url, 0112).
+  // The photo is the person's (contacts.avatar_url).
   if (seedAvatar) {
     await db
       .update(contacts)

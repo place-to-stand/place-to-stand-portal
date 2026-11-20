@@ -35,10 +35,6 @@ type ProjectsManagementSectionProps = {
   pageSize: number
   /** Toolbar row (FilterBar) rendered inside the card, above the table. */
   filters?: ReactNode
-  /**
-   * PRD 004 §01: pages converted to PageShell render tabs/count/action in the
-   * shell toolbar; they pass false so the section renders only the table.
-   */
 }
 
 export function ProjectsManagementSection({
@@ -85,7 +81,7 @@ export function ProjectsManagementSection({
 
   const handlePageChange = usePageParam()
 
-  // Active `?q=` flips the empty state to the filtered message (R4).
+  // Active `?q=` flips the empty state to the filtered message.
   const hasActiveFilter = Boolean(searchParams.get('q')?.trim())
   const emptyMessage = hasActiveFilter
     ? 'No projects match the current filters.'
@@ -100,7 +96,6 @@ export function ProjectsManagementSection({
 
   return (
     <div className='space-y-4'>
-      {/* Main Container with Background */}
       <PagePanel className='space-y-4'>
         <ProjectLifecycleDialogs
           deleteTarget={deleteTarget}

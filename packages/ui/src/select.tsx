@@ -11,10 +11,9 @@ type SelectItemEntry = { value: string; label: React.ReactNode }
 
 /**
  * Base UI's `Select.Value` renders the raw value unless the Root receives an
- * `items` map (labels can't be derived from unmounted popup items). Radix
- * renders the selected item's content instead. To preserve Radix semantics for
- * unchanged consumers, walk the JSX tree and collect `SelectItem`
- * value → label pairs.
+ * `items` map (labels can't be derived from unmounted popup items). Walks the
+ * JSX tree and collects `SelectItem` value → label pairs, so the trigger shows
+ * the selected item's content.
  */
 function collectSelectItems(
   children: React.ReactNode,
@@ -47,16 +46,15 @@ function collectSelectItems(
 }
 
 /**
- * Radix-compatible control props. Declared in method syntax (bivariant) so
- * consumers passing handlers typed with narrower literal unions — accepted by
- * Radix's own method-syntax props — keep compiling.
+ * Control props, declared in method syntax (bivariant) so consumers passing
+ * handlers typed with narrower literal unions keep compiling.
  */
 interface SelectRadixCompatProps {
   value?: string
   defaultValue?: string
-  /** Radix-compatible signature: called with the newly selected string value. */
+  /** Called with the newly selected string value. */
   onValueChange?(value: string): void
-  /** Radix-compatible signature: called with the new open state. */
+  /** Called with the new open state. */
   onOpenChange?(open: boolean): void
 }
 
@@ -121,10 +119,10 @@ function SelectGroup({ ...props }: SelectPrimitive.Group.Props) {
 }
 
 function SelectValue({ children, ...props }: SelectPrimitive.Value.Props) {
-  // Radix shows `placeholder` whenever no value is selected, even when a
-  // `children` expression is passed (it evaluates to false/null while empty).
-  // Base UI only falls back to `placeholder` when `children` is nullish, so
-  // normalize falsy non-function children away to keep Radix semantics.
+  // Show `placeholder` whenever no value is selected, even when a `children`
+  // expression is passed (it evaluates to false/null while empty). Base UI
+  // only falls back to `placeholder` when `children` is nullish, so `false`
+  // is normalized away.
   const resolvedChildren =
     children == null || children === false ? undefined : children
 
@@ -165,7 +163,7 @@ function SelectContent({
   className,
   children,
   position = 'popper',
-  // House rule: dropdown popups left-align with their trigger (or match its
+  // House rule 4: dropdown popups left-align with their trigger (or match its
   // width); deviations opt in with an explicit `align` at the call site.
   align,
   alignOffset = 0,
@@ -178,7 +176,7 @@ function SelectContent({
     SelectPrimitive.Positioner.Props,
     'alignOffset' | 'side' | 'sideOffset'
   > & { align?: PopupAlign } & {
-    /** Radix compatibility: `popper` maps to `alignItemWithTrigger={false}`. */
+    /** `popper` maps to `alignItemWithTrigger={false}`. */
     position?: 'popper' | 'item-aligned'
   }) {
   return (
@@ -221,8 +219,8 @@ function SelectContent({
 
 function SelectLabel({ className, ...props }: React.ComponentProps<'div'>) {
   // Plain div, not Select.GroupLabel: Base UI's GroupLabel throws unless
-  // nested in <Select.Group>; Radix's SelectLabel worked free-standing.
-  // Same runtime-invariant trap as DropdownMenuLabel — presentation only.
+  // nested in <Select.Group>, and a label here may stand alone. Same trap as
+  // DropdownMenuLabel; presentation only.
   return (
     <div
       data-slot='select-label'

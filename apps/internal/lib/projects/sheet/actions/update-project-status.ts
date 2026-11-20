@@ -24,7 +24,7 @@ const updateProjectStatusSchema = z.object({
   status: z.enum(PROJECT_STATUS_ENUM_VALUES),
 })
 
-export type UpdateProjectStatusInput = z.infer<typeof updateProjectStatusSchema>
+type UpdateProjectStatusInput = z.infer<typeof updateProjectStatusSchema>
 
 export async function updateProjectStatus(
   input: UpdateProjectStatusInput

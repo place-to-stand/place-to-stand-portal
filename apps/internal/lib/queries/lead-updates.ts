@@ -13,8 +13,8 @@ import type { LeadUpdateTypeValue } from '@/lib/leads/updates'
 /**
  * Timeline rows for one lead, newest first, with author identity joined.
  *
- * CRM-asserted (ADMIN, SALES) — leads are CRM data and this
- * project has no RLS backstop (W26).
+ * CRM-asserted (ADMIN, SALES): leads are CRM data and this project has no
+ * RLS backstop.
  */
 export async function listLeadUpdates(
   user: AppUser,

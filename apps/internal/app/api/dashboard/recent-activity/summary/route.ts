@@ -54,9 +54,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Defense-in-depth: the internal portal is admin-only, and the briefing is
-  // built from UNSCOPED activity logs (fetchActivityLogsSince) plus global
-  // lead/task metrics — internal operations data.
+  // Admin-only: the briefing is built from UNSCOPED activity logs
+  // (fetchActivityLogsSince) plus global lead/task metrics, internal
+  // operations data that Sales may not see.
   assertAdmin(user)
 
   let timeframeDays: number

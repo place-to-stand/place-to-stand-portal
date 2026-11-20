@@ -40,7 +40,7 @@ const itemId = (entity: SheetEntityKey, value: string, n: number) =>
   `${entity}:${value}:${n}`
 
 /** A record id, as opposed to a create sheet (`new`, `copy-<id>`). */
-export const isRecordValue = (value: string) => UUID_PATTERN.test(value)
+const isRecordValue = (value: string) => UUID_PATTERN.test(value)
 
 /**
  * The sheet a page that renders its own sheet for `entity` shows: the bottom
@@ -199,7 +199,7 @@ export function setFirstSheetParam(
   }
 }
 
-export type SheetOpenTarget =
+type SheetOpenTarget =
   /** Already open: close these sheets (top first) to get back to it. */
   | { kind: 'back'; item: SheetStackItem; above: SheetStackItem[] }
   /** Not open: stack it on top. */

@@ -16,14 +16,14 @@ import type {
 } from '@/lib/types/integrations'
 
 /** What a provider tells us about the account behind a token. */
-export type ValidatedIntegrationAccount = {
+type ValidatedIntegrationAccount = {
   providerAccountId: string
   providerEmail: string | null
   displayName: string
   metadata: Record<string, unknown>
 }
 
-export type IntegrationProviderAdapter = {
+type IntegrationProviderAdapter = {
   /** Proves the token works and identifies whose it is. */
   validateToken: (token: string) => Promise<ValidatedIntegrationAccount>
   /** Every project the token can see, normalized for the picker. */

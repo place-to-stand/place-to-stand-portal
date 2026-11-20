@@ -19,8 +19,8 @@ import type { ActivitySourceValue } from '@/lib/types'
 /**
  * Server-side eligibility check for linked tasks (the client-side filter and
  * disabled button are advisory only): every linked task must exist, belong to
- * the log's project, not be soft-deleted, and not be status ARCHIVED.
- * Accepted tasks are explicitly allowed — the task sheet pre-links them.
+ * the log's project and not be archived (soft-deleted). Accepted tasks are
+ * explicitly allowed — the task sheet pre-links them.
  * Runs inside the mutation transaction so a task archived after the dialog
  * opened still fails cleanly with a 400.
  */
@@ -62,11 +62,11 @@ async function assertLinkedTasksEligible(
 }
 
 /**
- * Time-log mutations are the single write path for the browser routes (and
- * any future CLI route), so the activity row is written here rather than by
- * each caller. Only the source is caller-specific.
+ * Time-log mutations are the single write path (the browser routes and bulk
+ * archive), so the activity row is written here rather than by each caller.
+ * Only the source is caller-specific.
  */
-export type TimeLogMutationOptions = {
+type TimeLogMutationOptions = {
   source?: ActivitySourceValue
 }
 
@@ -109,7 +109,7 @@ const sameIdSet = (left: string[], right: string[]): boolean => {
   return [...left].sort().every((id, index) => id === sortedRight[index])
 }
 
-export type CreateTimeLogInput = {
+type CreateTimeLogInput = {
   projectId: string
   userId: string
   hours: number
@@ -118,7 +118,7 @@ export type CreateTimeLogInput = {
   taskIds: string[]
 }
 
-export type UpdateTimeLogInput = {
+type UpdateTimeLogInput = {
   projectId: string
   timeLogId: string
   userId: string
@@ -231,7 +231,7 @@ export async function softDeleteTimeLog(
     return { loggedOn: timeLog.loggedOn }
   }
 
-  // updatedAt must move too (PRD 002 F1): the monthly close drift detector
+  // updatedAt must move too: the monthly close drift detector
   // finds post-close changes via record timestamps > closed_at.
   const nowIso = new Date().toISOString()
   await db
@@ -299,7 +299,7 @@ export async function restoreTimeLog(
     return { loggedOn: timeLog.loggedOn }
   }
 
-  // updatedAt must move too (PRD 002 F1): the monthly close drift detector
+  // updatedAt must move too: the monthly close drift detector
   // finds post-close changes via record timestamps > closed_at.
   const nowIso = new Date().toISOString()
   await db
@@ -386,7 +386,7 @@ export async function updateTimeLog(
         hours: hoursValue,
         loggedOn,
         note: noteValue,
-        // PRD 002 F1: drift detection keys on record timestamps > closed_at.
+        // Drift detection keys on record timestamps > closed_at.
         updatedAt: new Date().toISOString(),
       })
       .where(eq(timeLogs.id, timeLogId))
@@ -423,7 +423,7 @@ export async function updateTimeLog(
     },
   })
 
-  // F6: the caller needs the pre-mutation date — a move OUT of a closed month
+  // The caller needs the pre-mutation date — a move OUT of a closed month
   // is undetectable once loggedOn is overwritten.
   return { previousLoggedOn: existing.loggedOn }
 }

@@ -16,7 +16,7 @@ type CursorPaginationProps = {
   disableAll?: boolean
   /** Rows-per-page the list was rendered with; renders the selector. */
   pageSize?: number
-  /** Rows on the current page — lets a single short page hide the footer. */
+  /** Rows on the current page: an empty single page hides the footer. */
   itemCount?: number
 }
 

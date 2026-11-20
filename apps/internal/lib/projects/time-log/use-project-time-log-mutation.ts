@@ -138,13 +138,11 @@ export function useProjectTimeLogMutation(
             ? errorResult.fieldErrors
             : null
 
-        // If we have field-level errors, create an error with all field errors attached
         if (fieldErrors && Object.keys(fieldErrors).length > 0) {
           const firstField = Object.keys(fieldErrors)[0] as TimeLogFormField
           const firstMessage =
             fieldErrors[firstField] ?? message ?? 'Invalid input.'
 
-          // Attach all field errors to the error object
           const error = makeFieldError(
             firstField,
             firstMessage
@@ -180,7 +178,7 @@ export function useProjectTimeLogMutation(
         throw new Error('Time log mutation did not return an identifier.')
       }
 
-      // PRD 002 section 05: closed-month warning riding the API response.
+      // The closed-month warning rides the API response.
       const warning =
         typeof result === 'object' && result && 'warning' in result
           ? String((result as { warning?: unknown }).warning ?? '').trim()
@@ -218,7 +216,6 @@ export function useProjectTimeLogMutation(
       const failureTitle =
         mode === 'edit' ? 'Unable to save time log' : 'Unable to log time'
 
-      // If we have all field errors from the API, use those
       if (fieldError.allFieldErrors) {
         const { general, ...fields } = fieldError.allFieldErrors
         setFormErrors(fields)

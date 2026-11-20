@@ -18,7 +18,7 @@ type NavItem = {
   capability: Capability
 }
 
-export type NavGroup = {
+type NavGroup = {
   title?: string | null
   items: NavItem[]
 }

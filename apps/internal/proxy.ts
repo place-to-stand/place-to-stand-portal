@@ -28,7 +28,7 @@ const PUBLIC_PATHS = new Set([
   // under this prefix must resolve its own user via `withCliAuth`
   // (lib/cli/handler.ts) — there is no edge-level fallback.
   '/api/cli/',
-  // Remote MCP server (PRD 009). Same reasoning as the CLI: OAuth bearer
+  // Remote MCP server. Same reasoning as the CLI: OAuth bearer
   // tokens, not cookies, and the route verifies them itself via `withMcpAuth`.
   // The discovery document must be readable before the client has a token.
   '/api/mcp',
@@ -187,8 +187,8 @@ export async function proxy(req: NextRequest) {
 }
 
 /**
- * Old sheet params from before clients became companies (0111) and sign-ins
- * moved onto people. `?client=<id>` is the company's id, so it becomes
+ * Maps retired sheet params so old links keep working. `?client=<id>` is
+ * the company's id, so it becomes
  * `?company=<id>` in place (the param's position is its place in the sheet
  * stack). `?user=<id>` needs a lookup, so it goes to `/settings/users`, which
  * opens that person.

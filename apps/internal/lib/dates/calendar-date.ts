@@ -36,7 +36,7 @@ export const WEEK_STARTS_ON = 0 as const
 const CALENDAR_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const CALENDAR_DATE_FORMAT = 'yyyy-MM-dd'
 
-export function isCalendarDate(value: unknown): value is CalendarDate {
+function isCalendarDate(value: unknown): value is CalendarDate {
   return typeof value === 'string' && CALENDAR_DATE_RE.test(value)
 }
 
@@ -60,7 +60,7 @@ export function todayCalendarDate(now: Date = new Date()): CalendarDate {
   return toCalendarDate(now)
 }
 
-export type DateRangePresetKey =
+type DateRangePresetKey =
   | 'today'
   | 'yesterday'
   | 'this-week'
@@ -106,7 +106,7 @@ const PRESET_BOUNDS: Record<
  * "All time" has no bounds: an empty range (`from` and `to` both ''). Lists
  * read it as no date filter.
  */
-export const ALL_TIME_RANGE: CalendarDateRange = { from: '', to: '' }
+const ALL_TIME_RANGE: CalendarDateRange = { from: '', to: '' }
 
 export const isAllTimeRange = (range: CalendarDateRange) =>
   range.from === '' && range.to === ''

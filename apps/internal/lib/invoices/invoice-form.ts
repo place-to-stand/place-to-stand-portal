@@ -12,9 +12,7 @@ import {
 import type { ProductCatalogItemRow } from '@/lib/queries/product-catalog'
 import type { ClientPickerRow } from '@/lib/types'
 
-// ---------------------------------------------------------------------------
 // Row types (snake_case, matching query layer)
-// ---------------------------------------------------------------------------
 
 type InvoiceRow = {
   id: string
@@ -73,8 +71,8 @@ export type InvoiceWithClient = InvoiceRow & {
     deleted_at: string | null
   } | null
   /**
-   * Active hour blocks linked to this invoice (created on payment, or linked
-   * by hand). Only populated by the invoices list.
+   * Active hour blocks this invoice created when it was paid. Only populated
+   * by the invoices list.
    */
   hour_blocks?: InvoiceHourBlockSummary[]
 }
@@ -90,9 +88,7 @@ export type InvoiceWithLineItems = InvoiceWithClient & {
   line_items: InvoiceLineItemRow[]
 }
 
-// ---------------------------------------------------------------------------
 // Zod schemas
-// ---------------------------------------------------------------------------
 
 const invoiceLineItemFormSchema = z
   .object({
@@ -147,9 +143,7 @@ export type InvoiceLineItemFormValues = z.infer<
 >
 export type InvoiceFormValues = z.infer<typeof invoiceFormSchema>
 
-// ---------------------------------------------------------------------------
 // Form field list (for resetField / dirtyFields)
-// ---------------------------------------------------------------------------
 
 export const INVOICE_FORM_FIELDS: Array<keyof InvoiceFormValues> = [
   'companyId',
@@ -158,9 +152,7 @@ export const INVOICE_FORM_FIELDS: Array<keyof InvoiceFormValues> = [
   'lineItems',
 ]
 
-// ---------------------------------------------------------------------------
 // Empty line item factory
-// ---------------------------------------------------------------------------
 
 export const createEmptyLineItem = (): InvoiceLineItemFormValues => ({
   id: undefined,
@@ -182,9 +174,7 @@ export const createLineItemFromCatalog = (
   createsHourBlock: product.creates_hour_block_default,
 })
 
-// ---------------------------------------------------------------------------
 // Build form defaults from DB record
-// ---------------------------------------------------------------------------
 
 export const buildInvoiceFormDefaults = (
   invoice: InvoiceWithLineItems | null
@@ -219,9 +209,7 @@ export const buildInvoiceFormDefaults = (
   }
 }
 
-// ---------------------------------------------------------------------------
 // Save payload
-// ---------------------------------------------------------------------------
 
 type InvoiceLineItemSavePayload = {
   id?: string
@@ -234,7 +222,7 @@ type InvoiceLineItemSavePayload = {
   createsHourBlock: boolean
 }
 
-export type InvoiceSavePayload = {
+type InvoiceSavePayload = {
   id?: string
   companyId: string
   notes: string | null
@@ -281,9 +269,7 @@ export const createInvoiceSavePayload = (
   }
 }
 
-// ---------------------------------------------------------------------------
 // Computation helpers
-// ---------------------------------------------------------------------------
 
 export const computeLineItemAmount = (
   quantity: number,
@@ -296,8 +282,6 @@ export const computeInvoiceTotals = (
 ): { subtotal: number; taxAmount: number; total: number } =>
   invoiceTotals(lineItems, taxRatePercent / 100)
 
-// ---------------------------------------------------------------------------
 // Re-exports for convenience
-// ---------------------------------------------------------------------------
 
 export type { ProductCatalogItemRow }

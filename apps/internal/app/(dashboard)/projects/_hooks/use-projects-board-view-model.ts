@@ -39,7 +39,7 @@ export type ProjectsBoardHeaderProps = {
   canSelectPrevious: boolean
 }
 
-export type ProjectsBoardViewModel = {
+type ProjectsBoardViewModel = {
   header: ProjectsBoardHeaderProps
   tabs: ProjectsBoardTabsSectionProps
   dialogs: ProjectsBoardDialogsProps

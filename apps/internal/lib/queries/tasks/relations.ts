@@ -39,7 +39,7 @@ type TaskAssigneeSelection = {
   deletedAt: string | null
 }
 
-export type ProjectTaskCollections = {
+type ProjectTaskCollections = {
   active: RawTaskWithRelations[]
   accepted: RawTaskWithRelations[]
   archived: RawTaskWithRelations[]

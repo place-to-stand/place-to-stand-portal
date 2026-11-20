@@ -13,7 +13,7 @@
  *   `*-entity-*` colour classes are banned in every app either way.
  * - `sheetRegistry`: lib/sheets/entities.ts, whose params pts/sheets guards.
  * - `pagePanel`: the PagePanel component, the one place its classes live.
- * - `queryLayerAllowlist`: lib/queries files from before the layering rule.
+ * - `queryLayerAllowlist`: lib/queries files the layering rule skips.
  * - `apiRouteGuard`: API routes never call a redirecting guard.
  */
 import { readFileSync } from 'node:fs'
@@ -212,8 +212,8 @@ export function nextApp({
         'pts/env-through-schema': 'error',
         // README rule 16: keyboard shortcuts come from lib/keyboard/shortcuts.
         'pts/shortcut-registry': 'error',
-        // PR #365: element ids come from useId, so two sheets of one kind
-        // never share one (internal app; older hits grandfathered).
+        // Element ids come from useId, so two sheets of one kind never share
+        // one (internal app only).
         ...(sheetRegistry && { 'pts/use-id-not-fixed-id': 'error' }),
         'pts/class-names': [
           'error',
@@ -301,8 +301,8 @@ export function nextApp({
     ...(queryLayerAllowlist
       ? [
           {
-            // lib/queries does no logging and no permission checks. Files
-            // from before the rule are listed in the app's config.
+            // lib/queries does no logging and no permission checks. Files the
+            // rule skips are listed in the app's config.
             files: ['lib/queries/**'],
             ignores: queryLayerAllowlist,
             rules: {

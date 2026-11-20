@@ -23,7 +23,7 @@ import { requirePrincipal, type McpPrincipal } from './auth'
 import { MCP_TOOL_CAPABILITIES, type McpToolName } from './tool-capabilities'
 
 /**
- * The token check admits ADMIN and SALES (PRD 009 D6, revised 2026-10-27).
+ * The token check admits ADMIN and SALES.
  * Each tool then needs the capability listed for it in
  * `MCP_TOOL_CAPABILITIES`, read from the same registry the portal's own
  * guards use (`lib/auth/capabilities.ts`). Within a tool, the data helpers it
@@ -46,10 +46,10 @@ function assertToolAccess(name: McpToolName, user: AppUser) {
   )
 }
 
-/** Agreed with Kris 2026-10-19 (PRD 009 §7). */
-export const MCP_TOOL_CALLED_EVENT = 'mcp.tool_call'
+/** The PostHog event every MCP tool call records. */
+const MCP_TOOL_CALLED_EVENT = 'mcp.tool_call'
 
-export type ToolDefinition<Shape extends z.ZodRawShape> = {
+type ToolDefinition<Shape extends z.ZodRawShape> = {
   name: McpToolName
   title: string
   description: string

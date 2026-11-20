@@ -1,9 +1,9 @@
 /**
- * SSR smoke-render for the Base UI ports (PRD 004, completed later by the
- * Slot/tabs/hover-card/tiptap ports). Renders every ported wrapper in its real
- * consumer compositions — open/keepMounted states included — via
- * renderToString. Catches runtime context-invariant throws (the class that
- * crashed DropdownMenuLabel) that tsc cannot see.
+ * SSR smoke-render for the Base UI wrappers in @pts/ui and the tiptap
+ * primitives. Renders each wrapper in its real consumer compositions, with
+ * open/keepMounted states included, via renderToString. Catches runtime
+ * context-invariant throws (a part rendered outside the context it needs)
+ * that tsc cannot see. Run with `npm run smoke:ui`.
  */
 import * as React from 'react'
 import { renderToString } from 'react-dom/server'
@@ -258,8 +258,8 @@ const cases: Case[] = [
     ),
   },
   {
-    // The exact user-menu shape that crashed: keepMounted content with a
-    // free-standing Label + Separator + Group of items.
+    // The user-menu shape: keepMounted content with a free-standing
+    // Label + Separator + Group of items.
     name: 'dropdown-menu (user-menu shape: open, forceMount, bare Label)',
     element: (
       <DropdownMenu open onOpenChange={noop}>
@@ -409,7 +409,7 @@ const cases: Case[] = [
       </Tabs>
     ),
   },
-  // --- hover-card: the deferred port, now on Base UI popover.
+  // --- hover-card, built on the Base UI popover.
   {
     name: 'hover-card (open, trigger asChild)',
     element: (

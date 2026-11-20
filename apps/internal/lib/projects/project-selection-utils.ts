@@ -23,7 +23,7 @@ type BuildProjectSelectionOptionsArgs = {
   currentUserId?: string
 }
 
-export type ProjectSelectionOptions = {
+type ProjectSelectionOptions = {
   items: SearchableComboboxItem[]
   groups: SearchableComboboxGroup[]
 }

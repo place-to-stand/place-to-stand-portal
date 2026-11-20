@@ -10,7 +10,7 @@ import {
 } from '@/lib/form-submissions/delivery/constants'
 import { confirmationApplies } from '@/lib/queries/form-submission-delivery'
 
-export type EmailQueueHealth = {
+type EmailQueueHealth = {
   /** Requested under an hour ago and not sent yet: normal while a send is in flight. */
   waiting: number
   /** Over an hour late and still being retried. */

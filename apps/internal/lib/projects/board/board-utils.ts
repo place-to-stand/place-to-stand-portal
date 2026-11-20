@@ -61,7 +61,7 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
  * `undefined` are treated alike — `attachments` is optional and arrives both
  * ways depending on which query built the row.
  */
-export const isStructurallyEqual = (a: unknown, b: unknown): boolean => {
+const isStructurallyEqual = (a: unknown, b: unknown): boolean => {
   if (Object.is(a, b)) {
     return true
   }
@@ -91,13 +91,10 @@ export const isStructurallyEqual = (a: unknown, b: unknown): boolean => {
  * copy (`useBoardTaskCollections`). Order-insensitive — columns re-sort by
  * rank — but otherwise every field counts.
  *
- * This used to fingerprint `status`/`rank`/`updated_at`/`commentCount` only,
- * and any change outside that list was silently dropped after
- * `router.refresh()`: logging time bumps `loggedHours` without touching
- * `updated_at`, so the card kept the old total until a hard reload. The
- * same hole covered every other aggregate or side-table field (attachments,
- * assignees, accepted_at, due_on written by the calendar route). Comparing
- * the whole row closes the class of bug instead of patching one field.
+ * Compare the whole row, never a fingerprint of a few fields: many changes
+ * don't touch `updated_at` (logging time bumps `loggedHours`; attachments,
+ * assignees, accepted_at, due_on written by the calendar route), and a
+ * fingerprint would drop them after `router.refresh()` until a hard reload.
  */
 export const areTaskCollectionsEqual = (
   a: TaskWithRelations[] | undefined,
@@ -213,8 +210,7 @@ export const buildBoardPath = (
   const rootPath = `/projects/${clientSegment}/${projectSlug}`
 
   // Task selection travels as `?task=` (sheet deep-link convention): a query
-  // change on the same route keeps the page mounted, unlike the old
-  // trailing-segment URLs which remounted the whole board.
+  // change on the same route keeps the page mounted.
   // The board's task is the first `task` sheet; any task stacked above
   // another sheet keeps its place. A task opened over another sheet lands
   // on top of the stack.

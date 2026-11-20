@@ -98,7 +98,7 @@ async function performSaveHourBlock(
   if (!id) {
     try {
       // Attribute the block to the first month it can be billed in — clamped
-      // forward past a pending prepaid cutover (PRD 002 D13).
+      // forward past a pending prepaid cutover.
       const billingMonth = await resolveHourBlockBillingMonth(companyId)
 
       const [inserted] = await db
@@ -133,9 +133,9 @@ async function performSaveHourBlock(
         metadata: event.metadata,
       })
 
-      // PRD 002 section 05: closed-month warning (current month closed
-      // early), or informational note when the block bills ahead of a
-      // pending prepaid cutover. Non-blocking either way.
+      // Closed-month warning (current month closed early), or an
+      // informational note when the block bills ahead of a pending prepaid
+      // cutover. Non-blocking either way.
       warning = await closedMonthWarning(user, [billingMonth])
       if (!warning && billingMonth > currentMonthStartUtc()) {
         const label = formatCalendarDate(billingMonth, {
@@ -244,8 +244,8 @@ async function performSaveHourBlock(
       })
     }
 
-    // PRD 002 section 05: editing a block whose billing month is closed
-    // shows as drift until the month is re-closed.
+    // Editing a block whose billing month is closed shows as drift until
+    // the month is re-closed.
     warning = await closedMonthWarning(user, [existingHourBlock.billing_month])
   }
 

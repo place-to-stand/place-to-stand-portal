@@ -12,7 +12,7 @@ import { logContactClientLinkChanges } from '@/lib/queries/contacts/settings/con
 import type { ContactSavePlan } from '@/lib/people/actions/save-contact'
 
 /** The companies (clients) a person gains and loses portal access to. */
-export type PersonPortalPlan = { grant: string[]; revoke: string[] }
+type PersonPortalPlan = { grant: string[]; revoke: string[] }
 
 /**
  * The person sheet's portal switches, as the company sheet's People section

@@ -96,7 +96,6 @@ function LineItemRow({
   const showMinQuantityWarning =
     createsHourBlock && minQuantity !== null && (quantity ?? 0) < minQuantity
 
-  // Build grouped options: "Custom" group + "Product Catalog" group
   const productGroups = useMemo<SearchableComboboxGroup[]>(() => {
     const groups: SearchableComboboxGroup[] = [
       {
@@ -163,7 +162,6 @@ function LineItemRow({
         </button>
       ) : null}
 
-      {/* Content */}
       <div className='flex-1 space-y-3 p-4'>
         {/* Product / Custom selector + remove button */}
         {!isReadOnly ? (
@@ -327,10 +325,6 @@ function LineItemRow({
     </div>
   )
 }
-
-// ---------------------------------------------------------------------------
-// Sortable wrapper for drag-to-reorder
-// ---------------------------------------------------------------------------
 
 type SortableLineItemRowProps = LineItemRowProps & { id: string }
 

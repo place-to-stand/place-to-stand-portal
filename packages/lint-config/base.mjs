@@ -105,8 +105,8 @@ export const FIXTURES = {
 
 /**
  * Rules for every workspace, apps and packages alike. `allowConsole` for
- * command-line code (the pts CLI); scripts/ and e2e/ are never linted as app
- * code.
+ * command-line code: the pts CLI, and the root config's scripts and browser
+ * tests.
  */
 export function common({ allowConsole = false } = {}) {
   return [

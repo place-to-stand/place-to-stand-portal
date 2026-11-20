@@ -13,7 +13,7 @@ import {
   type TaskSheetFormValues,
 } from '../task-sheet-schema'
 
-export type UseTaskSheetFormArgs = {
+type UseTaskSheetFormArgs = {
   task?: TaskWithRelations
   /** Create a new task filled in from this one (Duplicate). */
   duplicateOf?: TaskWithRelations
@@ -24,7 +24,7 @@ export type UseTaskSheetFormArgs = {
   defaultLeadId: string | null
 }
 
-export type UseTaskSheetFormReturn = {
+type UseTaskSheetFormReturn = {
   form: UseFormReturn<TaskSheetFormValues>
   defaultValues: TaskSheetFormValues
   sheetTitle: string

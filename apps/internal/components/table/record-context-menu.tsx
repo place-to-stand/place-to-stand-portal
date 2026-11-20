@@ -43,7 +43,7 @@ export type CardEdgeMoves = {
 }
 
 /** The menu's Send to top / bottom: the moves, and the card's name. */
-export type EdgeMoveMenuConfig = CardEdgeMoves & {
+type EdgeMoveMenuConfig = CardEdgeMoves & {
   /**
    * Named in the toast. The column stays where it is (no scrolling after
    * the card), so the toast says where the card went.
@@ -114,9 +114,10 @@ type RecordContextMenuProps = {
 /**
  * The right-click menu on every record row and card: Edit, Duplicate (for
  * records that can be copied, see `DUPLICABLE_SHEET_ENTITIES`), Set assignee
- * (tasks and leads), Set due date (tasks), Send to top / bottom (board
- * cards), then Archive or Restore. Each action is the same one the row's buttons and the sheet
- * already run, so the menu adds a way in, never a second behaviour.
+ * (tasks and leads), Set due date (tasks), Mark as done and Send to top /
+ * bottom (board cards), then Archive or Restore. Each action is the same one
+ * the row's buttons and the sheet already run, so the menu adds a way in,
+ * never a second behaviour.
  */
 export function RecordContextMenu({
   children,

@@ -18,8 +18,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /**
  * The client's invoice page as an admin sees it before sending: by id, behind
- * sign-in (this path is not on the proxy allowlist, and `requireUser` bounces
- * anyone who is not an admin), with no view recorded and no live checkout.
+ * sign-in (this path is not on the proxy allowlist, and
+ * `requirePage('billing.manage')` bounces anyone who can't manage billing),
+ * with no view recorded and no live checkout.
  * Drafts have no public link, so this is the only way to see one.
  */
 export default async function InvoicePreviewPage({

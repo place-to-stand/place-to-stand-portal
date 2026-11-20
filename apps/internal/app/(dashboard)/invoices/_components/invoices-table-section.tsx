@@ -57,7 +57,7 @@ import { SheetLink } from '@/components/ui/sheet-link'
 
 type InvoicesTableMode = 'active' | 'archive'
 
-export type InvoicesTableSectionProps = {
+type InvoicesTableSectionProps = {
   invoices: InvoiceWithClient[]
   selection: RowSelection
   mode: InvoicesTableMode
@@ -70,7 +70,7 @@ export type InvoicesTableSectionProps = {
   onRestore: (invoice: InvoiceWithClient) => void
   onRefresh: () => void
   emptyMessage: string
-  /** Route the sort/filter params live on (PRD 004 §03). */
+  /** Route the sort/filter params live on. */
   basePath: string
 }
 

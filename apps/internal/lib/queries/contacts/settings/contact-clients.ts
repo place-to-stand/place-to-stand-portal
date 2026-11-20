@@ -28,7 +28,7 @@ export type ClientOption = {
   isClient?: boolean
 }
 
-export type ContactSheetInputRow = ContactProfile & {
+type ContactSheetInputRow = ContactProfile & {
   id: string
   email: string | null
   name: string
@@ -38,7 +38,7 @@ export type ContactSheetInputRow = ContactProfile & {
 }
 
 /** Sheet row plus the archive flag the deep-link resolver needs. */
-export type ContactDeepLinkRow = ContactSheetInputRow & {
+type ContactDeepLinkRow = ContactSheetInputRow & {
   deletedAt: string | null
 }
 
@@ -65,7 +65,7 @@ export type ContactSheetData = {
   } | null
 }
 
-/** Fetches all active clients (contacts client filter, MCP directory). */
+/** Every company billed now, by name (the MCP directory). */
 export async function listAllActiveClients(
   user: AppUser
 ): Promise<ClientOption[]> {
@@ -89,9 +89,7 @@ export async function listAllActiveClients(
   }))
 }
 
-/**
- * Fetches the clients linked to a specific contact.
- */
+/** The clients a contact can see in the client portal (MCP people read). */
 export async function listContactClients(
   user: AppUser,
   contactId: string

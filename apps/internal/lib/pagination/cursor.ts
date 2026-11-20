@@ -4,9 +4,9 @@ import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from './page-size'
 
 export type CursorDirection = 'forward' | 'backward'
 
-export type CursorPayload = Record<string, unknown>
+type CursorPayload = Record<string, unknown>
 
-export type PaginationOptions = {
+type PaginationOptions = {
   defaultLimit?: number
   maxLimit?: number
 }

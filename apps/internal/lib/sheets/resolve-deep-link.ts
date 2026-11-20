@@ -29,7 +29,7 @@ type ResolveSheetDeepLinkArgs<T> = {
   /**
    * Cross-tab redirect: when provided along with `isArchived`, a link opened
    * on the wrong tab redirects to the matching one so shared links keep
-   * working after archive/restore (submissions precedent).
+   * working after archive/restore.
    */
   tab?: 'active' | 'archive'
   isArchived?: (record: T) => boolean

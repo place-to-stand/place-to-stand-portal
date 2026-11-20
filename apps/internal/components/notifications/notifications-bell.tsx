@@ -30,7 +30,7 @@ export function NotificationsBell() {
         <Button
           type='button'
           variant='outline'
-          // xs keeps the header row at the same height as before, so the
+          // xs keeps the header row no taller than its other controls, so the
           // page tabs stay level with the sidebar's search box.
           size='xs'
           aria-label={label}

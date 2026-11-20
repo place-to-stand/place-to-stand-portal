@@ -214,5 +214,3 @@ export function useTaskComments(
     },
   }
 }
-
-export type { UseTaskCommentsOptions, UseTaskCommentsState } from './types'

@@ -37,11 +37,7 @@ export function isUniqueViolation(error: unknown): boolean {
   )
 }
 
-// ---------------------------------------------------------------------------
-// Diff helpers
-// ---------------------------------------------------------------------------
-
-export type Diff = {
+type Diff = {
   changedFields: string[]
   details: { before: Record<string, unknown>; after: Record<string, unknown> }
 }
@@ -106,7 +102,7 @@ export type ProfitShareFieldErrors = Partial<
   >
 >
 
-export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 /** Writes the profit share; returns its activity event when it changed. */
 export async function saveProfitShare(

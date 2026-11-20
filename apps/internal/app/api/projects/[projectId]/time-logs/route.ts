@@ -148,7 +148,7 @@ export async function POST(
       taskIds: payload.taskIds ?? [],
     })
 
-    // PRD 002 section 05: non-blocking, admin-only closed-month warning.
+    // Non-blocking, admin-only closed-month warning.
     const warning = await closedMonthWarning(user, [payload.loggedOn])
 
     return NextResponse.json(warning ? { timeLogId, warning } : { timeLogId }, {

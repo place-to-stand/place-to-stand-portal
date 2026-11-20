@@ -35,7 +35,7 @@ export function SheetLink({
 }) {
   const link = useSheetLink(sheet, onOpen)
   return (
-    // Other props pass through, so a Radix `asChild` trigger (a tooltip)
+    // Other props pass through, so an `asChild` trigger (a tooltip)
     // can wrap it.
     <a
       {...props}

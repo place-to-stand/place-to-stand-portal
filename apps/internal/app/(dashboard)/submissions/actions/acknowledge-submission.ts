@@ -14,7 +14,7 @@ import {
 import { acknowledgeSubmissionSchema } from './schemas'
 import type { ActionResult, AcknowledgeSubmissionInput } from './types'
 
-// W2 (PRD 001 architecture review): deliberately no PostHog server tracking —
+// Deliberately no PostHog server tracking:
 // trackSettingsServerInteraction's SettingsEntity union has no submissions
 // value and its SETTINGS_SAVE event would misclassify inbox actions.
 export async function acknowledgeSubmission(
@@ -80,7 +80,7 @@ export async function acknowledgeSubmission(
       // The conditional UPDATE missed. Distinguish "a racing admin got
       // there first" (fine, idempotent) from "the row changed since it was
       // rendered" — acknowledging data the admin never saw would defeat
-      // the D8 re-flag, so that becomes an explicit error.
+      // the unread re-flag, so that becomes an explicit error.
       const fresh = await getFormSubmissionById(parsed.data.id)
 
       if (fresh && fresh.acknowledgedAt === null) {
@@ -93,7 +93,7 @@ export async function acknowledgeSubmission(
     }
   }
 
-  // D6: the unread badge lives in the (dashboard) layout — revalidate the
+  // The unread badge lives in the (dashboard) layout — revalidate the
   // whole layout tree so the sidebar count refreshes on the next render.
   revalidatePath('/', 'layout')
 

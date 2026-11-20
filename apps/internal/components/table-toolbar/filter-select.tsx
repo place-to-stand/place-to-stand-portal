@@ -22,7 +22,7 @@ import {
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import { cn } from '@/lib/utils'
 
-export type FilterOption = {
+type FilterOption = {
   value: string
   label: string
   /**
@@ -41,7 +41,7 @@ type SingleProps = {
   /** Current validated value; undefined = All. */
   value: string | undefined
   onChange: (value: string | undefined) => void
-  /** 'All …' placeholder — carries the filter's meaning (D5, no labels). */
+  /** 'All …' placeholder — carries the filter's meaning (filters have no labels). */
   placeholder: string
   options: readonly FilterOption[]
   className?: string
@@ -72,16 +72,16 @@ type MultiProps = {
   className?: string
 }
 
-export type FilterSelectProps = SingleProps | MultiProps
+type FilterSelectProps = SingleProps | MultiProps
 
 /**
  * A multi filter with more options than this gets a search field (tags);
  * a short list (statuses) stays a plain checklist.
  */
-export const MULTI_FILTER_SEARCH_AFTER = 7
+const MULTI_FILTER_SEARCH_AFTER = 7
 
 /**
- * The one filter control (PRD 004 §03). Both modes share the field trigger
+ * The one filter control. Both modes share the field trigger
  * (`FieldTrigger`: one width, the label, a clear × away from the default,
  * the up-down chevron). `single` = the clearable searchable combobox
  * ("All …" when empty); `multi` = the same trigger over a checkbox list
@@ -133,7 +133,7 @@ function SingleFilterSelect({
   const [value, setValue] = useOptimisticValue(propValue)
   const onChange = (next: string | undefined) =>
     setValue(next, () => commit(next))
-  // Every list filter is a clearable searchable combobox: the placeholder
+  // A single filter is a clearable searchable combobox: the placeholder
   // ("All …") when nothing is picked, the choice and an X to clear it back.
   return (
     <SearchableCombobox

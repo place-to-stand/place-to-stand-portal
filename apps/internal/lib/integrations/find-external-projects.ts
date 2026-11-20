@@ -7,7 +7,7 @@ import type {
 
 import { listExternalProjectsForUser } from './connections'
 
-export type IntegrationLinkRequest = {
+type IntegrationLinkRequest = {
   provider: IntegrationProvider
   externalId: string
 }

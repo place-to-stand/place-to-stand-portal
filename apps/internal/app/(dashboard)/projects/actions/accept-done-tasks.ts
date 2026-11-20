@@ -19,7 +19,7 @@ const schema = z.object({
   projectId: z.string().uuid(),
 })
 
-export type AcceptDoneTasksResult = ActionResult & {
+type AcceptDoneTasksResult = ActionResult & {
   acceptedCount: number
 }
 

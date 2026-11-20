@@ -48,7 +48,7 @@ export type PortalContactOption = {
   isPromoted: boolean
 }
 
-export type PortalScope = {
+type PortalScope = {
   /** Clients whose data this request may touch. Empty means show nothing. */
   companyIds: string[]
   /** The same clients, with names, for display in the header. */
@@ -103,7 +103,7 @@ export const resolvePortalScope = cache(
  * Every contact an admin may preview as — the list behind the ViewAsBanner
  * dropdown. Only the portal layout needs it, so it is deliberately NOT part of
  * resolvePortalScope: the scope resolution runs on every page render (and
- * every Link prefetch), and loading the whole contacts table there was a
+ * every Link prefetch), and loading the whole contacts table there would be a
  * full-table query per navigation for admins.
  */
 export const fetchPortalContactOptions = cache(
@@ -121,8 +121,8 @@ export const fetchPortalContactOptions = cache(
           isPromoted: isNotNull(contacts.userId).mapWith(Boolean),
         })
         .from(contacts)
-        // Everyone at a current client, with or without portal access (as
-        // before): previewing shows what they'd see once given access.
+        // Everyone at a current client, with or without portal access:
+        // previewing shows what they'd see once given access.
         // People at no client would preview an empty portal, so they're left
         // out.
         .where(

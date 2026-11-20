@@ -18,12 +18,11 @@ import { resolveHourBlockBillingMonth } from '@/lib/queries/companies/billing/bi
  * Called from the Stripe webhook handler — no auth check needed.
  *
  * Uses ON CONFLICT DO NOTHING on the unique partial index
- * (invoice_line_item_id WHERE deleted_at IS NULL) for idempotency.
+ * on invoice_line_item_id (live rows only) for idempotency.
  */
 export async function createHourBlocksFromInvoice(
   invoiceId: string
 ): Promise<void> {
-  // Fetch invoice with client info
   const [invoice] = await db
     .select({
       id: invoices.id,
@@ -50,7 +49,6 @@ export async function createHourBlocksFromInvoice(
     return
   }
 
-  // Fetch qualifying line items
   const lineItems = await db
     .select({
       id: invoiceLineItems.id,
@@ -66,7 +64,6 @@ export async function createHourBlocksFromInvoice(
       )
     )
 
-  // Filter out zero/negative quantities
   const qualifying = lineItems.filter(item => Number(item.quantity) > 0)
 
   if (!qualifying.length) {
@@ -74,8 +71,8 @@ export async function createHourBlocksFromInvoice(
   }
 
   // Attribute webhook-created blocks to the first month they can be billed
-  // in — clamped forward past a pending prepaid cutover, since no UI warning
-  // can reach this path (PRD 002 D13).
+  // in, clamped forward past a pending prepaid cutover, since no UI warning
+  // can reach this path.
   const billingMonth = await resolveHourBlockBillingMonth(invoice.companyId)
 
   const inserted: Array<{ id: string; hoursPurchased: number }> = []

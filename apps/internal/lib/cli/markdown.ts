@@ -1,6 +1,6 @@
 /**
  * The inline markdown CLI text may use: **bold**, *italic* and
- * [text](https://…). Everything else is escaped as text, so nothing pasted
+ * [text](url) links (http, https or mailto). Everything else is escaped as text, so nothing pasted
  * can inject markup.
  */
 

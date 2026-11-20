@@ -151,8 +151,8 @@ type PersonAvatarProps = Omit<UserAvatarProps, 'alt' | 'name'> & {
 
 /**
  * A person shown as just their avatar, named by a hover tooltip: the
- * compact people cell in list tables (Clients' Origination, Time logs'
- * Person).
+ * compact people cell in list tables (Companies' Origination, Time logs'
+ * Person), card assignees and sheet presence.
  */
 export function PersonAvatar({
   name,

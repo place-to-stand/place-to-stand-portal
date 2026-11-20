@@ -20,9 +20,9 @@ const ID_LOOKUPS = new Set(['getElementById'])
 const SELECTOR_LOOKUPS = new Set(['querySelector', 'querySelectorAll'])
 
 /**
- * PR #365: two sheets of one kind shared a form id, and one sheet's Save
- * submitted the other's form. Element ids (and `form=` links to them) come
- * from `useId`, so every instance of a component gets its own.
+ * Element ids (and `form=` links to them) come from `useId`, so every
+ * instance of a component gets its own. Two sheets of one kind sharing a form
+ * id means one sheet's Save submits the other's form.
  */
 export const useIdNotFixedId = {
   meta: {

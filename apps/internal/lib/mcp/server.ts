@@ -13,9 +13,9 @@ import { registerTaskTools } from './tools/tasks'
 import { registerTimeLogTools } from './tools/time-logs'
 
 /**
- * The tool registry (PRD 009 §4). Time logs, invoices, hour blocks, billing
- * history, form submissions and the monthly close are read-only: logging hours stays a manual human process
- * (D5), and billing is readable but never written (D9).
+ * The tool registry. Time logs, invoices, hour blocks, billing history, form
+ * submissions and the monthly close are read-only: logging hours stays a
+ * manual human step, and billing is readable but never written.
  */
 export function registerMcpTools(server: McpServer) {
   registerDirectoryTools(server)

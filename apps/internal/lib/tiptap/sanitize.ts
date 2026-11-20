@@ -1,7 +1,6 @@
 type ProtocolOptions = {
   /**
    * The protocol scheme to be registered.
-   * @default '''
    * @example 'ftp'
    * @example 'git'
    */

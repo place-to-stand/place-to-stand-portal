@@ -10,10 +10,6 @@ import type {
   WorkerStatusResult,
 } from '@/lib/tasks/worker-status'
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
 const POLL_INTERVAL = 10_000
 const TERMINAL_STATUSES: WorkerCommentStatus[] = [
   'plan_ready',
@@ -24,11 +20,7 @@ const TERMINAL_STATUSES: WorkerCommentStatus[] = [
 
 export const WORKER_STATUS_KEY = 'worker-status'
 
-// ---------------------------------------------------------------------------
-// Hook
-// ---------------------------------------------------------------------------
-
-export type WorkerStatusData = {
+type WorkerStatusData = {
   statusData: WorkerStatusResult | undefined
   isStatusLoading: boolean
   latestStatus: WorkerCommentStatus | null

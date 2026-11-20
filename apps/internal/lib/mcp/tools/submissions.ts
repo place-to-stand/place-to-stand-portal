@@ -21,7 +21,7 @@ import { defineTool } from '../tool'
 
 /**
  * The website form inbox (contact, audit and subscribe submissions), read
- * only. Acknowledging, archiving and promoting to a lead stay in the portal.
+ * only. Acknowledging and archiving stay in the portal.
  */
 export function registerSubmissionTools(server: McpServer) {
   defineTool(server, {

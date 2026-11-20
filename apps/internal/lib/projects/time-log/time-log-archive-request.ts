@@ -1,7 +1,7 @@
 /**
  * Archive (soft delete) or restore one time log through
  * `/api/projects/[projectId]/time-logs/[timeLogId]`. Resolves with the
- * closed-month warning that rides the response (PRD 002 section 05), or
+ * closed-month warning that rides the response, or
  * throws with the API's error message.
  */
 export async function requestTimeLogArchiveChange(

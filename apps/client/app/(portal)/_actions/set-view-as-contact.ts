@@ -46,7 +46,6 @@ export async function setViewAsContact(contactId: string) {
 
   const cookieStore = await cookies()
 
-  // Set the contact preview cookie.
   cookieStore.set(VIEW_AS_CONTACT_COOKIE, contact.id, {
     httpOnly: true,
     sameSite: 'lax',
@@ -54,7 +53,8 @@ export async function setViewAsContact(contactId: string) {
     path: '/',
   })
 
-  // Clear the old client-scoped cookie to avoid stale state.
+  // The contact cookie takes precedence; drop the client-scoped one so it
+  // can't resurface later.
   cookieStore.delete(VIEW_AS_COOKIE)
 
   revalidatePath('/', 'layout')

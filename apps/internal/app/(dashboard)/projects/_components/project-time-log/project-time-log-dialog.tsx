@@ -30,7 +30,7 @@ type TimeLogDialogOptions = {
   onMutationSuccess?: () => void
 }
 
-export type ProjectTimeLogDialogProps = ProjectTimeLogDialogParams &
+type ProjectTimeLogDialogProps = ProjectTimeLogDialogParams &
   TimeLogDialogOptions
 
 /** The Log time dialog, for callers that already hold the project's data. */

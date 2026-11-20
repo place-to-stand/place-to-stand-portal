@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react'
 
-export type ContentType = 'unknown' | 'questions' | 'plan'
+type ContentType = 'unknown' | 'questions' | 'plan'
 
 const QUESTIONS_HEADING = '## Clarifying Questions'
 

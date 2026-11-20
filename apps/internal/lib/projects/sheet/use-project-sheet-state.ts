@@ -57,12 +57,12 @@ export type {
   ProjectWithClient,
 } from './project-sheet-form'
 
-export type UseProjectSheetStateArgs = {
+type UseProjectSheetStateArgs = {
   open: boolean
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   project: ProjectWithClient | null
-  /** Prefills the create sheet's client (a company's Projects (its sheet's Client column)). */
+  /** Prefills the create sheet's client (set when created from a company's Projects list). */
   initialCompanyId?: string
   clients: ClientPickerRow[]
   contractorDirectory?: ContractorUserSummary[]
@@ -94,7 +94,7 @@ export type ProjectSheetLinkChanges = {
   removedIntegrationLinkIds: string[]
 }
 
-export type UseProjectSheetStateReturn = {
+type UseProjectSheetStateReturn = {
   form: UseFormReturn<ProjectSheetFormValues>
   /** Field edits or repo links not yet saved. */
   hasUnsavedChanges: boolean

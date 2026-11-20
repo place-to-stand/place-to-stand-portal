@@ -1,16 +1,6 @@
 import type { LeadSourceTypeValue, LeadStatusValue } from './constants'
 import type { LeadUpdateTypeValue } from './updates'
 
-// =============================================================================
-// Database Types
-// =============================================================================
-// =============================================================================
-// Mutation Types
-// =============================================================================
-// =============================================================================
-// Presentation Types
-// =============================================================================
-
 /**
  * Enriched lead record for UI display.
  * Includes computed/joined fields like assignee info and formatted notes.
@@ -28,11 +18,11 @@ export type LeadRecord = {
   contactEmail: string | null
   contactPhone: string | null
   companyName: string | null
-  /** The company's website, falling back to the lead's legacy copy. */
+  /** The linked company's website. */
   companyWebsite: string | null
-  /** The linked company record; `companyName` is its display copy. */
+  /** The linked company record; `companyName` is read from it. */
   companyId: string | null
-  /** The lead's contact; contactName/Email/Phone are its display copy. */
+  /** The lead's contact; contactName/Email/Phone are read from it. */
   contactId: string | null
   notesHtml: string
   rank: string
@@ -84,7 +74,7 @@ export type LeadAssigneeOption = {
   name: string
   email: string | null
   avatarUrl: string | null
-  /** Set when the admin can no longer sign in; shown only on leads they already hold. */
+  /** Set when the person can no longer sign in; shown only on leads they already hold. */
   disabledAt: string | null
 }
 

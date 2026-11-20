@@ -30,7 +30,7 @@ const buttonVariants = cva(
         sm: 'h-8 rounded-md py-1.5 px-3 has-[>svg]:px-2.5 gap-2',
         lg: 'h-10 rounded-md px-6 has-[>svg]:px-4 gap-2',
         icon: 'size-9',
-        // Row action buttons: a 16px glyph reads heavy in a 32px square.
+        // Row action buttons: a 16px glyph reads heavy in a 28px square.
         'icon-sm': 'size-7 [&_svg]:size-3.5',
         'icon-lg': 'size-10',
       },

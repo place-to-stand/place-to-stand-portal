@@ -39,8 +39,8 @@ import type { PaletteRecord } from '@/lib/command-palette/types'
 export const PALETTE_RESULT_LIMIT = 8
 
 /**
- * Projects a viewer may see: PERSONAL ones only by their creator (R3), the
- * rule the retired combobox switcher applied. Tasks follow their project.
+ * Projects a viewer may see: PERSONAL ones only by their creator. Tasks
+ * follow their project.
  */
 export const visibleProjectCondition = (user: AppUser): SQL =>
   or(ne(projects.type, 'PERSONAL'), eq(projects.createdBy, user.id))!

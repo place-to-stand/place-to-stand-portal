@@ -111,11 +111,8 @@ export function PlanRevisionNav({
   )
 }
 
-// ---------------------------------------------------------------------------
-// Pill color logic
-// Priority: questions (warning) > pr_created (success) > dispatched (warning,
-// pending) > default. Status colors come from the three status tokens only.
-// ---------------------------------------------------------------------------
+// Pill tone priority: questions (warning) > pr_created (success) >
+// dispatched (warning, pending) > none. Tones come only from the status tokens.
 
 type PillTone = 'warning' | 'success' | null
 

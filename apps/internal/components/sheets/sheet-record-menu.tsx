@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@pts/ui/dropdown-menu'
 
-export type SheetRecordMenuProps = {
+type SheetRecordMenuProps = {
   /** The record's kind in words, for the button's name ("task actions"). */
   noun: string
   /**

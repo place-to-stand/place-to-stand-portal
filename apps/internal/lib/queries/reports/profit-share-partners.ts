@@ -6,7 +6,7 @@ import { and, inArray, isNull, ne } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 
-export type ProfitSharePartnerUserRow = {
+type ProfitSharePartnerUserRow = {
   id: string
   email: string
   fullName: string | null

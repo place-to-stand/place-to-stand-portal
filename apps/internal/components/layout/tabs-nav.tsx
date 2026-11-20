@@ -42,8 +42,7 @@ export function useOptimisticTab(activeTab: string) {
 }
 
 /**
- * Config-driven tab strip for section navigation (PRD 004 §01, D11).
- * Replaces the nine per-feature `*TabsNav` copies; tab arrays live in
+ * Config-driven tab strip for section navigation. Tab arrays live in
  * colocated `_lib/tabs.ts` files per feature. Below `sm` the strip folds
  * into `ToolbarTabsMenu`, so the toolbar row stays one line on phones.
  */

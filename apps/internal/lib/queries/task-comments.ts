@@ -27,11 +27,11 @@ import type {
 import { roleCan } from '@/lib/auth/capabilities'
 
 /**
- * Comment mutations are reached from the browser API routes and from the CLI;
- * the activity row is written here so neither caller has to remember it, and
+ * Comment mutations are reached from the browser API routes, the CLI and
+ * MCP; the activity row is written here so no caller has to remember it, and
  * only the source differs between them.
  */
-export type TaskCommentMutationOptions = {
+type TaskCommentMutationOptions = {
   source?: ActivitySourceValue
 }
 
@@ -180,7 +180,7 @@ async function logCommentActivity(args: {
   })
 }
 
-export type ListTaskCommentsInput = {
+type ListTaskCommentsInput = {
   limit?: number | null
   cursor?: string | null
 }

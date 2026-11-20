@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 
 /**
- * One name per record (migration 0109): a user (a person's sign-in) is
+ * One name per record: a user (a person's sign-in) is
  * called by their contact's name. (A client is a company you bill, so it is
  * called by `companies.name` directly.)
  * Correlated subqueries written table-qualified, because drizzle drops the
@@ -26,8 +26,8 @@ export function personNameOf(table = 'users') {
 export const personNameSql = personNameOf('users')
 
 /**
- * A user's photo: their contact's (migration 0112; a photo belongs to the
- * person, signed in or not). `table` as for `personNameOf`.
+ * A user's photo: their contact's (a photo belongs to the person, signed
+ * in or not). `table` as for `personNameOf`.
  */
 export function personAvatarOf(table = 'users') {
   return sql<

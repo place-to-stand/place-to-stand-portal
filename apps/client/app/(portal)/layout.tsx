@@ -47,8 +47,8 @@ export default async function PortalLayout({
       )}
       <header className='border-foreground/10 bg-chrome border-b'>
         <div className='mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-4'>
-          {/* Doubles as the way back to the portal home now that the nav
-              links are gone. */}
+          {/* Doubles as the way back to the portal home: the header has no
+              nav links. */}
           <Link
             href='/'
             aria-label={`${business.name} Client Portal — home`}

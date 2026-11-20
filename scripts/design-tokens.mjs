@@ -3,9 +3,9 @@
  * Syncs docs/design-system/tokens.json with the code it describes.
  *
  * Reads the theme colors and radius scale from packages/ui/src/styles/theme.css
- * (the theme both portals import),
- * the brand colors from packages/ui/src/brand.tsx (BRAND) and the email colors
- * from packages/email/src/layout.ts (EMAIL_COLORS), and writes their values
+ * (the theme both portals import), the brand colors from
+ * packages/ui/src/brand.tsx (BRAND) and the email colors from
+ * packages/email/src/layout.ts (EMAIL_COLORS), and writes their values
  * into tokens.json. Usage notes and every hand-written family (type, spacing,
  * size, shadow, opacity) are kept as they are.
  *

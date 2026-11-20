@@ -47,7 +47,7 @@ const SUPPORTED_OTP_TYPES = [
   'invite',
 ] as const
 
-export type SupportedOtpType = (typeof SUPPORTED_OTP_TYPES)[number]
+type SupportedOtpType = (typeof SUPPORTED_OTP_TYPES)[number]
 
 export function isSupportedOtpType(value: string): value is SupportedOtpType {
   return (SUPPORTED_OTP_TYPES as readonly string[]).includes(value)

@@ -3,13 +3,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 
-// --- Hooks ---
 import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
-// --- Icons ---
 import { LinkIcon } from '@/components/tiptap-icons/link-icon'
 
-// --- Lib ---
 import {
   isMarkInSchema,
   isNodeTypeSelected,
@@ -55,8 +52,8 @@ export interface LinkHandlerProps {
 export function canSetLink(editor: Editor | null): boolean {
   if (!editor || !editor.isEditable) return false
 
-  // The third argument 'true' checks whether the current selection is inside an image caption, and prevents setting a link there
-  // If the selection is inside an image caption, we can't set a link
+  // `true` also checks the selection's ancestors, so a selection inside an
+  // image node can't take a link.
   if (isNodeTypeSelected(editor, ['image'], true)) return false
   return editor.can().setMark('link')
 }

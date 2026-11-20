@@ -4,7 +4,7 @@ import type { ContactMembership } from '@/lib/queries/memberships'
 import { isoTimestamp } from './timestamp'
 
 /** A company the contact belongs to (main company first). */
-export type CliContactCompany = {
+type CliContactCompany = {
   companyId: string
   companyName: string
   title: string | null
@@ -15,12 +15,11 @@ export type CliContactCompany = {
    * portal login). Only for callers who manage clients; omitted otherwise.
    */
   portalAccess?: boolean
-  /** The company's client, if it is one. */
-  /** The company's id when it is a client (0111: a client is its company). */
+  /** The company's id when it is a client (a client is its company). */
   clientId: string | null
 }
 
-export type CliContact = {
+type CliContact = {
   id: string
   name: string | null
   email: string | null
@@ -37,7 +36,7 @@ export type CliContact = {
 }
 
 /** What the caller may see: portal access and sign-ins need `clients.manage`. */
-export type ContactViewer = { seesPortalAccess: boolean }
+type ContactViewer = { seesPortalAccess: boolean }
 
 export function serializeContactCompanies(
   memberships: readonly ContactMembership[],

@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from 'react'
 
 import { BULK_ACTION_LIMIT } from '@/lib/bulk/archive-entities'
 
-export type HeadCheckState = 'none' | 'some' | 'all'
+type HeadCheckState = 'none' | 'some' | 'all'
 
 type State = {
   /** The page the ticks belong to: a new page or filter starts empty. */

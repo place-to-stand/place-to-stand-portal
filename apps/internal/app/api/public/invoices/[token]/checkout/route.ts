@@ -82,7 +82,6 @@ export async function POST(
       )
     }
 
-    // Validate status
     if (invoice.status !== 'SENT' && invoice.status !== 'VIEWED') {
       return NextResponse.json(
         { ok: false, error: 'Invoice is not available for payment.' },
@@ -139,7 +138,6 @@ export async function POST(
       ? `Invoice ${invoice.invoiceNumber}`
       : 'Invoice Payment'
 
-    // Create PaymentIntent
     const subtotalCents = Math.round(Number(invoice.subtotal) * 100)
     const taxAmountCents = Math.round(Number(invoice.taxAmount) * 100)
     const taxRatePercent = invoice.taxRate
@@ -163,8 +161,8 @@ export async function POST(
       {
         // Two clicks at once read the same row, so they get the same intent
         // instead of two. Any later write to the invoice changes the key.
-        // v2: Stripe 23 sends allowed_payment_method_types, and Stripe refuses
-        // a key it saw with other params, so keys from before stay unused.
+        // Stripe refuses a key it saw with other params, so the version in
+        // the key (`v2`) must change whenever the intent's params do.
         idempotencyKey: `invoice-checkout:v2:${invoice.id}:${totalCents}:${invoice.stripePaymentIntentId ?? 'none'}:${invoice.updatedAt}`,
       }
     )

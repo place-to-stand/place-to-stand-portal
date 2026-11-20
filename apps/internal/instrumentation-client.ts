@@ -31,9 +31,9 @@ const beforeSend = (event: CaptureResult | null) => {
   }
 }
 
-// Dev sessions were flooding the production PostHog project with Turbopack
-// build-error overlays, mid-edit HMR ReferenceErrors, and localhost analytics,
-// so capture is limited to production builds. The public invoice page is
+// Capture runs in production builds only: dev sessions would fill the
+// production PostHog project with Turbopack build-error overlays, mid-edit
+// HMR errors and localhost analytics. The public invoice page is
 // for clients, not staff, so analytics don't start there at all. Also
 // skipped when the key is unset, so a deployment without PostHog env vars
 // still boots quietly (as in the client portal).

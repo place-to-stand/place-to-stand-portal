@@ -13,9 +13,7 @@ type UseRecordCycleOptions = {
 }
 
 /**
- * `⌘[` / `⌘]` (or Ctrl) prev/next-record navigation (PRD 004 §01, D14).
- * Extracted verbatim from the retired combobox header components so the
- * muscle-memory shortcut survives the header redesign.
+ * `⌘[` / `⌘]` (or Ctrl) moves to the previous or next record.
  */
 export function useRecordCycle({
   onPrevious,

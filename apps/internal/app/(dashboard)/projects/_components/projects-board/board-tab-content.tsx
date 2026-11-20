@@ -74,7 +74,7 @@ export type ProjectsBoardActiveProject = {
   }
 } | null
 
-export type BoardTabContentProps = {
+type BoardTabContentProps = {
   isActive: boolean
   feedback: string | null
   activeProject: ProjectsBoardActiveProject

@@ -41,7 +41,7 @@ import {
   type HourBlockSortField,
 } from '@/lib/hour-blocks/filters'
 
-export type HourBlockClientSummary = {
+type HourBlockClientSummary = {
   id: string
   name: string
 }
@@ -98,7 +98,7 @@ const clientSelection = {
   deletedAt: clientEndedAtSql,
 } as const
 
-export type ListHourBlocksForSettingsInput = {
+type ListHourBlocksForSettingsInput = {
   status?: 'active' | 'archived'
   search?: string | null
   /** Only this client's blocks. */
@@ -115,7 +115,7 @@ export type ListHourBlocksForSettingsInput = {
   sort?: ParsedSort<HourBlockSortField>
 }
 
-export type HourBlocksSettingsResult = {
+type HourBlocksSettingsResult = {
   items: HourBlockWithClient[]
   clients: HourBlockClient[]
   /** Rows matching the active filters/search (drives `Showing N of M`). */
@@ -126,9 +126,9 @@ export type HourBlocksSettingsResult = {
 }
 
 /**
- * Per-sort descriptor (PRD 004 §03, R5): order expression + field-tagged
- * cursor value encoding + comparison predicates. `createdAt` is
- * non-nullable so no null partition applies.
+ * Per-sort descriptor: order expression + field-tagged cursor value
+ * encoding + comparison predicates. Nullable keys (client, invoice) use
+ * `nullsLastDescriptor`.
  */
 type HourBlockSortDescriptor = {
   encode: (row: HourBlockWithClient) => string
@@ -282,7 +282,7 @@ export async function listHourBlocksForSettings(
     hourBlocksList = rows.map(mapHourBlockWithClient)
   } else {
     // Field-tagged cursor: payloads minted under a different sort are
-    // rejected and we serve page one (R5 backstop for stale deep links).
+    // rejected and we serve page one (a backstop for stale deep links).
     const cursorPayload = decodeSortCursor(
       input.cursor,
       sort.field,

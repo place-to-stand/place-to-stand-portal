@@ -59,8 +59,9 @@ type ClientSelectorProps = {
  * sibling, for walking one client at a time in weekly planning.
  *
  * State lives in two params next to `?assignee=`: `?companyId=` (NOT
- * `?client=`, which is an old deep-link param (it opens the company sheet) and would open the
- * edit sheet on every dashboard route) and `?hide=personal,internal`. The
+ * `?client=`, which `proxy.ts` maps to the company sheet param, so it would
+ * open the company sheet on every dashboard route) and
+ * `?hide=personal,internal`. The
  * "Show" checkboxes only matter under "All clients": PERSONAL and INTERNAL
  * projects have no client, so a client selection already excludes them.
  */

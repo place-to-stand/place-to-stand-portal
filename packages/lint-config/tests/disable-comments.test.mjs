@@ -89,7 +89,7 @@ tester.run('restricted-syntax', pts.rules['restricted-syntax'], {
       errors: [{ message: 'No debugger.' }],
     },
     {
-      // Two selectors on one node report twice, as ESLint did.
+      // Two selectors on one node report twice, as in ESLint.
       code: 'debugger',
       options: [
         { selector: 'DebuggerStatement', message: 'one' },

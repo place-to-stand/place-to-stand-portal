@@ -8,9 +8,8 @@ import { archiveFromSheetMenu } from './helpers'
  * and archives it again.
  *
  *   E2E_PLANNING_TASK_PATH  a task-sheet URL for a task on a project with a
- *                           linked GitHub repo, e.g.
- *                           /projects/acme/site/tasks?task=<uuid>
- *                           (the planning test skips without it)
+ *                           linked GitHub repo (default: the seed's
+ *                           "Gift card balance page")
  */
 test.skip(!process.env.E2E_WRITES, 'set E2E_WRITES=1 on a throwaway database')
 
@@ -32,13 +31,11 @@ function recordWrites(page: Page) {
 }
 
 test('opening the planning panel writes nothing', async ({ page }) => {
-  const path = process.env.E2E_PLANNING_TASK_PATH
-  test.skip(
-    !path,
-    'set E2E_PLANNING_TASK_PATH to a task on a repo-linked project'
-  )
+  const path =
+    process.env.E2E_PLANNING_TASK_PATH ??
+    '/projects/harbor-pine/online-store/tasks?task=e2e0e2e0-0000-4000-8000-000000000001'
 
-  await page.goto(path!)
+  await page.goto(path)
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await page.waitForLoadState('networkidle')
@@ -63,8 +60,9 @@ test('opening the planning panel writes nothing', async ({ page }) => {
 test('Activity sits below Comments, collapsed, and loads when opened', async ({
   page,
 }) => {
-  const path = process.env.E2E_PLANNING_TASK_PATH
-  test.skip(!path, 'set E2E_PLANNING_TASK_PATH to an existing task')
+  const path =
+    process.env.E2E_PLANNING_TASK_PATH ??
+    '/projects/harbor-pine/online-store/tasks?task=e2e0e2e0-0000-4000-8000-000000000001'
 
   const isFeedRead = (url: string) => {
     const parsed = new URL(url)
@@ -78,7 +76,7 @@ test('Activity sits below Comments, collapsed, and loads when opened', async ({
     if (isFeedRead(request.url())) feedReads.push(request.url())
   })
 
-  await page.goto(path!)
+  await page.goto(path)
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
 

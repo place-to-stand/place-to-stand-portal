@@ -8,7 +8,6 @@ export {
 export {
   BulkActionBar,
   type BulkBarAction,
-  type BulkBarSelection,
   type BulkOptimistic,
   type RunBulkAction,
 } from './bulk-action-bar'

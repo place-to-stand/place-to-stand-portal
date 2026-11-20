@@ -4,17 +4,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Editor } from '@tiptap/react'
 
-// --- Hooks ---
 import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
-// --- Icons ---
 import { ExternalLinkIcon } from '@/components/tiptap-icons/external-link-icon'
 import { LinkIcon } from '@/components/tiptap-icons/link-icon'
 import { TrashIcon } from '@/components/tiptap-icons/trash-icon'
 import { CopyIcon } from '@/components/tiptap-icons/copy-icon'
 import { PencilIcon } from '@/components/tiptap-icons/pencil-icon'
 
-// --- UI Primitives ---
 import { Button, ButtonGroup } from '@/components/tiptap-ui-primitive/button'
 import { Separator } from '@/components/tiptap-ui-primitive/separator'
 import {
@@ -23,7 +20,6 @@ import {
   CardItemGroup,
 } from '@/components/tiptap-ui-primitive/card'
 
-// --- Lib ---
 import { sanitizeUrl } from '@/lib/tiptap-utils'
 
 import './link-floating-menu.css'

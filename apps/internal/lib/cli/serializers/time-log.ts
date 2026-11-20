@@ -2,7 +2,7 @@ import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 
 import { isoTimestamp } from './timestamp'
 
-export type CliTimeLog = {
+type CliTimeLog = {
   id: string
   projectId: string
   userId: string

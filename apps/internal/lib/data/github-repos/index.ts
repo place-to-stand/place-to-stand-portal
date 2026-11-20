@@ -6,7 +6,7 @@ import type { AppUser } from '@/lib/auth/session'
 import type { GitHubRepoLink } from '@/lib/types/github'
 
 /** The signed-in user performing the link/unlink; the role is never assumed. */
-export type RepoLinkActor = Pick<AppUser, 'id' | 'role'>
+type RepoLinkActor = Pick<AppUser, 'id' | 'role'>
 
 /**
  * Get repos linked to a project
@@ -57,7 +57,7 @@ export async function getReposForProjects(
 }
 
 /** `db` or an open transaction, so a sheet save can write links in its own. */
-export type RepoLinkExecutor = typeof db | DbTx
+type RepoLinkExecutor = typeof db | DbTx
 
 /** What a link row needs, resolved from GitHub before any write. */
 export type RepoLinkInput = {

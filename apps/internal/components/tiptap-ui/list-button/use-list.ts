@@ -4,15 +4,12 @@ import { useCallback, useEffect, useState } from 'react'
 import { type Editor } from '@tiptap/react'
 import { NodeSelection, TextSelection } from '@tiptap/pm/state'
 
-// --- Hooks ---
 import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
-// --- Icons ---
 import { ListIcon } from '@/components/tiptap-icons/list-icon'
 import { ListOrderedIcon } from '@/components/tiptap-icons/list-ordered-icon'
 import { ListTodoIcon } from '@/components/tiptap-icons/list-todo-icon'
 
-// --- Lib ---
 import {
   findNodePosition,
   isNodeInSchema,
@@ -151,7 +148,7 @@ export function toggleList(editor: Editor | null, type: ListType): boolean {
     let state = view.state
     let tr = state.tr
 
-    // No selection, find the the cursor position
+    // No selection, find the cursor position
     if (state.selection.empty || state.selection instanceof TextSelection) {
       const pos = findNodePosition({
         editor,

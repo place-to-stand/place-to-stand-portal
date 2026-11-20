@@ -9,6 +9,9 @@ import { expectHealthy } from './helpers'
  * back. Run only with E2E_WRITES=1.
  */
 test.skip(!process.env.E2E_WRITES, 'set E2E_WRITES=1 on a throwaway database')
+// Wide enough to show all four columns: a drag back from Done needs both ends
+// on screen.
+test.use({ viewport: { width: 1600, height: 1000 } })
 
 const CORNER = { x: 10, y: 6 }
 const column = (page: Page, id: string) =>

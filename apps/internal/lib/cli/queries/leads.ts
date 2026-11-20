@@ -35,7 +35,7 @@ const leadFields = {
   currentStageEnteredAt: leads.currentStageEnteredAt,
   resolvedAt: leads.resolvedAt,
   convertedAt: leads.convertedAt,
-  // A won lead's client is its company (0111).
+  // A won and converted lead's client is its company.
   convertedToClientId: sql<
     string | null
   >`case when ${leads.convertedAt} is not null then ${leads.companyId} end`,
@@ -60,7 +60,7 @@ export type CliLeadRow = Pick<
   companyWebsite: string | null
 }
 
-export type CliLeadFilters = {
+type CliLeadFilters = {
   status?: LeadStatusValue
   assigneeId?: string
   search?: string

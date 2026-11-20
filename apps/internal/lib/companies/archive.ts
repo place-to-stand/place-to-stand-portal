@@ -76,7 +76,7 @@ export async function setCompanyArchived(
   }
 
   // Archiving a former client turns off its people's portal access, which
-  // is an admin's call (audit RBAC-8).
+  // is an admin's call.
   if (archived && !roleCan(actor.role, 'clients.manage')) {
     const [former] = await db
       .select({ id: companies.id })

@@ -19,7 +19,7 @@ import {
   type StaffOrPersonCandidate,
 } from './staff-or-person-picker'
 
-export type ClientOriginationPickerProps = {
+type ClientOriginationPickerProps = {
   selectedUser: PartnerUserOption | null
   selectedContact: OriginationContactOption | null
   availableUsers: PartnerUserOption[]

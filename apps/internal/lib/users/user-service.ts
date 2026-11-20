@@ -14,46 +14,8 @@ import {
 } from '@/lib/email/send-portal-invite'
 import { serverEnv } from '@/lib/env.server'
 
-export type AvatarFinalizationResult = {
-  normalizedPath: string | null
-}
-
 export function generateTemporaryPassword() {
   return randomBytes(18).toString('base64url').slice(0, 18)
-}
-
-export async function finalizeUserAvatar(options: {
-  client: ReturnType<typeof getSupabaseServiceClient>
-  avatarPath?: string | null
-  userId: string
-}): Promise<AvatarFinalizationResult> {
-  const { client, avatarPath, userId } = options
-
-  if (!avatarPath) {
-    return { normalizedPath: null }
-  }
-
-  try {
-    await ensureAvatarBucket(client)
-    const normalizedPath = await moveAvatarToUserFolder({
-      client,
-      path: avatarPath,
-      userId,
-    })
-    return { normalizedPath }
-  } catch (error) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.error('Failed to finalize avatar for user', error)
-    }
-
-    try {
-      await deleteAvatarObject({ client, path: avatarPath })
-    } catch (cleanupError) {
-      console.error('Failed to clean up pending avatar', cleanupError)
-    }
-
-    return { normalizedPath: null }
-  }
 }
 
 /**
@@ -66,8 +28,7 @@ export async function finalizeUserAvatar(options: {
  * `type: 'magiclink'` and not `'invite'` — the auth user already exists by the
  * time this runs, and `'invite'` is for creating one.
  *
- * Throws on failure so callers can roll back; both call sites already treat a
- * failed invite as a failed operation.
+ * Throws on failure so callers can roll back.
  */
 export async function dispatchPortalInvite(options: {
   email: string
@@ -111,10 +72,10 @@ export async function dispatchPortalInvite(options: {
 }
 
 /**
- * Internal admin invite: unchanged temp-password flow.
+ * Staff invite (Admin or Sales): the temporary-password flow.
  *
- * `baseUrl` must be the internal app. Passing the client portal here is the bug
- * this split exists to prevent — admins sign in at a different origin.
+ * `baseUrl` must be the internal app, never the client portal: staff sign in
+ * at a different origin.
  */
 export async function dispatchAdminInvite(options: {
   email: string

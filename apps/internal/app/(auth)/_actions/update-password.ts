@@ -11,9 +11,9 @@ import { newPasswordPairSchema } from '@/lib/auth/password'
 
 const schema = newPasswordPairSchema
 
-export type CompletePasswordResetInput = z.infer<typeof schema>
+type CompletePasswordResetInput = z.infer<typeof schema>
 
-export type CompletePasswordResetResult = {
+type CompletePasswordResetResult = {
   error?: string
 }
 
@@ -21,7 +21,7 @@ export async function completePasswordReset(
   input: CompletePasswordResetInput
 ): Promise<CompletePasswordResetResult> {
   // Any internal-portal user resets their own password here. requireUser() is
-  // admin-only and would bounce a SALES user to the leads board mid-reset.
+  // admin-only and would bounce a SALES user to their home page mid-reset.
   const user = await requireCrmUser()
   const parsed = schema.safeParse(input)
 

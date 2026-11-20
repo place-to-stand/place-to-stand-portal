@@ -50,7 +50,7 @@ export default async function LeadsBoardPage({
 
   // Deep-link resolution: the board holds every active lead, so a uuid param
   // that isn't on it is either archived (cross-redirect so shared links keep
-  // working, submissions precedent) or gone (not-found notice).
+  // working) or gone (not-found notice).
   let leadNotFound = false
   if (
     leadParam &&

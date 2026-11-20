@@ -13,7 +13,7 @@ type SortableTableHeadProps = {
   field: string
   /** Current validated `?sort=` value (undefined = view default). */
   sort: string | undefined
-  /** The view's default sort, e.g. 'name:asc' — its column shows the arrow on load (PW3). */
+  /** The view's default sort, e.g. 'name:asc'. Its column shows the arrow on load. */
   defaultSort: SortValue
   /** Receives the next `?sort=` value; undefined = back to default (URL param cleared). */
   onSortChange: (next: SortValue | undefined) => void
@@ -33,10 +33,9 @@ function parseSort(value: string | undefined, fallback: SortValue) {
 }
 
 /**
- * Column-header sort control (PRD 004 §03, D6 revised). Only allowlisted
- * columns render this — plain `TableHead` elsewhere IS the allowlist.
- * Click cycles asc → desc → default; the default-sorted column always
- * shows its direction arrow (PW3).
+ * Column-header sort control. Only allowlisted columns render this; a plain
+ * `TableHead` marks a column that cannot sort. A click cycles asc, desc, then
+ * back to the default, and the default-sorted column always shows its arrow.
  */
 export function SortableTableHead({
   field,
@@ -77,8 +76,8 @@ export function SortableTableHead({
     onSortChange(next)
   }
 
-  // When the param is unset, the default column reads as sorted (PW3) —
-  // expose that to AT too.
+  // When the param is unset, the default column reads as sorted, for
+  // assistive tech too.
   const showAsSorted =
     isActive && (sort !== undefined || defaultParsed.field === field)
 

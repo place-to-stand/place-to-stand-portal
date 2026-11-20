@@ -34,7 +34,7 @@ export type CapabilityWithEndpoints = {
   mcpTools: string[]
 }
 
-export type PermissionsRegistry = {
+type PermissionsRegistry = {
   areas: { area: CapabilityArea; capabilities: CapabilityWithEndpoints[] }[]
   /** Admin-only endpoints, by the section of the app they belong to. */
   adminOnly: { section: string; endpoints: Endpoint[] }[]

@@ -11,8 +11,7 @@ import postgres from 'postgres'
  * person: their open session stops working on the next page load, API call
  * and CLI request (bearer token); a fresh sign-in link doesn't get them in;
  * switching back on does. (Client sign-ins can't use this app at all; the
- * client portal's view drops a switched-off sign-in, checked by
- * scripts/check-portal-role.mjs.) Writes: E2E_WRITES only, local only.
+ * client portal's view drops a switched-off sign-in.) Writes: E2E_WRITES only, local only.
  */
 
 test.skip(!process.env.E2E_WRITES, 'set E2E_WRITES=1 on a throwaway database')

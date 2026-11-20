@@ -21,7 +21,7 @@ import {
 } from '@/lib/business/settings-form'
 import { db } from '@/lib/db'
 
-export type SaveBusinessSettingsResult =
+type SaveBusinessSettingsResult =
   | { ok: true }
   | {
       ok: false

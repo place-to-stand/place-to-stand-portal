@@ -34,7 +34,7 @@ const TABS = {
   timeLogs: { segment: 'time-logs' },
 } as const
 
-export type ProjectTab = keyof typeof TABS
+type ProjectTab = keyof typeof TABS
 
 type ProjectTabRouteArgs = {
   tab: ProjectTab

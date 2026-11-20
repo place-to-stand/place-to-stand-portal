@@ -91,7 +91,7 @@ export function InvoicesManagementTable({
     [clients]
   )
 
-  // Run raw params through the type guard (R4): an invalid ?status= is
+  // Run raw params through the type guard: an invalid ?status= is
   // ignored by the server, so it must not count as an active filter.
   const hasActiveFilter =
     isInvoiceStatus(searchParams.get('status') ?? undefined) ||
@@ -100,10 +100,6 @@ export function InvoicesManagementTable({
   const emptyMessage = hasActiveFilter
     ? 'No invoices match the current filters.'
     : EMPTY_MESSAGES[mode]
-
-  // -------------------------------------------------------------------------
-  // Sheet handlers
-  // -------------------------------------------------------------------------
 
   // Resolve the record from the page's fresh props so router.refresh() (e.g.
   // after send/unsend/void) re-renders the open sheet with the latest row;
@@ -155,10 +151,6 @@ export function InvoicesManagementTable({
     [clear, selectedId]
   )
 
-  // -------------------------------------------------------------------------
-  // Archive handlers
-  // -------------------------------------------------------------------------
-
   const handleRequestDelete = (invoice: InvoiceWithClient) => {
     if (invoice.deleted_at || isPending) return
     setDeleteTarget(invoice)
@@ -207,10 +199,6 @@ export function InvoicesManagementTable({
     })
   }
 
-  // -------------------------------------------------------------------------
-  // Restore handlers
-  // -------------------------------------------------------------------------
-
   const handleRestore = (invoice: InvoiceWithClient) => {
     if (!invoice.deleted_at || isPending) return
 
@@ -246,10 +234,6 @@ export function InvoicesManagementTable({
   const handleRefresh = useCallback(() => {
     router.refresh()
   }, [router])
-
-  // -------------------------------------------------------------------------
-  // Pagination
-  // -------------------------------------------------------------------------
 
   const handlePageChange = usePageParam()
 

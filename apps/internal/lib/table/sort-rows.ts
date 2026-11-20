@@ -2,15 +2,15 @@
  * In-memory column sort for lists that hold every row on the client (or
  * fetch them all on the server). Client-safe, no imports.
  *
- * A column's key is a string (compared A-Z, any case), a number or null.
- * Null, a blank string or NaN means the row has no value for the column (the
- * cell shows a dash): it sorts last in both directions, as the SQL lists do
- * (NULLS LAST). Rows with equal keys keep
- * the order they arrived in, so the view's default order breaks ties.
+ * A column's key is a string (compared A-Z, any case), a number, a boolean
+ * or null. Null, a blank string or NaN means the row has no value for the
+ * column (the cell shows a dash): it sorts last in both directions, as the
+ * SQL lists do (NULLS LAST). Rows with equal keys keep the order they
+ * arrived in, so the view's default order breaks ties.
  */
 export type SortKey = string | number | boolean | null | undefined
 
-export type SortDirection = 'asc' | 'desc'
+type SortDirection = 'asc' | 'desc'
 
 /** Null, undefined, a blank string and NaN are all "no value". */
 function normalize(value: SortKey): string | number | boolean | null {
@@ -20,7 +20,7 @@ function normalize(value: SortKey): string | number | boolean | null {
   return value
 }
 
-export function compareSortKeys(left: SortKey, right: SortKey): number {
+function compareSortKeys(left: SortKey, right: SortKey): number {
   const a = normalize(left)
   const b = normalize(right)
   if (a === null || b === null) {

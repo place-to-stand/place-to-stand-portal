@@ -147,15 +147,31 @@ test('hour blocks, invoices and time logs: archive and restore', async ({
     ['/time-logs', 'time logs'],
   ] as const) {
     await open(page, list)
-    const rows = page.locator('tbody tr:has(td[data-slot=table-select-cell])')
+    const selectable = page.locator(
+      'tbody tr:has(td[data-slot=table-select-cell])'
+    )
+    // Paid invoices can't be archived, so pick from the rest.
+    const rows =
+      list === '/invoices'
+        ? selectable.filter({ hasNotText: 'Paid' })
+        : selectable
     const before = await rows.count()
+    const picked = [
+      (await rows.nth(0).locator('td').nth(1).innerText()).trim(),
+      (await rows.nth(1).locator('td').nth(1).innerText()).trim(),
+    ]
     await rows.nth(0).locator('td[data-slot=table-select-cell]').click()
     await rows.nth(1).locator('td[data-slot=table-select-cell]').click()
     await confirmArchive(page)
     await expectToast(page, `2 ${plural} archived`)
 
+    // Both lists sort newest first, so the two just archived lead the
+    // archive, above anything archived before.
     await open(page, `${list}/archive`)
-    await page.getByRole('checkbox', { name: /^Select all/ }).click()
+    await expect(rows.nth(0)).toContainText(picked[0])
+    await expect(rows.nth(1)).toContainText(picked[1])
+    await rows.nth(0).locator('td[data-slot=table-select-cell]').click()
+    await rows.nth(1).locator('td[data-slot=table-select-cell]').click()
     await bar(page).getByRole('button', { name: 'Restore' }).click()
     await expectToast(page, `2 ${plural} restored`)
 

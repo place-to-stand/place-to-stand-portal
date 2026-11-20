@@ -28,9 +28,7 @@ import {
   TASK_DEPLOYMENTS_KEY,
 } from './use-task-deployments'
 
-// ---------------------------------------------------------------------------
 // Terminal statuses that don't need polling
-// ---------------------------------------------------------------------------
 
 const TERMINAL_STATUSES: string[] = [
   'plan_ready',
@@ -38,10 +36,6 @@ const TERMINAL_STATUSES: string[] = [
   'error',
   'cancelled',
 ]
-
-// ---------------------------------------------------------------------------
-// Compact status badge (matches deployment-card WorkerStatusBadge)
-// ---------------------------------------------------------------------------
 
 function CompactStatusBadge({
   status,
@@ -75,10 +69,6 @@ function CompactStatusBadge({
       return null
   }
 }
-
-// ---------------------------------------------------------------------------
-// Copy-to-clipboard button (tiny, inline)
-// ---------------------------------------------------------------------------
 
 function CopyButton({
   value,
@@ -120,10 +110,6 @@ function CopyButton({
   )
 }
 
-// ---------------------------------------------------------------------------
-// Single deployment row
-// ---------------------------------------------------------------------------
-
 function DeploymentRow({
   deployment,
   isPolled,
@@ -135,7 +121,6 @@ function DeploymentRow({
   onCancel: (deploymentId: string) => void
   isCancelling: boolean
 }) {
-  // Only poll the row that's marked as polled
   const { latestStatus, prUrl } = useWorkerStatus(
     isPolled ? deployment.id : null
   )
@@ -147,15 +132,12 @@ function DeploymentRow({
 
   return (
     <div className='group/deploy-row bg-background/60 flex items-center gap-2 rounded-md border px-2.5 py-1.5'>
-      {/* Plan ID */}
       <span className='text-muted-foreground text-overline shrink-0 font-mono'>
         {deployment.plan_id}
       </span>
 
-      {/* Status badge */}
       <CompactStatusBadge status={displayStatus} />
 
-      {/* GitHub issue link */}
       <a
         href={deployment.github_issue_url}
         target='_blank'
@@ -166,7 +148,6 @@ function DeploymentRow({
         <ExternalLink className='ml-0.5 inline h-3 w-3' />
       </a>
 
-      {/* PR link + copy buttons (for pr_created status) */}
       {displayPrUrl && (
         <div className='inline-flex shrink-0 items-center gap-1'>
           <a
@@ -187,10 +168,8 @@ function DeploymentRow({
         </div>
       )}
 
-      {/* Spacer */}
       <span className='flex-1' />
 
-      {/* Cancel button (working/implementing) */}
       {isCancellable && (
         <RowActionButton
           label='Cancel dispatch'
@@ -205,10 +184,6 @@ function DeploymentRow({
     </div>
   )
 }
-
-// ---------------------------------------------------------------------------
-// PlanDeploymentStatus — compact inline deployment list
-// ---------------------------------------------------------------------------
 
 const DEFAULT_VISIBLE = 2
 

@@ -2,19 +2,43 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "ignore": [
     "apps/internal/components/ui/**",
-    "apps/client/components/ui/**",
     "apps/internal/components/tiptap-*/**",
-    "apps/internal/hooks/use-composed-ref.ts",
-    "apps/internal/hooks/use-element-rect.ts",
-    "apps/internal/hooks/use-throttled-callback.ts",
-    "apps/internal/hooks/use-unmount.ts"
+    "apps/internal/hooks/use-composed-ref.ts"
   ],
-  "ignoreDependencies": ["server-only", "postcss-load-config"],
+  "ignoreDependencies": [
+    "server-only",
+    "postcss",
+    "postcss-load-config",
+    "postgres",
+    "eslint",
+    "@next/eslint-plugin-next",
+    "eslint-plugin-jsx-a11y",
+    "eslint-plugin-react",
+    "eslint-plugin-react-hooks",
+    "react"
+  ],
   "workspaces": {
-    ".": {},
+    ".": {
+      "entry": ["oxlint.config.mjs", "scripts/*.mjs", "e2e/global-setup.ts"]
+    },
+    "apps/*": {
+      "entry": ["oxlint.config.mjs"]
+    },
     "apps/internal": {
-      "entry": ["scripts/*.{ts,tsx}"],
+      "entry": ["oxlint.config.mjs", "scripts/*.{ts,tsx}"],
       "ignoreBinaries": ["tsx"]
+    },
+    "packages/*": {
+      "entry": ["oxlint.config.mjs"]
+    },
+    "packages/db": {
+      "entry": ["oxlint.config.mjs", "src/index.ts", "scripts/*.mjs"]
+    },
+    "packages/lint-config": {
+      "entry": ["oxlint.config.mjs", "scripts/*.mjs"]
     }
+  },
+  "ignoreIssues": {
+    "packages/lint-config/plugin.mjs": ["duplicates"]
   }
 }

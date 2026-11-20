@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils'
 import { TaskSelector } from './task-selector'
 import { UserSelectField } from './user-select-field'
 
-export type ProjectTimeLogFormProps = {
+type ProjectTimeLogFormProps = {
   isMutating: boolean
   disableSubmit: boolean
   formErrors: TimeLogFormErrors

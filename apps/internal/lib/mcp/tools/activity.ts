@@ -163,9 +163,9 @@ export function registerActivityTools(server: McpServer) {
         resolveActorId(user, actor),
       ])
 
-      // Billing activity moved from CLIENT to COMPANY (0113), and old client
-      // ids became company ids (0111): an agent asking the old way still
-      // finds it.
+      // Billing activity is stored under COMPANY with company ids: CLIENT is
+      // read as COMPANY and a legacy client id as its company's id, so an
+      // agent asking either way still finds it.
       const targetTypes = targetType
         ? [
             ...new Set(

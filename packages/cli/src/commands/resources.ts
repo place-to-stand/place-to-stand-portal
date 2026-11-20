@@ -8,7 +8,7 @@ type ProjectScopedOptions = { project: string; limit?: string }
 
 /**
  * Listings that differ only by name and path — optional search, capped limit.
- * Registered from a description rather than repeated four times.
+ * Registered from a description rather than repeated for each.
  */
 const SIMPLE_LISTS = [
   { name: 'clients', description: 'Read clients', path: 'api/cli/v1/clients' },

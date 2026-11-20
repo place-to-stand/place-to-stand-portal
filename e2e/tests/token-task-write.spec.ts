@@ -14,8 +14,9 @@ import { expect, test } from '@playwright/test'
  */
 test.skip(!process.env.E2E_WRITES, 'set E2E_WRITES=1 on a throwaway database')
 
-const ADMIN = process.env.E2E_ADMIN_EMAIL ?? 'jason@local.test'
-const OTHER = process.env.E2E_SALES_EMAIL ?? 'dave@local.test'
+const ADMIN = process.env.E2E_ADMIN_EMAIL ?? 'ada@example.com'
+// Another admin: an assignee must be able to open the project.
+const OTHER = process.env.E2E_OTHER_ADMIN_EMAIL ?? 'grace@example.com'
 
 function localSupabase() {
   const file = path.join(__dirname, '../../apps/internal/.env.local')
@@ -87,7 +88,7 @@ test('a token task write assigned to someone else succeeds with its side effects
     },
   })
   // Was a 500 (a redirect from a cookie-only guard) though the row saved.
-  expect(created.status()).toBe(201)
+  expect(created.status(), await created.text()).toBe(201)
   const body = (await created.json()) as {
     ok: boolean
     data: { id: string; assigneeIds: string[] }

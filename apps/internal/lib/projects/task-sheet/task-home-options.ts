@@ -12,7 +12,7 @@ import type { TaskLead, TaskLeadOption } from '@/lib/types'
  * its entity's icon) and its value says which: `project:<id>` or
  * `lead:<id>`.
  */
-export type TaskHomeValue = { projectId: string | null; leadId: string | null }
+type TaskHomeValue = { projectId: string | null; leadId: string | null }
 
 const PROJECT_PREFIX = 'project:'
 const LEAD_PREFIX = 'lead:'

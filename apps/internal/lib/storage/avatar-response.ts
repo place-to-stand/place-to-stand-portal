@@ -20,9 +20,8 @@ const UNVERSIONED_CACHE = 'private, max-age=300, stale-while-revalidate=2592000'
 
 /**
  * Serve a person's photo from our own URL. Each upload gets a new storage
- * path, so the path is the ETag. The old route redirected to a fresh signed
- * Supabase URL on every request, which the browser saw as a new image each
- * time; that's what made photos load in slowly.
+ * path, so the path is the ETag. Redirecting to a fresh signed Supabase URL
+ * instead would look like a new image to the browser on every request.
  */
 export async function avatarImageResponse(
   request: NextRequest,

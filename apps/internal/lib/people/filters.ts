@@ -2,9 +2,9 @@ import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 import { firstParam } from '@/lib/pagination/params'
 
-// PRD 004 §03: per-view sort allowlist (D6/R5). Each field here has a
-// matching descriptor (order expr + cursor encode/compare) in the query.
-// An unknown field (e.g. the retired `clients`) falls back to the default.
+// Per-view sort allowlist. Each field here has a matching descriptor (order
+// expr + cursor encode/compare) in the query. An unknown field falls back to
+// the default.
 const CONTACT_SORT_FIELDS = [
   'name',
   'companies',
@@ -74,12 +74,12 @@ export const isRoleFilter = (
   value: string
 ): value is (typeof ROLE_FILTER_VALUES)[number] =>
   (ROLE_FILTER_VALUES as readonly string[]).includes(value)
-export const isSignInFilter = (value: string): value is SignInFilter =>
+const isSignInFilter = (value: string): value is SignInFilter =>
   (SIGN_IN_FILTER_VALUES as readonly string[]).includes(value)
 
 type RawSearchParams = Record<string, string | string[] | undefined>
 
-export type ContactsSearchParams = {
+type ContactsSearchParams = {
   /** 1-based page for the offset-paginated contacts tables. */
   page: number
   search: string | undefined
@@ -107,7 +107,7 @@ export function parseContactsSearchParams(
   const searchParam = firstParam(params.q)?.trim()
   const clientIdParam = firstParam(params.companyId)?.trim()
   const typeParam = firstParam(params.type)?.trim() ?? ''
-  // `?role=`; old links used `?signIn=` with the same values.
+  // `?role=`, or `?signIn=` (older links) with the same values.
   const signInParam =
     (firstParam(params.role) ?? firstParam(params.signIn))?.trim() ?? ''
   const sort = parseSortParam(

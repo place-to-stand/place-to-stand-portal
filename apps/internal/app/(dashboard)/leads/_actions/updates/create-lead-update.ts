@@ -10,9 +10,7 @@ import {
 import type { LeadActionResult } from '../types'
 import { revalidateLeadsPath } from '@/lib/leads/revalidate'
 
-export type { CreateLeadUpdateInput } from '@/lib/leads/lead-update-core'
-
-export type CreateLeadUpdateResult = LeadActionResult & {
+type CreateLeadUpdateResult = LeadActionResult & {
   updateId?: string
 }
 

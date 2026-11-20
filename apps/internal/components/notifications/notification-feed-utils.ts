@@ -18,7 +18,7 @@ export const FAILURE_TITLES: Record<FeedAction['action'], string> = {
   restore: 'Unable to restore notifications',
 }
 
-export type FeedAction = {
+type FeedAction = {
   action: 'read' | 'unread' | 'archive' | 'restore'
   ids?: string[]
 }
@@ -61,7 +61,7 @@ async function postOne(body: FeedAction) {
 }
 
 /** Applies an action to the cached feed so the UI updates before the server answers. */
-export function applyLocally(
+function applyLocally(
   feed: NotificationFeed,
   { action, ids }: FeedAction,
   filter: NotificationFilter

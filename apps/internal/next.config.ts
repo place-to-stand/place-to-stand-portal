@@ -79,7 +79,7 @@ const nextConfig: NextConfig = {
       to('/settings', '/settings/business'),
       to('/reference/templates', '/reference/templates/emails'),
       to('/reference/templates/notifications', '/reference/templates/chat'),
-      // Reference pages, once under Admin.
+      // Reference pages at their Admin addresses.
       to('/settings/permissions', '/reference/permissions'),
       to('/settings/templates', '/reference/templates/emails'),
       to('/settings/templates/:path*', '/reference/templates/:path*'),
@@ -103,7 +103,7 @@ const nextConfig: NextConfig = {
       to('/settings/users/archive', '/people'),
       to('/settings/users/activity', '/people/activity'),
       to('/settings/projects', '/projects'),
-      // The project Overview and Scope tabs are gone: the board is Tasks.
+      // A project has no Overview or Scope tab: the board is Tasks.
       to(
         '/projects/:clientSlug/:projectSlug/overview',
         '/projects/:clientSlug/:projectSlug/tasks'
@@ -120,8 +120,8 @@ const nextConfig: NextConfig = {
     ]
   },
   async rewrites() {
-    // PostHog reverse proxy to avoid ad blockers
-    // The relay path must match the api_host in instrumentation-client.ts
+    // PostHog reverse proxy, so ad blockers don't drop events. The relay
+    // path must match `api_host` in instrumentation-client.ts.
     const posthogHost =
       process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com'
     return [

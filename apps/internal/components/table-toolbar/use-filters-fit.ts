@@ -60,7 +60,7 @@ function onFiltersButton(): boolean {
   )
 }
 
-export type FiltersFit = {
+type FiltersFit = {
   /** The filters sit in the Filters button instead of the row. */
   folded: boolean
   /**

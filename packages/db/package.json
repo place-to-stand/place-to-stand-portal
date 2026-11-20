@@ -29,7 +29,6 @@
   "devDependencies": {
     "@pts/lint-config": "^0.1.0",
     "dotenv": "^18.0.10",
-    "dotenv-cli": "^11.1.0",
     "drizzle-kit": "^0.31.11",
     "typescript": "^6.0.3"
   }

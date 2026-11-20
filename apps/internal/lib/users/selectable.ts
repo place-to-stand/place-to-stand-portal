@@ -8,7 +8,7 @@
  * users (`deleted_at`) are excluded for the same reason. Accepts both the
  * snake_case `DbUser` shape and the camelCase option shapes.
  */
-export type SelectableUserFlags = {
+type SelectableUserFlags = {
   deleted_at?: string | null
   disabled_at?: string | null
   deletedAt?: string | null

@@ -8,12 +8,12 @@ import { archiveFromSheetMenu } from './helpers'
  * edit sheet re-baselines, so a second keep-open save goes through (no
  * "someone else saved" refusal) and closing asks nothing.
  * Runs only with E2E_WRITES=1, against a throwaway database with a client
- * company ("Seed Client") and one of its projects.
+ * company and one of its projects (the seed's "Harbor & Pine Coffee").
  */
 test.skip(!process.env.E2E_WRITES, 'set E2E_WRITES=1 on a throwaway database')
 
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
-const CLIENT = process.env.E2E_CLIENT_NAME ?? 'Seed Client'
+const CLIENT = process.env.E2E_CLIENT_NAME ?? 'Harbor & Pine Coffee'
 
 const keepOpenButton = (sheet: Locator) =>
   sheet.getByRole('button', { name: /^(Save|Create) and keep open/ })
@@ -133,7 +133,7 @@ test('task: create, then two keep-open edits, then close clean', async ({
   await pickOption(
     page,
     sheet.getByRole('combobox', { name: 'Project or Lead' }),
-    /Seed Project/
+    /Online store/
   )
   await keepOpen(page, sheet, /Task created/)
   const id = await expectBecameRecord(page, sheet, 'task')

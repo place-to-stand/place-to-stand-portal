@@ -25,7 +25,7 @@ const deleteLeadUpdateSchema = z.object({
   leadId: z.string().uuid(),
 })
 
-export type DeleteLeadUpdateInput = z.infer<typeof deleteLeadUpdateSchema>
+type DeleteLeadUpdateInput = z.infer<typeof deleteLeadUpdateSchema>
 
 export async function deleteLeadUpdate(
   input: DeleteLeadUpdateInput

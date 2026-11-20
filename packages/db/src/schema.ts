@@ -22,10 +22,6 @@ import {
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 
-// =============================================================================
-// ENUMS
-// =============================================================================
-
 export const taskStatus = pgEnum('task_status', [
   'ON_DECK',
   'IN_PROGRESS',
@@ -76,7 +72,6 @@ export const leadSourceType = pgEnum('lead_source_type', [
   'EVENT', // Reserved: for future event-based lead capture
 ])
 
-// OAuth enums
 export const oauthProvider = pgEnum('oauth_provider', [
   'GOOGLE',
   'GITHUB',
@@ -108,7 +103,6 @@ export const oauthConnectionStatus = pgEnum('oauth_connection_status', [
   'PENDING_REAUTH',
 ])
 
-// Invoice status
 export const invoiceStatus = pgEnum('invoice_status', [
   'DRAFT',
   'SENT',
@@ -118,10 +112,8 @@ export const invoiceStatus = pgEnum('invoice_status', [
 ])
 
 /**
- * How a logged lead interaction happened.
- * Kept deliberately small at launch — see PRD 005 D3. TEXT_MESSAGE (SMS /
- * iMessage) was added Sep 2026; direction (inbound vs outbound) and
- * artifact-sent types are still deferred to PRD 005 §07.
+ * How a logged lead interaction happened. Kept deliberately small: there is
+ * no direction (inbound vs outbound) and no artifact-sent type.
  */
 export const leadUpdateType = pgEnum('lead_update_type', [
   'MEETING',
@@ -142,18 +134,14 @@ export const workerStatus = pgEnum('worker_status', [
   'cancelled',
 ])
 
-// =============================================================================
-// CORE TABLES
-// =============================================================================
-
 export const users = pgTable(
   'users',
   {
     id: uuid().primaryKey().notNull(),
     /** The sign-in email (the auth provider's); the person's own email is on their contact. */
     email: text().notNull(),
-    // A user is a person's sign-in. Their name is their contact's (0109
-    // dropped users.full_name): read it with personNameSql (@pts/db/names).
+    // A user is a person's sign-in. Their name is their contact's: read it
+    // with personNameSql (@pts/db/names).
     role: userRole().default('CLIENT').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`now()`)
@@ -222,8 +210,8 @@ export const companies = pgTable(
     uniqueIndex('uq_companies_staff')
       .on(table.isStaff)
       .where(sql`is_staff`),
-    // One live company per name (case-insensitive), so pickers and the lead
-    // backfill can't fork "Lasso Group" into two records.
+    // One live company per name (case-insensitive), so pickers can't fork
+    // "Lasso Group" into two records.
     uniqueIndex('idx_companies_name_unique')
       .using('btree', sql`lower(btrim(name))`)
       .where(sql`(deleted_at IS NULL)`),
@@ -238,10 +226,6 @@ export const companies = pgTable(
     }),
   ]
 )
-
-// =============================================================================
-// TAGS
-// =============================================================================
 
 /**
  * What a tag belongs to. Each kind of record has its own tags: a company's
@@ -671,7 +655,7 @@ export const taskAssignees = pgTable(
       name: 'task_assignees_user_id_fkey',
     }).onDelete('cascade'),
     unique('task_assignees_task_id_user_id_key').on(table.taskId, table.userId),
-    // A task has one (current) assignee (0103).
+    // A task has one (current) assignee.
     uniqueIndex('task_assignees_one_current_per_task')
       .on(table.taskId)
       .where(sql`(deleted_at IS NULL)`),
@@ -810,8 +794,7 @@ export const hourBlocks = pgTable(
     companyId: uuid('company_id').notNull(),
     /**
      * The invoice line that created this block (blocks made by hand have
-     * none). Its invoice is read through the line (0108 dropped the copied
-     * invoice_id).
+     * none). Its invoice is read through the line.
      */
     invoiceLineItemId: uuid('invoice_line_item_id'),
     notes: text('notes'),
@@ -855,7 +838,7 @@ export const hourBlocks = pgTable(
       'chk_hour_blocks_hours_purchased',
       sql`hours_purchased > 0 AND hours_purchased % 0.25 = 0`
     ),
-    // Created in 0042; declared here so the schema matches the database.
+    // Declared here so the schema matches the database.
     // The callback runs after the module loads, so the later table resolves.
     foreignKey({
       columns: [table.invoiceLineItemId],
@@ -1299,8 +1282,8 @@ export const leads = pgTable(
     index('idx_leads_assignee')
       .using('btree', table.assigneeId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
-    // One person per email is the contacts table's job now (a contact can
-    // have several leads), so live leads no longer need unique emails.
+    // One person per email is the contacts table's job (a contact can have
+    // several leads), so live leads don't need unique emails.
     foreignKey({
       columns: [table.assigneeId],
       foreignColumns: [users.id],
@@ -1368,8 +1351,8 @@ export const leadUpdates = pgTable(
     /**
      * The interaction's description, as TipTap HTML — the same convention as
      * `task_comments`: the dialog sanitizes before send and the timeline
-     * renderer sanitizes again before injecting. Rows written before the RTE
-     * landed hold plain text, which renders unchanged.
+     * renderer sanitizes again before injecting. Older rows hold plain text,
+     * which renders unchanged.
      */
     body: text().notNull(),
     /**
@@ -1396,7 +1379,7 @@ export const leadUpdates = pgTable(
   },
   table => [
     // Serves both the timeline render (ordered by occurred_at desc) and the
-    // derived last-touch aggregate in §03. Partial on deleted_at IS NULL, so
+    // derived last-touch aggregate. Partial on deleted_at IS NULL, so
     // soft-deleted rows are excluded by the index itself rather than filtered
     // after the fact.
     index('idx_lead_updates_lead_occurred')
@@ -1416,7 +1399,7 @@ export const leadUpdates = pgTable(
     }).onDelete('cascade'),
     // RESTRICT, not CASCADE: an update is an audit record of who contacted
     // whom, and users are disabled (`disabled_at`) rather than deleted in this
-    // codebase. Deliberately stricter than task_comments — see PRD 005 W2.
+    // codebase. Deliberately stricter than task_comments.
     foreignKey({
       columns: [table.authorId],
       foreignColumns: [users.id],
@@ -1456,7 +1439,7 @@ export const activityLogs = pgTable(
       'btree',
       table.createdAt.desc().nullsFirst().op('timestamptz_ops')
     ),
-    // Global per-entity feeds (/projects/activity, /clients/activity, …)
+    // Global per-entity feeds (/projects/activity, /companies/activity, …)
     // filter on target_type alone and page by created_at.
     index('idx_activity_logs_type_created_at').using(
       'btree',
@@ -1531,10 +1514,6 @@ export const activityOverviewCache = pgTable(
   ]
 )
 
-// =============================================================================
-// OAUTH CONNECTIONS
-// =============================================================================
-
 export const oauthConnections = pgTable(
   'oauth_connections',
   {
@@ -1585,10 +1564,6 @@ export const oauthConnections = pgTable(
     }).onDelete('cascade'),
   ]
 )
-
-// =============================================================================
-// GITHUB INTEGRATION
-// =============================================================================
 
 export const githubAppInstallationStatus = pgEnum(
   'github_app_installation_status',
@@ -1735,10 +1710,6 @@ export const githubRepoLinks = pgTable(
   ]
 )
 
-// =============================================================================
-// PROJECT INTEGRATION LINKS (Vercel / Supabase projects tagged onto projects)
-// =============================================================================
-
 /**
  * A portal project's link to an external hosting project (a Vercel project,
  * a Supabase project). Rows store only external identifiers, never the
@@ -1800,9 +1771,7 @@ export const projectIntegrationLinks = pgTable(
   ]
 )
 
-// =============================================================================
-// TASK DEPLOYMENTS (GitHub issue-based worker deployments per task)
-// =============================================================================
+// GitHub issue-based worker deployments, per task.
 
 export const taskDeployments = pgTable(
   'task_deployments',
@@ -1855,10 +1824,6 @@ export const taskDeployments = pgTable(
     }),
   ]
 )
-
-// =============================================================================
-// AI PLANNING SESSIONS
-// =============================================================================
 
 export const planningSessionStatus = pgEnum('planning_session_status', [
   'active',
@@ -1991,10 +1956,6 @@ export const planMessages = pgTable(
     }).onDelete('cascade'),
   ]
 )
-
-// =============================================================================
-// INVOICING (Product Catalog, Invoices, Line Items)
-// =============================================================================
 
 export const productCatalogItems = pgTable(
   'product_catalog_items',
@@ -2221,10 +2182,6 @@ export const invoiceLineItems = pgTable(
   ]
 )
 
-// =============================================================================
-// MARKETING FORM SUBMISSIONS
-// =============================================================================
-
 export const formSubmissionKind = pgEnum('form_submission_kind', [
   'audit',
   'contact',
@@ -2363,19 +2320,19 @@ export const formSubmissions = pgTable(
       onDelete: 'set null',
     }),
 
-    // Tombstone for "Delete forever": the row is PII-stripped rather than
-    // DELETEd so its unique session_key stays occupied — a late intake
-    // beacon conflicts with the tombstone and is discarded instead of
-    // resurrecting the "deleted" submission as a fresh row. Tombstones are
-    // excluded from every list/count and can never be restored.
+    // Tombstone: a row PII-stripped rather than DELETEd, so its unique
+    // session_key stays occupied and a late intake beacon conflicts with it
+    // and is discarded instead of resurrecting the submission as a fresh
+    // row. Tombstones are excluded from every list/count and can never be
+    // restored. No action in the app sets it.
     destroyedAt: timestamp('destroyed_at', {
       withTimezone: true,
       mode: 'string',
     }),
 
-    // Email delivery (PRD 008). `delivery_requested_at` is set only when the
-    // marketing site opts in with `deliver: true`, so rows that predate the
-    // cutover can never be picked up by the retry sweep.
+    // Email delivery. `delivery_requested_at` is set only when the marketing
+    // site opts in with `deliver: true`; rows without it are never picked up
+    // by the retry sweep.
     //
     // Each email has a lease and a stamp. A sender takes the lease first
     // (`*_email_claimed_at`, expiring so a crash mid-send is recoverable),
@@ -2437,10 +2394,6 @@ export const formSubmissions = pgTable(
       .where(sql`(deleted_at IS NULL AND contact_email IS NOT NULL)`),
   ]
 )
-
-// =============================================================================
-// RATE LIMITING
-// =============================================================================
 
 /**
  * Fixed-window counters for throttling unauthenticated actions (auth email
@@ -2553,14 +2506,10 @@ export const userDashboardLayouts = pgTable(
   ]
 )
 
-// =============================================================================
-// VIEWS
-// =============================================================================
-
 /**
  * Who can see which client in the client portal, derived from memberships:
  * a current, portal-enabled membership at the client's company, held by a
- * live Client sign-in (role CLIENT in force from user_role_terms, 0126; not
+ * live Client sign-in (role CLIENT in force from user_role_terms; not
  * switched off or archived).
  * The one source both portals read; there is nothing to keep in sync.
  */

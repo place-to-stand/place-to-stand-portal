@@ -46,7 +46,7 @@ export type CompanyBillingHandle = {
  * Never billed, billed now, billed with a stop scheduled (billed through the
  * end of this month), or billed before (stopped).
  */
-export type BillingMode = 'new' | 'live' | 'ending' | 'former'
+type BillingMode = 'new' | 'live' | 'ending' | 'former'
 
 type BillingContextValue = {
   /** Loading or failure of a live client's billing record. */

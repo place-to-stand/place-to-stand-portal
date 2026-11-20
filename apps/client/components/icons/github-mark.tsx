@@ -1,4 +1,4 @@
-// lucide-react dropped brand marks; simple-icons isn't a dependency of this
+// lucide-react has no brand marks and simple-icons isn't a dependency of this
 // app, so the mark is inlined directly (same path data the internal app's
 // GitHubReposSection pulls from simple-icons' siGithub, for visual parity).
 export function GitHubMark({ className }: { className?: string }) {

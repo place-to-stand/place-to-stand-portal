@@ -21,7 +21,7 @@ export type SheetViewer = {
 }
 
 /** A save someone else made while this sheet was open. */
-export type TheirSave = {
+type TheirSave = {
   userId: string
   name: string
   /** The viewer's own save, from another tab. */

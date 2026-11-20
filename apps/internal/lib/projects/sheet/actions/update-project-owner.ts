@@ -21,7 +21,7 @@ const updateProjectOwnerSchema = z.object({
   ownerId: z.string().uuid().nullable(),
 })
 
-export type UpdateProjectOwnerInput = z.infer<typeof updateProjectOwnerSchema>
+type UpdateProjectOwnerInput = z.infer<typeof updateProjectOwnerSchema>
 
 /**
  * Single-field owner swap for table-row controls (the landing's avatar

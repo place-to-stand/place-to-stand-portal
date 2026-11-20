@@ -36,7 +36,7 @@ export const FORM_SUBMISSION_STATUS_TOKENS: Record<
   captured: BADGE_TINTS.emerald,
 }
 
-/** Source column badges (PRD 008 §7). Always paired with the text label. */
+/** Source column badges. Always paired with the text label. */
 export const ATTRIBUTION_CHANNEL_TOKENS: Record<AttributionChannel, string> = {
   paid: BADGE_TINTS.rose,
   organic: BADGE_TINTS.emerald,
@@ -54,15 +54,14 @@ export const FORM_SUBMISSION_KIND_TOKENS: Record<FormSubmissionKind, string> = {
 }
 
 /**
- * D1 (PRD 001): only rows that warrant attention count as unacknowledged —
- * contact submissions (any status) and audits that reached
- * `completed`/`captured`. Subscribe signups always arrive `captured`, so they
+ * Only rows that warrant attention count as unacknowledged: contact
+ * submissions (any status) and audits that reached `completed`/`captured`. Subscribe signups always arrive `captured`, so they
  * flag through the status arm. In-progress and abandoned audits are noise at ad
  * volume and never flag.
  *
- * Terminology (2026-08-04 revision): the UI converges on the
- * "acknowledge" family everywhere — indicator/badge/filter say
- * "Unacknowledged", the actions are Acknowledge/Unacknowledge.
+ * Terminology: the UI uses the "acknowledge" family everywhere. The
+ * indicator, badge and filter say "Unacknowledged"; the actions are
+ * Acknowledge/Unacknowledge.
  *
  * Must stay in sync with the SQL predicates in
  * `apps/internal/lib/queries/form-submissions.ts` (`buildFilters`

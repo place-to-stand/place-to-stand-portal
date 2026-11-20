@@ -8,10 +8,10 @@ import { defineConfig, devices } from '@playwright/test'
  *
  *   E2E_BASE_URL    internal portal (default http://localhost:3003)
  *   E2E_PORTAL_URL  client portal   (default http://localhost:3011)
- *   E2E_WRITES=1    also run the tests that change data (use a throwaway
- *                   database, e.g. a rehearsal copy)
- *   E2E_PROD_COPY=1 also run checks that expect the production copy's
- *                   numbers (the September 2026 close)
+ *   E2E_WRITES=1    also run the tests that change data
+ *
+ * Start from the made-up data: `npm run test:e2e:seed` (wipes the local
+ * database), then both apps, then `E2E_WRITES=1 npm run test:e2e`.
  *
  * Sign-in uses one-time links from the local Supabase (global-setup.ts),
  * so no password is stored anywhere.
@@ -24,7 +24,7 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   fullyParallel: false,
   workers: 1,
-  reporter: [['list']],
+  reporter: [['list'], ['./no-skips-reporter.ts']],
   outputDir: path.join(__dirname, 'test-results'),
   globalSetup: './global-setup.ts',
   use: {

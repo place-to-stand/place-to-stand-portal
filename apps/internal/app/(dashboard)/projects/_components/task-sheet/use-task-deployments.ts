@@ -7,7 +7,7 @@ import type { DbTaskDeployment } from '@/lib/types'
 
 export const TASK_DEPLOYMENTS_KEY = 'task-deployments'
 
-export type TaskDeploymentsData = {
+type TaskDeploymentsData = {
   deployments: DbTaskDeployment[]
   isLoading: boolean
   queryKey: readonly string[]

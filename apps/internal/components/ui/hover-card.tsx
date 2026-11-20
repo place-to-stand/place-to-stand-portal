@@ -49,11 +49,10 @@ type HoverCardProps = {
   openDelay?: number
   closeDelay?: number
   /**
-   * Optional controlled mode (backward-compatible: uncontrolled when absent).
-   * Timer semantics are part of the contract: when the controlled `open`
-   * flips true, this instance's pending open/close timers are cancelled — a
-   * stale close timer from a previous hover must never fire after the parent
-   * opened the card.
+   * Optional controlled mode; uncontrolled when absent. Timer semantics are
+   * part of the contract: when the controlled `open` flips true, this
+   * instance's pending open/close timers are cancelled, so a stale close
+   * timer from a previous hover never fires after the parent opened the card.
    */
   open?: boolean
   onOpenChange?: (open: boolean) => void
@@ -111,7 +110,7 @@ function HoverCard({
     [openDelay, closeDelay, setOpenState]
   )
 
-  // Controlled-open cancels this instance's pending timers (R8): without
+  // Controlled-open cancels this instance's pending timers: without
   // this, sliding from another trigger leaves a stale close timer that fires
   // ~200ms after the parent force-opened this card and wipes it.
   React.useEffect(() => {
@@ -251,9 +250,8 @@ function HoverCardContent({
           // Tab still lands inside the popup.
           initialFocus={openType => (openType === 'keyboard' ? true : false)}
           className={cn(
-            // data-open/data-closed are Base UI's spelling of Radix's
-            // data-[state=*]. fill-mode-forwards holds the exit frame so the
-            // card doesn't blink back at full opacity before unmounting.
+            // fill-mode-forwards holds the exit frame so the card doesn't
+            // blink back at full opacity before unmounting.
             'bg-popover text-popover-foreground data-open:animate-in data-closed:animate-out data-closed:fill-mode-forwards data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 shadow-popover z-50 w-64 origin-(--transform-origin) rounded-md border p-4 outline-hidden',
             className
           )}

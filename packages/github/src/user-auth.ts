@@ -1,6 +1,5 @@
 /**
- * Proving a person can see a GitHub App installation (S2 in the PR #279
- * audit). An installation id in the install callback's URL is just a number
+ * Proving a person can see a GitHub App installation. An installation id in the install callback's URL is just a number
  * anyone can type, so the portal only saves one after the person signs in
  * to GitHub (OAuth, as the App) and GitHub lists that installation among
  * the ones their account can reach.

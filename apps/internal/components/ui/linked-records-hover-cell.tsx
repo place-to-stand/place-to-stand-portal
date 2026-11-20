@@ -79,8 +79,8 @@ const ROW_CLASS = 'flex items-center gap-2 px-3 py-2 text-sm'
 /**
  * A count that opens a HoverCard listing the records behind it — linked
  * clients on a contact, projects on a client, assignments on a user. Rows
- * open their record's sheet over the page when they carry a `sheet`; the
- * zero state is a muted number with no card.
+ * open their record's sheet over the page when they carry a `sheet`. A zero
+ * shows the shared dash (or `zeroLabel`) with no card.
  */
 export function LinkedRecordsHoverCell({
   count,

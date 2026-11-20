@@ -60,7 +60,7 @@ import {
 } from './save-lead-party'
 
 /** Someone else saved the lead after the sheet loaded it. */
-export const LEAD_SAVED_ELSEWHERE =
+const LEAD_SAVED_ELSEWHERE =
   'Someone else saved this lead. Reload to see their changes.'
 
 export type SaveLeadResult = {
@@ -80,7 +80,7 @@ export type SaveLeadResult = {
 }
 
 /**
- * The one create-and-update path for leads, with the acting admin injected
+ * The one create-and-update path for leads, with the acting user injected
  * rather than resolved from a session. Lives outside the `'use server'` module
  * for the same reason `saveTaskForActor` does: an `actor` parameter on a server
  * action would be attacker-controlled. The action resolves the actor from the
@@ -330,8 +330,8 @@ async function updateLead(
       { executor: tx, defer }
     )
   }
-  // Always store the company's own spelling, so a case-only edit can't
-  // drift from the linked record.
+  // Use the company's own spelling, so a case-only edit doesn't read as a
+  // change.
   if (company) {
     normalized = { ...normalized, companyName: company.name }
   }

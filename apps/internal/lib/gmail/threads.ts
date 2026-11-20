@@ -24,11 +24,11 @@ import {
 
 const GMAIL_API = 'https://gmail.googleapis.com/gmail/v1/users/me'
 /** Threads per account per page; "Load more" fetches the next page. */
-export const THREADS_PAGE_SIZE = 3
+const THREADS_PAGE_SIZE = 3
 /** Thread reads at once, well inside Gmail's per-user rate limit. */
 const CONCURRENCY = 5
 
-export type ViewerThreadsResult =
+type ViewerThreadsResult =
   | { state: 'not_connected' }
   | { state: 'reconnect'; accounts: GmailAccount[] }
   | {
@@ -149,8 +149,7 @@ async function threadsForConnection(
 /**
  * Gmail threads with any of `addresses`, read live from the viewer's own
  * connected Google accounts, newest first. Never another person's mailbox:
- * Jason chose (Nov 2026) that each viewer sees only their own mail. Nothing
- * is stored.
+ * each viewer sees only their own mail. Nothing is stored.
  */
 export async function listViewerThreadsWith(
   userId: string,

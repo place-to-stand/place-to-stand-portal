@@ -6,7 +6,7 @@
  * `readPageSize()` (page-size.server.ts) — the same SSR-cookie pattern as
  * the sidebar's `sidebar_state`, so the first paint already has the right
  * row count. Query-layer clamps import `DEFAULT_PAGE_SIZE`/`MAX_PAGE_SIZE`
- * from here so no list can drift to its own default again.
+ * from here so every list shares one default.
  */
 export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const
 
@@ -18,7 +18,7 @@ export const MAX_PAGE_SIZE: PageSizeOption = 100
 export const PAGE_SIZE_COOKIE = 'pts_page_size'
 export const PAGE_SIZE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
-export function isPageSizeOption(value: number): value is PageSizeOption {
+function isPageSizeOption(value: number): value is PageSizeOption {
   return (PAGE_SIZE_OPTIONS as readonly number[]).includes(value)
 }
 

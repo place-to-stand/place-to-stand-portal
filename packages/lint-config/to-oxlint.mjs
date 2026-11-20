@@ -1,8 +1,6 @@
 /**
  * Turns a config written in ESLint's flat format (base.mjs, next.mjs) into an
- * Oxlint config. We keep the flat format because it reads well and every
- * rule, option and file scope in it was checked against ESLint's output
- * when we moved (PR description, "Proof"). Each workspace's
+ * Oxlint config. We keep the flat format because it reads well. Each workspace's
  * oxlint.config.mjs is `export default toOxlint(<config>)`.
  *
  * How the formats differ, and what this does about it:
@@ -19,8 +17,8 @@
  * - `env` (the globals an object declares) carries over as is.
  * - A later object that sets only a rule's severity keeps its earlier
  *   options, as in ESLint (Oxlint would reset them: inheritOptions).
- * - Oxlint runs every rule at the severity it's given; `--max-warnings=0`
- *   made every warning fail, so `warn` becomes `error`.
+ * - Oxlint runs every rule at the severity it's given, and lint fails on any
+ *   problem, so `warn` becomes `error`.
  */
 import { createRequire } from 'node:module'
 import { join, matchesGlob } from 'node:path'
@@ -58,7 +56,7 @@ const JS_FALLBACK = {
   react: 'react-js',
 }
 
-/** ESLint rule ids that run from a JavaScript plugin, and their new id. */
+/** ESLint rule ids that run from a JavaScript plugin, and the id they run as. */
 const JS_RULES = {
   // Oxlint has no no-restricted-syntax: pts/restricted-syntax takes the
   // same options.
@@ -252,7 +250,6 @@ function inheritOptions(rules, files, earlierObjects) {
   }
 }
 
-/** Flat config objects → one Oxlint config. */
 /**
  * `react.version: 'detect'` as eslint-plugin-react resolves it (the React
  * installed where lint runs), since Oxlint only takes a version number.
@@ -272,6 +269,7 @@ function detectReactVersion(settings) {
   return { ...settings, react: { ...settings.react, version } }
 }
 
+/** Flat config objects → one Oxlint config. */
 export function toOxlint(flatConfig, { settings } = {}) {
   const objects = flatConfig.flat(Infinity)
   const ignorePatterns = []

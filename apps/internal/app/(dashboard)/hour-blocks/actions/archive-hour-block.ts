@@ -86,7 +86,7 @@ async function performSoftDeleteHourBlock(
 
   revalidatePath(HOUR_BLOCKS_PATH)
 
-  // PRD 002 section 05: archiving a closed-month block shows as drift.
+  // Archiving a closed-month block shows as drift.
   const warning = await closedMonthWarning(user, [
     existingHourBlock.billing_month,
   ])

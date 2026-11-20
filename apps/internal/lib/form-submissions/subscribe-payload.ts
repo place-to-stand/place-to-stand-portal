@@ -35,7 +35,7 @@ export const subscribePayloadSchema = z.object({
   client: clientSchema,
 })
 
-export type SubscribePayload = z.infer<typeof subscribePayloadSchema>
+type SubscribePayload = z.infer<typeof subscribePayloadSchema>
 
 export function toSubscribeSubmissionRow(
   payload: SubscribePayload,
@@ -100,7 +100,7 @@ export function toSubscribeSubmissionRow(
     // its server, so our request header is its fetch agent, not the browser.
     userAgent: client.userAgent ?? requestUserAgent,
 
-    // No team notification or confirmation email for signups (for now).
+    // Signups get no team notification or confirmation email.
     deliveryRequestedAt: null,
   }
 }

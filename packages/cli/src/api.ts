@@ -125,7 +125,7 @@ export async function request<T>(
   }
 }
 
-export type PortalMeta = {
+type PortalMeta = {
   apiVersion: string
   supabaseUrl: string
   supabaseAnonKey: string

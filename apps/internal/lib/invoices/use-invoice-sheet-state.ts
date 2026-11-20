@@ -65,17 +65,13 @@ import {
   type SubmitButtonState,
 } from './invoice-ui-state'
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export type TaxRateData = {
   state: string
   rate: string
   label: string
 }
 
-export type UseInvoiceSheetStateArgs = {
+type UseInvoiceSheetStateArgs = {
   open: boolean
   onOpenChange: (open: boolean) => void
   onComplete: () => void
@@ -87,7 +83,7 @@ export type UseInvoiceSheetStateArgs = {
   taxRates: TaxRateData[]
 }
 
-export type UseInvoiceSheetStateReturn = {
+type UseInvoiceSheetStateReturn = {
   form: UseFormReturn<InvoiceFormValues>
   fieldArray: UseFieldArrayReturn<InvoiceFormValues, 'lineItems', 'id'>
   isEditing: boolean
@@ -121,10 +117,6 @@ export type UseInvoiceSheetStateReturn = {
   handleMoveLineItem: (fromIndex: number, toIndex: number) => void
   handleProductSelect: (index: number, productId: string) => void
 }
-
-// ---------------------------------------------------------------------------
-// Hook
-// ---------------------------------------------------------------------------
 
 const loadInvoice = (id: string) =>
   getJson<InvoiceWithLineItems>(`/api/invoices/${id}`)
@@ -210,10 +202,6 @@ export function useInvoiceSheetState({
     resetOnOpen: false,
   })
 
-  // ---------------------------------------------------------------------------
-  // Live totals computation via useWatch
-  // ---------------------------------------------------------------------------
-
   const watchedLineItems = useWatch({
     control: form.control,
     name: 'lineItems',
@@ -232,10 +220,6 @@ export function useInvoiceSheetState({
     )
     return computeInvoiceTotals(items, watchedTaxRate ?? 0)
   }, [watchedLineItems, watchedTaxRate])
-
-  // ---------------------------------------------------------------------------
-  // Reset and load
-  // ---------------------------------------------------------------------------
 
   // Load by version, not by object: a refresh hands over a new but equal
   // `invoice`, and reloading the version already shown (e.g. the one a
@@ -299,7 +283,8 @@ export function useInvoiceSheetState({
     }
 
     if (!invoiceId) {
-      // Create mode — check for proposal pre-fill data
+      // Create mode: start from the `invoice-prefill` sessionStorage entry when
+      // one is set.
       invoiceWithLineItemsRef.current = null
 
       let prefillData: InvoiceFormValues | null = null
@@ -388,13 +373,8 @@ export function useInvoiceSheetState({
     toast,
   ])
 
-  // ---------------------------------------------------------------------------
-  // Auto-fill: due date + tax rate based on selected client
-  // ---------------------------------------------------------------------------
-
   const watchedClientId = useWatch({ control: form.control, name: 'companyId' })
 
-  // Build a map of state → tax rate for lookup
   const taxRateMap = useMemo(() => {
     const map = new Map<string, TaxRateData>()
     for (const tr of taxRates) {
@@ -428,7 +408,6 @@ export function useInvoiceSheetState({
     [clients, form, taxRateMap]
   )
 
-  // Derive tax rate label for display
   const taxRateLabel = useMemo(() => {
     if (!watchedClientId) return null
     const selectedClient = clients.find(c => c.id === watchedClientId)
@@ -437,10 +416,6 @@ export function useInvoiceSheetState({
     if (!matchingRate) return null
     return matchingRate.label
   }, [watchedClientId, clients, taxRateMap])
-
-  // ---------------------------------------------------------------------------
-  // Server field errors
-  // ---------------------------------------------------------------------------
 
   const applyServerFieldErrors = useCallback(
     (fieldErrors?: Record<string, string[]>) => {
@@ -454,14 +429,6 @@ export function useInvoiceSheetState({
     },
     [form]
   )
-
-  // ---------------------------------------------------------------------------
-  // Sheet open/close
-  // ---------------------------------------------------------------------------
-
-  // ---------------------------------------------------------------------------
-  // Submit
-  // ---------------------------------------------------------------------------
 
   const reloadRecord = useReloadSheetRecord('invoice', invoice?.id ?? null)
   // Drop the edits and load the invoice (and its lines) as it is now.
@@ -620,10 +587,6 @@ export function useInvoiceSheetState({
     ]
   )
 
-  // ---------------------------------------------------------------------------
-  // Delete (archive)
-  // ---------------------------------------------------------------------------
-
   const handleRequestDelete = useCallback(() => {
     if (!invoice || invoice.deleted_at || isPending) {
       return
@@ -703,10 +666,6 @@ export function useInvoiceSheetState({
       }
     })
   }, [form, invoice, isPending, onComplete, onOpenChange, startSave, toast])
-
-  // ---------------------------------------------------------------------------
-  // Line item helpers
-  // ---------------------------------------------------------------------------
 
   const handleAddLineItem = useCallback(() => {
     fieldArray.append(createEmptyLineItem())
@@ -788,10 +747,6 @@ export function useInvoiceSheetState({
     [form, productCatalog]
   )
 
-  // ---------------------------------------------------------------------------
-  // Derived field states
-  // ---------------------------------------------------------------------------
-
   // Fields lock for either reason — a form that's still loading its line
   // items shouldn't be editable any more than one mid-save.
   const isBusy = isPending || isLoading
@@ -822,10 +777,6 @@ export function useInvoiceSheetState({
     () => deriveDeleteButtonState(isEditing, isPending, invoice),
     [invoice, isEditing, isPending]
   )
-
-  // ---------------------------------------------------------------------------
-  // Return
-  // ---------------------------------------------------------------------------
 
   return {
     form,
