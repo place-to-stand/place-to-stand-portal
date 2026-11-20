@@ -11,6 +11,7 @@ import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
 import { decryptToken, encryptToken } from '@/lib/oauth/encryption'
+import { markConnectionNeedsReauth } from '@/lib/oauth/needs-reauth'
 import {
   INTEGRATION_PROVIDERS,
   type ExternalProjectOption,
@@ -296,7 +297,23 @@ export async function listExternalProjectsForUser(
 
   const adapter = integrationProviderAdapters[provider]
   const results = await Promise.all(
-    tokens.map(({ token }) => adapter.listProjects(token))
+    tokens.map(({ connectionId, token }) =>
+      adapter.listProjects(token).catch(async (error: unknown) => {
+        // The provider refused a saved token: its owner reconnects it.
+        // Only a refused token: a 403 can be a team or organisation rule.
+        if (
+          (error instanceof VercelApiError &&
+            (error.status === 401 || error.invalidToken)) ||
+          (error instanceof SupabaseApiError && error.status === 401)
+        ) {
+          await markConnectionNeedsReauth(
+            connectionId,
+            `${provider} refused the token`
+          )
+        }
+        throw error
+      })
+    )
   )
 
   const byExternalId = new Map<string, ExternalProjectOption>()

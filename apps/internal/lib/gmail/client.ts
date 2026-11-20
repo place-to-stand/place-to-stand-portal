@@ -3,6 +3,9 @@ import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'
 import { refreshAccessToken } from '@/lib/oauth/google'
+import { markConnectionNeedsReauth } from '@/lib/oauth/needs-reauth'
+
+export { markConnectionNeedsReauth }
 
 /**
  * Error thrown when OAuth token refresh fails and user needs to reconnect
@@ -127,9 +130,11 @@ export async function getValidAccessToken(
       connectionId: conn.id,
     }
   } catch (error) {
-    // Token refresh failed - mark connection as needing reauth
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error'
+    // Only Google refusing the refresh token means the owner must reconnect.
+    // An outage, rate limit or network error is retried on the next sync.
+    if (!/invalid_grant|unauthorized_client/.test(errorMessage)) throw error
     await markConnectionNeedsReauth(conn.id, errorMessage)
     throw new OAuthReconnectRequiredError(
       `Gmail token refresh failed: ${errorMessage}`,
@@ -137,29 +142,6 @@ export async function getValidAccessToken(
       'GOOGLE'
     )
   }
-}
-
-/**
- * Mark a connection as needing re-authentication
- */
-export async function markConnectionNeedsReauth(
-  connectionId: string,
-  reason: string
-): Promise<void> {
-  const syncState = {
-    lastError: reason,
-    lastErrorAt: new Date().toISOString(),
-    needsReauth: true,
-  }
-
-  await db
-    .update(oauthConnections)
-    .set({
-      status: 'PENDING_REAUTH',
-      syncState,
-      updatedAt: new Date().toISOString(),
-    })
-    .where(eq(oauthConnections.id, connectionId))
 }
 
 // =============================================================================

@@ -13,7 +13,9 @@ const VERCEL_API = 'https://api.vercel.com'
 export class VercelApiError extends Error {
   constructor(
     message: string,
-    public readonly status: number
+    public readonly status: number,
+    /** Vercel's flag for a token it no longer accepts (revoked or expired). */
+    public readonly invalidToken = false
   ) {
     super(message)
     this.name = 'VercelApiError'
@@ -55,15 +57,20 @@ async function vercelFetch<T>(token: string, path: string): Promise<T> {
 
   if (!response.ok) {
     let message = `Vercel API responded ${response.status}`
+    let invalidToken = false
     try {
-      const body = (await response.json()) as { error?: { message?: string } }
+      const body = (await response.json()) as {
+        error?: { message?: string; code?: string; invalidToken?: boolean }
+      }
       if (body.error?.message) {
         message = body.error.message
       }
+      invalidToken =
+        body.error?.invalidToken === true || body.error?.code === 'invalidToken'
     } catch {
       // Body wasn't JSON; keep the status message.
     }
-    throw new VercelApiError(message, response.status)
+    throw new VercelApiError(message, response.status, invalidToken)
   }
 
   return (await response.json()) as T
@@ -189,7 +196,11 @@ export async function fetchAllVercelProjects(
   token: string
 ): Promise<VercelProject[]> {
   const teams = await fetchVercelTeams(token).catch((error: unknown) => {
-    if (error instanceof VercelApiError && error.status === 403) {
+    if (
+      error instanceof VercelApiError &&
+      error.status === 403 &&
+      !error.invalidToken
+    ) {
       return [] as VercelTeam[]
     }
     throw error
@@ -199,7 +210,11 @@ export async function fetchAllVercelProjects(
   const results = await Promise.all(
     scopes.map(scope =>
       fetchVercelProjects(token, scope).catch((error: unknown) => {
-        if (error instanceof VercelApiError && error.status === 403) {
+        if (
+          error instanceof VercelApiError &&
+          error.status === 403 &&
+          !error.invalidToken
+        ) {
           return [] as VercelProject[]
         }
         throw error

@@ -43,11 +43,6 @@ export default async function SystemHealthPage() {
       activeTab='health'
     >
       <div className='w-full space-y-6'>
-        <p className='text-muted-foreground text-sm'>
-          Whether the work the portal does on its own is keeping up. A queue
-          should drain to zero; numbers that stay up mean something is stuck.
-        </p>
-
         <PagePanel
           aria-label='Website form emails'
           flush

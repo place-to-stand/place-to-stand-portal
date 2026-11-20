@@ -2,6 +2,7 @@ import { eq, and, isNull } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
 import { decryptToken } from '@/lib/oauth/encryption'
+import { markConnectionNeedsReauth } from '@/lib/oauth/needs-reauth'
 
 export { resolveRepoLinkAuth } from './resolve-auth'
 
@@ -12,7 +13,14 @@ export { resolveRepoLinkAuth } from './resolve-auth'
  * - `{ token: string }` — Pre-resolved bearer token (from resolveRepoLinkAuth)
  * - `undefined`         — Use default OAuth connection for the user
  */
-export type GitHubAuth = string | { token: string } | undefined
+/**
+ * A connection id, a resolved token (with the connection it came from, when
+ * it's a person's saved sign-in), or nothing for the person's first one.
+ */
+export type GitHubAuth =
+  | string
+  | { token: string; connectionId?: string }
+  | undefined
 
 const GITHUB_API_BASE = 'https://api.github.com'
 
@@ -85,10 +93,10 @@ async function githubFetch<T>(
   options: RequestInit = {},
   auth?: GitHubAuth
 ): Promise<T> {
-  const token =
+  const { token, connectionId } =
     typeof auth === 'object' && auth !== null
-      ? auth.token
-      : (await getGitHubToken(userId, auth)).token
+      ? auth
+      : await getGitHubToken(userId, auth)
 
   const response = await fetch(`${GITHUB_API_BASE}${endpoint}`, {
     ...options,
@@ -100,6 +108,11 @@ async function githubFetch<T>(
   })
 
   if (!response.ok) {
+    // 401 means GitHub refused the saved sign-in (revoked or expired). An app
+    // installation token has no connection id and isn't the owner's to fix.
+    if (response.status === 401 && connectionId) {
+      await markConnectionNeedsReauth(connectionId, 'GitHub refused the token')
+    }
     const error = await response.text()
     throw new Error(`GitHub API error (${response.status}): ${error}`)
   }
