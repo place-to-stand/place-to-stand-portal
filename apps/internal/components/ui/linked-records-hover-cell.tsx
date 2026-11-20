@@ -12,6 +12,7 @@ import {
 import { EmptyValue } from '@/components/table/empty-value'
 import { SheetLink } from '@/components/ui/sheet-link'
 import type { SheetTarget } from '@/lib/sheets/use-sheet-link'
+import type { PopupAlign } from '@pts/ui/popup-align'
 import { cn } from '@/lib/utils'
 import { entityIconAccent } from '@/lib/entity-accents'
 
@@ -58,7 +59,7 @@ type LinkedRecordsHoverCellProps = {
   triggerClassName?: string
   /** Width overrides for the card; defaults to `w-auto min-w-56`. */
   contentClassName?: string
-  align?: 'start' | 'center' | 'end'
+  align?: PopupAlign
   /**
    * Shows the row icon before the count, as list columns do (Projects on
    * Clients, Contacts on Companies). A zero then shows only a dash.
@@ -66,7 +67,8 @@ type LinkedRecordsHoverCellProps = {
   withIcon?: boolean
 }
 
-const TRIGGER_CLASS =
+/** The dotted-underline look of a hover-card count; TagList's "+N" shares it. */
+export const HOVER_COUNT_TRIGGER_CLASS =
   'cursor-pointer border-b border-dotted border-current transition hover:border-solid outline-none focus-visible:rounded-sm focus-visible:ring-ring/50 focus-visible:ring-[3px]'
 // align-top on these inline-flex boxes: one led by an icon takes its baseline
 // from the icon's bottom edge, which lifts it about 1.5px in a table row.
@@ -94,7 +96,7 @@ export function LinkedRecordsHoverCell({
   onOpenChange,
   triggerClassName,
   contentClassName,
-  align = 'start',
+  align,
   withIcon = false,
 }: LinkedRecordsHoverCellProps) {
   // A zero is a dash with no icon, like every count column.
@@ -115,7 +117,10 @@ export function LinkedRecordsHoverCell({
           className={
             trigger
               ? cn(ICON_TRIGGER_CLASS, triggerClassName)
-              : cn(TRIGGER_CLASS, triggerClassName ?? 'text-foreground')
+              : cn(
+                  HOVER_COUNT_TRIGGER_CLASS,
+                  triggerClassName ?? 'text-foreground'
+                )
           }
         >
           {trigger ?? triggerLabel ?? `${count}${label ?? ''}`}

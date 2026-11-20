@@ -34,6 +34,7 @@
     "./kbd": "./src/kbd.tsx",
     "./label": "./src/label.tsx",
     "./numbers": "./src/numbers.ts",
+    "./popup-align": "./src/popup-align.ts",
     "./popover": "./src/popover.tsx",
     "./progress": "./src/progress.tsx",
     "./row-action-button": "./src/row-action-button.tsx",

@@ -619,11 +619,6 @@
       "count": 1
     }
   },
-  "components/ui/hover-card.tsx": {
-    "typescript/no-deprecated": {
-      "count": 2
-    }
-  },
   "components/ui/searchable-combobox.tsx": {
     "max-lines": {
       "count": 1
