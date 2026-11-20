@@ -30,6 +30,8 @@ export type UseTaskCommentsState = {
     isSubmitting: boolean
     canComment: boolean
   }
+  /** Typed but not posted: a new comment, or changes to one being edited. */
+  unsent: { composer: boolean; edit: boolean }
   editing: {
     commentId: string | null
     draft: string
@@ -37,6 +39,8 @@ export type UseTaskCommentsState = {
     start: (comment: TaskCommentWithAuthor) => void
     cancel: () => void
     confirm: () => void
+    /** The edit is being saved: its Cancel waits for the result. */
+    isSaving: boolean
   }
   deletion: {
     targetId: string | null

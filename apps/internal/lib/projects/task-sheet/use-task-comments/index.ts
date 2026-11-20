@@ -166,6 +166,22 @@ export function useTaskComments(
     deleteComment.mutate(deleteTargetId)
   }, [deleteComment, deleteTargetId])
 
+  // Typed but not posted. The task's Save never sees these, so closing the
+  // sheet (or starting another edit) asks first. Cancel hides the comment
+  // form and keeps its text without asking, so a hidden draft doesn't count.
+  const composerHasText = composerOpen && prepareCommentBody(draft) !== null
+  // An edit being saved isn't unsent: the cache keeps the old body until the
+  // refetch lands.
+  // A comment that left the list (deleted elsewhere) has no form to lose.
+  const editingComment = editingCommentId
+    ? flattenedComments.find(comment => comment.id === editingCommentId)
+    : undefined
+  const editingOriginal = editingComment ? (editingComment.body ?? '') : null
+  const editHasChanges =
+    editingOriginal !== null &&
+    !updateComment.isPending &&
+    sanitizeEditorHtml(editingDraft) !== sanitizeEditorHtml(editingOriginal)
+
   const isMutating =
     createComment.isPending ||
     updateComment.isPending ||
@@ -198,6 +214,7 @@ export function useTaskComments(
       start: handleStartEdit,
       cancel: handleCancelEdit,
       confirm: handleConfirmEdit,
+      isSaving: updateComment.isPending,
     },
     deletion: {
       targetId: deleteTargetId,
@@ -207,6 +224,7 @@ export function useTaskComments(
       isPending: deleteComment.isPending,
     },
     isMutating,
+    unsent: { composer: composerHasText, edit: editHasChanges },
     pagination: {
       hasNextPage: Boolean(hasNextPage),
       isFetchingNextPage,

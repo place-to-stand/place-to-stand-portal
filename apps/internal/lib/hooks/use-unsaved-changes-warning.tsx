@@ -4,7 +4,10 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 
-import { registerDiscardGuard } from '@/lib/sheets/discard-guards'
+import {
+  confirmDiscardDrafts,
+  registerDiscardGuard,
+} from '@/lib/sheets/discard-guards'
 import { useSheetStackEntry } from '@/lib/sheets/stack-entry'
 
 type UseUnsavedChangesWarningOptions = {
@@ -13,6 +16,12 @@ type UseUnsavedChangesWarningOptions = {
   description?: string
   confirmLabel?: string
   cancelLabel?: string
+  /**
+   * Work inside a sheet that saves on its own click (a comment, a lead
+   * update). The sheet's close asks it first, since the sheet's Save never
+   * sees it.
+   */
+  draft?: boolean
 }
 
 type UseUnsavedChangesWarningResult = {
@@ -26,6 +35,7 @@ export function useUnsavedChangesWarning({
   description = 'You have unsaved updates that will be lost. Continue without saving?',
   confirmLabel = 'Discard',
   cancelLabel = 'Stay',
+  draft = false,
 }: UseUnsavedChangesWarningOptions): UseUnsavedChangesWarningResult {
   const [dialogOpen, setDialogOpen] = useState(false)
   const pendingActionRef = useRef<(() => void) | null>(null)
@@ -38,18 +48,30 @@ export function useUnsavedChangesWarning({
     isDirtyRef.current = isDirty
   }, [isDirty])
 
+  const stackId = useSheetStackEntry()?.id
+
+  // Asks only about this form's own changes.
+  const confirmOwn = useCallback((next: () => void, stay?: () => void) => {
+    if (!isDirtyRef.current) {
+      next()
+      return
+    }
+
+    pendingActionRef.current = next
+    pendingStayRef.current = stay ?? null
+    setDialogOpen(true)
+  }, [])
+
+  // A sheet's close asks its drafts (an unsent comment) first, then its form.
   const requestConfirmation = useCallback(
     (next: () => void, stay?: () => void) => {
-      if (!isDirtyRef.current) {
-        next()
+      if (draft) {
+        confirmOwn(next, stay)
         return
       }
-
-      pendingActionRef.current = next
-      pendingStayRef.current = stay ?? null
-      setDialogOpen(true)
+      confirmDiscardDrafts(stackId, () => confirmOwn(next, stay), stay)
     },
-    []
+    [confirmOwn, draft, stackId]
   )
 
   const handleCancel = useCallback(() => {
@@ -70,13 +92,13 @@ export function useUnsavedChangesWarning({
 
   // A sheet in the stack with unsaved changes asks here before going back
   // to a sheet below it closes this one.
-  const stackId = useSheetStackEntry()?.id
   useEffect(() => {
     if (!isDirty || !stackId) {
       return
     }
-    return registerDiscardGuard(stackId, requestConfirmation)
-  }, [isDirty, requestConfirmation, stackId])
+    // Registers only the form's own check: the stack walks every guard.
+    return registerDiscardGuard(stackId, confirmOwn, { draft })
+  }, [confirmOwn, draft, isDirty, stackId])
 
   useEffect(() => {
     if (!isDirty) {
