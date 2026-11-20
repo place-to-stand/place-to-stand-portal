@@ -5,7 +5,7 @@ export const MENTION_LIST_LIMIT = 8
 
 /**
  * The people an @query matches: anyone whose name has a word starting with
- * it ("kr" finds Kris Crawford, "craw" too), names that start with it first,
+ * it ("al" finds Alex Rivera, "riv" too), names that start with it first,
  * then by name. An empty query lists everyone, by name.
  */
 export function filterMentionOptions(

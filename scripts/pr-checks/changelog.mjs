@@ -1,23 +1,20 @@
 #!/usr/bin/env node
 /**
  * A pull request that changes the apps adds a line to What's new
- * (apps/internal/CHANGELOG.md), or says why not. Run by the Changelog
- * workflow on every pull request:
+ * (apps/internal/CHANGELOG.md), or says why not:
  *
- *   node scripts/check-changelog.mjs <base sha> <head sha>
+ *   node scripts/pr-checks/changelog.mjs <base sha> <head sha>
  *
- * with the PR body in PR_BODY. It passes when the PR:
+ * with the PR description in PR_BODY. It passes when the PR:
  *   - changes nothing people can see (no app or shared UI code), or
- *   - adds a `- **Area:** change` line to CHANGELOG.md, or
- *   - has a line `Changelog: none` in its body, for changes nobody sees
- *     (dependencies, tests, lint). The skip is in the open, for review.
+ *   - adds a new `- **Area:** change` line to CHANGELOG.md, or
+ *   - has a line `Changelog: none` in its description, for changes nobody
+ *     sees (dependencies, tests, lint). The skip is in the open, for review.
  *
  * It can tell a line was added, not whether it says anything useful:
  * review checks the wording.
  */
-import { execFileSync } from 'node:child_process'
-import { realpathSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { bodyHasLine, changedFiles, git, isMain, readRange } from './shared.mjs'
 
 const CHANGELOG = 'apps/internal/CHANGELOG.md'
 // Code people see: both apps and the shared UI package.
@@ -31,15 +28,7 @@ const HIDDEN = [
   /(^|\/)oxlint\.config\.mjs$/,
 ]
 const ITEM = /^- \*\*[^*]+:\*\* \S/
-// One line of its own, outside comments and code blocks.
-const SKIP = /^[ \t]*changelog:[ \t]*none\b/im
-
-/** The body without HTML comments or fenced code, so a template can't skip for everyone. */
-function visibleBody(body) {
-  return (body ?? '')
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/```[\s\S]*?```/g, '')
-}
+const SKIP = 'Changelog: none'
 
 /**
  * `addedLines`: lines the PR adds to CHANGELOG.md. `baseLines`: the file on
@@ -60,31 +49,13 @@ export function checkChangelog({ files, addedLines, baseLines = [], body }) {
   if (added.length > 0) {
     return { ok: true, why: 'CHANGELOG.md has a new line' }
   }
-  if (SKIP.test(visibleBody(body))) return { ok: true, why: 'Changelog: none' }
+  if (bodyHasLine(body, SKIP)) return { ok: true, why: SKIP }
   return { ok: false, visible }
 }
 
-function git(...args) {
-  // Plain paths: non-ASCII names aren't quoted into a form the patterns miss.
-  return execFileSync('git', ['-c', 'core.quotePath=false', ...args], {
-    encoding: 'utf8',
-    // Errors carry git's message; a missing file on the base prints nothing.
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-}
-
 function main() {
-  const [base, head] = process.argv.slice(2)
-  if (!base || !head) {
-    console.error('Usage: check-changelog.mjs <base sha> <head sha>')
-    process.exit(2)
-  }
-  const range = `${base}...${head}`
-  // --no-renames lists both sides of a rename, so moving a file out of the
-  // apps still counts.
-  const files = git('diff', '--name-only', '--no-renames', range)
-    .split('\n')
-    .filter(Boolean)
+  const { base, head } = readRange('changelog.mjs')
+  const files = changedFiles(base, head)
   const mergeBase = git('merge-base', base, head).trim()
   let baseLines = []
   try {
@@ -92,7 +63,13 @@ function main() {
   } catch {
     // No CHANGELOG.md on the base yet: every line is new.
   }
-  const addedLines = git('diff', '--unified=0', range, '--', CHANGELOG)
+  const addedLines = git(
+    'diff',
+    '--unified=0',
+    `${base}...${head}`,
+    '--',
+    CHANGELOG
+  )
     .split('\n')
     .filter(line => line.startsWith('+') && !line.startsWith('+++'))
     .map(line => line.slice(1))
@@ -116,7 +93,7 @@ function main() {
       '',
       'or, if nobody will notice the change (dependencies, tests, lint),',
       'add this line to the pull request description:',
-      '  Changelog: none',
+      `  ${SKIP}`,
       '',
       'Changed files people can see:',
       ...result.visible.slice(0, 20).map(file => `  ${file}`),
@@ -125,11 +102,4 @@ function main() {
   process.exit(1)
 }
 
-// Run only as a script, never on import. Compared as real paths, so a
-// symlink or a space in the path can't skip the check and pass silently.
-if (
-  process.argv[1] &&
-  realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
-) {
-  main()
-}
+if (isMain(import.meta.url)) main()

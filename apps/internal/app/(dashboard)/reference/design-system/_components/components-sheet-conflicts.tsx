@@ -12,8 +12,8 @@ import type { SaveConflictGuard } from '@/lib/sheets/save-conflict/use-save-conf
 
 import { Specimen } from './specimen'
 
-const KRIS: SheetViewer = {
-  userId: 'design-kris',
+const ALEX: SheetViewer = {
+  userId: 'design-alex',
   name: 'Alex Rivera',
   hasPhoto: false,
   editing: false,
@@ -33,9 +33,9 @@ const SAMPLE_CONFLICT: SaveConflict = {
       created_at: TWO_MINUTES_AGO,
       source: 'ADMIN_UI',
       actor: {
-        id: KRIS.userId,
-        full_name: KRIS.name,
-        email: 'kris@example.com',
+        id: ALEX.userId,
+        full_name: ALEX.name,
+        email: 'alex@example.com',
         avatar_url: null,
       },
       metadata: {
@@ -81,8 +81,8 @@ export function SheetConflictSpecimens() {
         note='SheetPresence, above the first field'
       >
         <div className='flex flex-col gap-3'>
-          <SheetViewers noun='company' others={[KRIS]} />
-          <SheetViewers noun='company' others={[{ ...KRIS, editing: true }]} />
+          <SheetViewers noun='company' others={[ALEX]} />
+          <SheetViewers noun='company' others={[{ ...ALEX, editing: true }]} />
         </div>
       </Specimen>
       <Specimen

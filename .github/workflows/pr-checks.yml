@@ -1,0 +1,63 @@
+name: PR checks
+
+# Rules a pull request must meet, read from its changes and its description
+# (scripts/pr-checks/). Their own workflow, so editing the description
+# re-runs only these, not the whole CI.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# The description comes in through env, never pasted into a script.
+env:
+  PR_BODY: ${{ github.event.pull_request.body }}
+  BASE_SHA: ${{ github.event.pull_request.base.sha }}
+  HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+
+jobs:
+  changelog:
+    name: Changelog
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/pr-checks/changelog.mjs "$BASE_SHA" "$HEAD_SHA"
+
+  prod-migration:
+    name: Prod migration
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/pr-checks/prod-migration.mjs "$BASE_SHA" "$HEAD_SHA"
+
+  made-up-data:
+    name: Made-up data
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      # One entry per line. A secret, because a list in the repo would
+      # publish the names it guards.
+      - env:
+          REAL_NAMES: ${{ secrets.REAL_NAMES }}
+        run: node scripts/pr-checks/made-up-data.mjs

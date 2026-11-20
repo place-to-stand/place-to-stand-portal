@@ -48,7 +48,7 @@ test('partners must be ids', () => {
     }),
     []
   )
-  assert.deepEqual(errorsFor({ profitSharePartnerIds: ['jason'] }), [
+  assert.deepEqual(errorsFor({ profitSharePartnerIds: ['partner-a'] }), [
     'profitSharePartnerIds',
   ])
 })
