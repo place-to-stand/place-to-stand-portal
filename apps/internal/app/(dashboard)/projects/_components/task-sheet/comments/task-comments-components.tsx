@@ -132,6 +132,8 @@ type TaskCommentItemProps = {
   onConfirmEdit: () => void
   onRequestDelete: (id: string) => void
   disableActions: boolean
+  /** The edit is being saved: Save shows it and Cancel waits. */
+  isSavingEdit?: boolean
   /** Who `@` can mention while editing. */
   mentionOptionsUrl?: string
 }
@@ -148,6 +150,7 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
     onConfirmEdit,
     onRequestDelete,
     disableActions,
+    isSavingEdit = false,
     mentionOptionsUrl,
   } = props
 
@@ -186,6 +189,7 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
             submitLabel='Save'
             isEditing
             disabled={isEditingEmpty || disableActions}
+            pending={isSavingEdit}
             onSubmit={onConfirmEdit}
             onCancel={onCancelEdit}
           />

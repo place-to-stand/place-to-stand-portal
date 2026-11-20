@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  type RefObject,
   useCallback,
   useEffect,
   useId,
@@ -49,7 +50,16 @@ type LeadUpdateDialogProps = {
   onSaved: () => void
   /** Bumped by the section's X: close like Cancel (asks first if edited). */
   closeRequest?: number
+  /**
+   * Set to this form's "ask before dropping my changes": the section runs
+   * it before it swaps this form for another (logging a new update while
+   * editing one, or editing another).
+   */
+  guardRef?: RefObject<DiscardGuard | null>
 }
+
+/** Runs `next` at once when clean, or after the person picks Discard. */
+export type DiscardGuard = (next: () => void) => void
 
 /**
  * Today gets the ACTUAL current time — anchoring today at local noon would be
@@ -74,6 +84,7 @@ export function LeadUpdateDialog({
   update,
   onSaved,
   closeRequest = 0,
+  guardRef,
 }: LeadUpdateDialogProps) {
   const fieldId = useId()
   const isEditing = update !== null
@@ -136,6 +147,19 @@ export function LeadUpdateDialog({
     },
     [onOpenChange, requestConfirmation]
   )
+
+  useEffect(() => {
+    if (!guardRef) return
+    const guard: DiscardGuard = next =>
+      requestConfirmation(() => {
+        setIsDirty(false)
+        next()
+      })
+    guardRef.current = guard
+    return () => {
+      if (guardRef.current === guard) guardRef.current = null
+    }
+  }, [guardRef, requestConfirmation])
 
   // The section's X asks to close, like Cancel.
   const lastCloseRequest = useRef(closeRequest)

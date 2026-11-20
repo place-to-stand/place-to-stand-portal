@@ -166,21 +166,21 @@ export function useTaskComments(
     deleteComment.mutate(deleteTargetId)
   }, [deleteComment, deleteTargetId])
 
-  // Typed but not posted: an open comment form with text, or an edit that
-  // changed a comment. The task's Save never sees these, so closing the
-  // sheet asks first. Cancel hides the form and keeps its text without
-  // asking, so a hidden draft doesn't count.
-  const editingOriginal = editingCommentId
-    ? (flattenedComments.find(comment => comment.id === editingCommentId)
-        ?.body ?? '')
-    : null
+  // Typed but not posted. The task's Save never sees these, so closing the
+  // sheet (or starting another edit) asks first. Cancel hides the comment
+  // form and keeps its text without asking, so a hidden draft doesn't count.
+  const composerHasText = composerOpen && prepareCommentBody(draft) !== null
   // An edit being saved isn't unsent: the cache keeps the old body until the
   // refetch lands.
-  const hasUnsentWork =
-    (composerOpen && prepareCommentBody(draft) !== null) ||
-    (editingOriginal !== null &&
-      !updateComment.isPending &&
-      sanitizeEditorHtml(editingDraft) !== sanitizeEditorHtml(editingOriginal))
+  // A comment that left the list (deleted elsewhere) has no form to lose.
+  const editingComment = editingCommentId
+    ? flattenedComments.find(comment => comment.id === editingCommentId)
+    : undefined
+  const editingOriginal = editingComment ? (editingComment.body ?? '') : null
+  const editHasChanges =
+    editingOriginal !== null &&
+    !updateComment.isPending &&
+    sanitizeEditorHtml(editingDraft) !== sanitizeEditorHtml(editingOriginal)
 
   const isMutating =
     createComment.isPending ||
@@ -214,6 +214,7 @@ export function useTaskComments(
       start: handleStartEdit,
       cancel: handleCancelEdit,
       confirm: handleConfirmEdit,
+      isSaving: updateComment.isPending,
     },
     deletion: {
       targetId: deleteTargetId,
@@ -223,7 +224,7 @@ export function useTaskComments(
       isPending: deleteComment.isPending,
     },
     isMutating,
-    hasUnsentWork,
+    unsent: { composer: composerHasText, edit: editHasChanges },
     pagination: {
       hasNextPage: Boolean(hasNextPage),
       isFetchingNextPage,

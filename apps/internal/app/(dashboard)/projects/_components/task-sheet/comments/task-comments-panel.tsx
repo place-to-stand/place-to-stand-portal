@@ -40,12 +40,20 @@ export function TaskCommentsPanel(props: TaskCommentsPanelProps) {
   const { composer } = state
   // A comment posts on its own click, so the task's Save never sees it:
   // closing the sheet with one typed asks first.
-  const { dialog: discardDialog } = useUnsavedChangesWarning({
-    isDirty: state.hasUnsentWork,
+  const composerGuard = useUnsavedChangesWarning({
+    isDirty: state.unsent.composer,
     draft: true,
     title: 'Discard this comment?',
     description: "Your comment hasn't been posted.",
     cancelLabel: 'Keep writing',
+  })
+  // Same for an edit: closing, or editing another comment, asks first.
+  const editGuard = useUnsavedChangesWarning({
+    isDirty: state.unsent.edit,
+    draft: true,
+    title: 'Discard your changes?',
+    description: "Your changes to this comment haven't been saved.",
+    cancelLabel: 'Keep editing',
   })
   // The task's assignee options: the people who can open it.
   const mentionOptionsUrl = props.taskId
@@ -105,10 +113,20 @@ export function TaskCommentsPanel(props: TaskCommentsPanelProps) {
                   : ''
               }
               onChangeEditingDraft={state.editing.setDraft}
-              onStartEdit={state.editing.start}
-              onCancelEdit={state.editing.cancel}
+              onStartEdit={comment =>
+                editGuard.requestConfirmation(() =>
+                  state.editing.start(comment)
+                )
+              }
+              // Cancel asks too, as a lead update's Cancel does.
+              onCancelEdit={() =>
+                editGuard.requestConfirmation(state.editing.cancel)
+              }
               onConfirmEdit={state.editing.confirm}
               onRequestDelete={state.deletion.request}
+              isSavingEdit={
+                state.editing.commentId === comment.id && state.editing.isSaving
+              }
               mentionOptionsUrl={mentionOptionsUrl}
               // The optimistic row's id isn't a real comment yet, so it
               // stays inert until the refetch swaps in the saved one.
@@ -145,7 +163,8 @@ export function TaskCommentsPanel(props: TaskCommentsPanelProps) {
         onCancel={state.deletion.cancel}
         onConfirm={state.deletion.confirm}
       />
-      {discardDialog}
+      {composerGuard.dialog}
+      {editGuard.dialog}
     </>
   )
 }

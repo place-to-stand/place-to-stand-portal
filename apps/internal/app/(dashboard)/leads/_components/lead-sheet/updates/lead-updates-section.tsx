@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { MessageSquareText } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
@@ -10,7 +10,7 @@ import { Badge } from '@pts/ui/badge'
 import { EntityList } from '@/components/sheets/entity-list'
 import type { LeadRecord, LeadUpdateRecord } from '@/lib/leads/types'
 
-import { LeadUpdateDialog } from './lead-update-dialog'
+import { LeadUpdateDialog, type DiscardGuard } from './lead-update-dialog'
 import { LeadUpdateItem } from './lead-update-item'
 
 type LeadUpdatesSectionProps = {
@@ -72,15 +72,30 @@ export function LeadUpdatesSection({
   // The heading's X bumps this; the form closes as if Cancel was clicked.
   const [closeRequest, setCloseRequest] = useState(0)
 
+  // Each open form's "ask before dropping my changes": the new-update form
+  // and the one update being edited. Switching forms asks the one it drops.
+  const newFormGuard = useRef<DiscardGuard | null>(null)
+  const editFormGuard = useRef<DiscardGuard | null>(null)
+
   const openLogDialog = useCallback(() => {
-    setEditingUpdate(null)
-    setIsDialogOpen(true)
+    const open = () => {
+      setEditingUpdate(null)
+      setIsDialogOpen(true)
+    }
+    if (editFormGuard.current) editFormGuard.current(open)
+    else open()
   }, [])
 
   // Editing happens in place: the card turns into the form where it sits.
   const openEditDialog = useCallback((update: LeadUpdateRecord) => {
-    setIsDialogOpen(false)
-    setEditingUpdate(update)
+    const edit = () => {
+      setIsDialogOpen(false)
+      setEditingUpdate(update)
+    }
+    const askEdit = () =>
+      editFormGuard.current ? editFormGuard.current(edit) : edit()
+    if (newFormGuard.current) newFormGuard.current(askEdit)
+    else askEdit()
   }, [])
 
   const handleSaved = useCallback(() => {
@@ -109,6 +124,7 @@ export function LeadUpdatesSection({
             update={null}
             onSaved={handleSaved}
             closeRequest={closeRequest}
+            guardRef={newFormGuard}
           />
         }
         inlineFormOpen={isDialogOpen}
@@ -156,6 +172,7 @@ export function LeadUpdatesSection({
                 setEditingUpdate(null)
                 handleSaved()
               }}
+              guardRef={editFormGuard}
             />
           ) : (
             <LeadUpdateItem
