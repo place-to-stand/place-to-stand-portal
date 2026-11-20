@@ -30,6 +30,11 @@ export function toEditorHtml(html: string): string {
 function dropUnsupported(doc: Document) {
   for (const image of Array.from(doc.querySelectorAll('img'))) {
     const src = image.getAttribute('src') ?? ''
+    // A blocked URL (micromark empties `javascript:`) keeps only its text.
+    if (!src) {
+      image.replaceWith(doc.createTextNode(image.getAttribute('alt') ?? ''))
+      continue
+    }
     const link = doc.createElement('a')
     link.setAttribute('href', src)
     link.textContent = image.getAttribute('alt') || src
@@ -73,9 +78,15 @@ function convertTaskLists(doc: Document) {
       if (last && last.checklist === checklist) last.items.push(item)
       else runs.push({ checklist, items: [item] })
     })
+    let position = Number(list.getAttribute('start') ?? 1) || 1
     const lists = runs.map(run => {
       const next = doc.createElement(run.checklist ? 'ul' : list.tagName)
       if (run.checklist) next.setAttribute('data-type', 'taskList')
+      // A numbered run keeps counting from where it sits in the list.
+      else if (list.tagName === 'OL' && position !== 1) {
+        next.setAttribute('start', String(position))
+      }
+      position += run.items.length
       run.items.forEach(item => {
         const box = boxOf(item)
         if (run.checklist) {

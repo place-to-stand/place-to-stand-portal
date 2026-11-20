@@ -40,15 +40,25 @@ const LIST_ITEM_LINE = /^\s*([-*+]|\d{1,9}[.)])\s+\S/
 const FENCE_START = /^\s{0,3}(```|~~~)/
 
 /**
+ * A list item line that looks cut by a wrap: long, with no closing
+ * punctuation, so the line under it carries on the same item.
+ */
+const looksWrapped = (line: string) =>
+  line.trimEnd().length >= 60 && !/[.!?:;)]$/.test(line.trimEnd())
+
+/**
  * Plain text keeps its line breaks. Markdown would fold a line written
  * straight after a list item into that item ("Thanks" after "2. close"),
  * and run single lines of an address into one; a blank line before the
- * first and hard breaks for the second keep what the writer typed.
+ * first and hard breaks for the second keep what the writer typed. A line
+ * under a bullet that was wrapped (text from a terminal or a file) stays
+ * part of that bullet.
  */
 function keepLineBreaks(text: string): string {
   const out: string[] = []
   let inFence = false
   let previousWasItem = false
+  let previous = ''
   for (const line of text.replace(/\r\n?/g, '\n').split('\n')) {
     if (FENCE_START.test(line)) {
       inFence = !inFence
@@ -62,11 +72,13 @@ function keepLineBreaks(text: string): string {
     }
     const isItem = LIST_ITEM_LINE.test(line)
     const isIndented = /^\s/.test(line)
-    if (previousWasItem && line.trim() && !isItem && !isIndented) {
+    const continues = isIndented || looksWrapped(previous)
+    if (previousWasItem && line.trim() && !isItem && !continues) {
       out.push('')
     }
     out.push(line)
-    if (line.trim()) previousWasItem = isItem || (previousWasItem && isIndented)
+    if (line.trim()) previousWasItem = isItem || (previousWasItem && continues)
+    previous = line
   }
   return out.join('\n')
 }
@@ -85,9 +97,11 @@ export function markdownToHtml(text: string): string {
       // blank last line.
       .replace(/\n<\/code><\/pre>/g, '</code></pre>')
       // A single line break inside a paragraph stays a line break.
+      // (micromark already writes `<br />\n` for a hard break: keep that one.)
       .replace(
         /<p>([\s\S]*?)<\/p>/g,
-        (_match, body: string) => `<p>${body.replace(/\n/g, '<br />')}</p>`
+        (_match, body: string) =>
+          `<p>${body.replace(/(?<!<br \/>)\n/g, '<br />').replace(/\n/g, '')}</p>`
       )
   )
 }

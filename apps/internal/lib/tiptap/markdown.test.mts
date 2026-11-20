@@ -125,3 +125,23 @@ test('line breaks the writer typed stay', () => {
     '<p>Steps:</p><ol><li>open</li><li>close</li></ol><p>Thanks</p>'
   )
 })
+
+test('a Markdown hard break stays one break', () => {
+  assert.equal(
+    markdownToHtml('line one  \nline two'),
+    '<p>line one<br />line two</p>'
+  )
+  assert.equal(
+    markdownToHtml('line one\\\nline two'),
+    '<p>line one<br />line two</p>'
+  )
+})
+
+test('a wrapped bullet stays one bullet', () => {
+  assert.equal(
+    markdownToHtml(
+      '- A long bullet copied from a terminal that the window wrapped\nright here\n- next'
+    ).replace(/\n/g, ''),
+    '<ul><li>A long bullet copied from a terminal that the window wrappedright here</li><li>next</li></ul>'
+  )
+})
