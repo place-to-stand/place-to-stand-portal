@@ -130,6 +130,16 @@ export const SHORTCUTS = {
     group: 'Text editor',
   },
   taskList: { keys: 'mod+shift+9', label: 'Checklist', group: 'Text editor' },
+  indentListItem: {
+    keys: 'tab',
+    label: 'Indent a list item',
+    group: 'Text editor',
+  },
+  outdentListItem: {
+    keys: 'shift+tab',
+    label: 'Outdent a list item',
+    group: 'Text editor',
+  },
   blockquote: { keys: 'mod+shift+b', label: 'Quote', group: 'Text editor' },
   codeBlock: { keys: 'mod+alt+c', label: 'Code block', group: 'Text editor' },
   alignLeft: { keys: 'mod+shift+l', label: 'Align left', group: 'Text editor' },
