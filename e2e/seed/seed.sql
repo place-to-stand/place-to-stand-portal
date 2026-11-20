@@ -258,6 +258,18 @@ begin
                ('Login by email link', 'IN_PROGRESS', 'a1')) v(title, st, rk)
   cross join projects pr where pr.slug = 'project-01';
 
+ -- An archived task on a client project, with time logged on it: its sheet
+ -- still lists that time. Logged first, archived after, as in real use.
+ insert into tasks (id, project_id, title, status, rank, created_by)
+  select 'e2e0e2e0-0000-4000-8000-000000000002', pr.id, 'Holiday banner (old)', 'DONE', 'z0', ada
+  from projects pr where pr.slug = 'online-store';
+ insert into time_log_tasks (time_log_id, task_id)
+  select tl.id, 'e2e0e2e0-0000-4000-8000-000000000002'
+  from time_logs tl join projects pr on pr.id = tl.project_id
+  where pr.slug = 'online-store' and tl.deleted_at is null
+  order by tl.logged_on limit 1;
+ update tasks set deleted_at = now() where id = 'e2e0e2e0-0000-4000-8000-000000000002';
+
  -- Rosa (prepaid) and Nina (Net 30) sign in to the client portal.
  insert into users (id, email, role, onboarding_completed_at)
   select id, email, 'CLIENT', now() from auth.users
