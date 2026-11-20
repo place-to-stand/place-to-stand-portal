@@ -67,11 +67,6 @@ export default async function SystemHealthPage() {
       activeTab='health'
     >
       <div className='w-full space-y-6'>
-        <p className='text-muted-foreground text-sm'>
-          Whether the work the portal does on its own is keeping up. Anything in
-          red needs a look.
-        </p>
-
         <JobsPanel jobs={jobs} runs={runs} now={now} />
 
         <StripePanel stripe={stripe} now={now} />
