@@ -279,8 +279,8 @@ export async function listTaskTimeLogs(
   user: AppUser,
   taskId: string
 ): Promise<TaskTimeLogList> {
-  // Default access check: archived (soft-deleted) tasks 404.
-  await ensureTaskAccess(user, taskId)
+  // Archived tasks still show their logged time (the task sheet opens them).
+  await ensureTaskAccess(user, taskId, { includeArchived: true })
 
   const timeLogRows = (await db
     .select(TIME_LOG_SELECTION)

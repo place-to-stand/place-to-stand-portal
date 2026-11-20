@@ -1,7 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-
 import { LeadSheet } from '@/app/(dashboard)/leads/_components/lead-sheet'
 
 import { parseDuplicateSourceId } from '../entities'
@@ -13,7 +11,6 @@ export function LeadSheetWrapper({
   open,
   onRequestClose,
 }: SheetWrapperProps) {
-  const router = useRouter()
   // A duplicate loads its source lead and opens it as a new one.
   const sourceId = parseDuplicateSourceId(value)
   const data = useSheetInit('lead', sourceId ?? value)
@@ -35,7 +32,10 @@ export function LeadSheetWrapper({
       assignees={data.assignees}
       canManage
       senderName={data.senderName ?? undefined}
-      onSuccess={() => router.refresh()}
+      // Saving or archiving a lead revalidates, so the page already comes
+      // back fresh with the action. Refreshing again here races it and can
+      // make Next load the whole page again.
+      onSuccess={() => {}}
     />
   )
 }

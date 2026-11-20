@@ -174,8 +174,9 @@ export function useLeadSheetState({
         })
         rebaseline()
         setArchiveDialogOpen(false)
-        onOpenChange(false)
+        // Success first: the board then knows this close follows a save.
         onSuccess()
+        onOpenChange(false)
         if (!isEditing && result.leadId) {
           onCreated?.(result.leadId)
         }
@@ -277,8 +278,8 @@ export function useLeadSheetState({
       })
 
       setArchiveDialogOpen(false)
-      onOpenChange(false)
       onSuccess()
+      onOpenChange(false)
     })
   }, [lead, onOpenChange, onSuccess, toast])
 

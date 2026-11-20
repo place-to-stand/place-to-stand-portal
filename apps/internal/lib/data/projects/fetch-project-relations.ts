@@ -43,6 +43,11 @@ type ProjectRelationsFetchArgs = {
   includeArchivedTasks?: boolean
   /** Only these tasks (see `loadTaskRows`). */
   taskIds?: string[]
+  /**
+   * Without `includeArchivedTasks`: these archived tasks only, so a link to
+   * one from the board still opens its sheet.
+   */
+  archivedTaskIds?: string[]
 }
 
 export type ProjectRelationsFetchResult = {
@@ -88,6 +93,7 @@ export async function fetchProjectRelations({
   ownerIds,
   includeArchivedTasks = false,
   taskIds,
+  archivedTaskIds,
 }: ProjectRelationsFetchArgs): Promise<ProjectRelationsFetchResult> {
   const clientDataPromise: Promise<[ClientRelationRow[], MemberRow[]]> =
     Promise.all([loadClientRows(companyIds), loadMemberRows(companyIds)])
@@ -97,7 +103,12 @@ export async function fetchProjectRelations({
       loadTaskRows(projectIds, { archived: false, taskIds }),
       includeArchivedTasks
         ? loadTaskRows(projectIds, { archived: true, taskIds })
-        : Promise.resolve({ rows: [], assigneeRows: [] }),
+        : archivedTaskIds?.length
+          ? loadTaskRows(projectIds, {
+              archived: true,
+              taskIds: archivedTaskIds,
+            })
+          : Promise.resolve({ rows: [], assigneeRows: [] }),
     ])
 
   const githubReposPromise = getReposForProjects(projectIds)

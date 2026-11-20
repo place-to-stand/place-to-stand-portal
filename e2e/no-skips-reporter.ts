@@ -19,6 +19,9 @@ export default class NoSkipsReporter implements Reporter {
     const reasons = test.annotations
       .filter(a => a.type === 'skip')
       .map(a => a.description ?? '')
+    // No skip annotation: it did not run because an earlier test in its
+    // serial group failed, which that failure already reports.
+    if (reasons.length === 0) return
     if (reasons.some(r => r.includes('E2E_'))) return
     this.skipped.push(
       `${test.titlePath().slice(1).join(' › ')}: ${reasons.join('; ') || 'skipped'}`

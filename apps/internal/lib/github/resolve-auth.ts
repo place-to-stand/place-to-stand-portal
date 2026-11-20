@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { eq, and, isNull } from 'drizzle-orm'
+import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { githubAppInstallations, oauthConnections } from '@/lib/db/schema'
 import { decryptToken } from '@/lib/oauth/encryption'
@@ -10,8 +10,9 @@ import { serverEnv } from '@/lib/env.server'
 /**
  * Resolve a repo link to a bearer token, regardless of auth method.
  *
- * - OAuth-linked repos: decrypts `userId`'s own active GitHub OAuth token
- *   (not the connection that made the link)
+ * - OAuth-linked repos: decrypts `userId`'s own active GitHub OAuth token,
+ *   preferring the connection that made the link when it is theirs, then
+ *   their most recently updated one
  * - GitHub App-linked repos: generates a short-lived installation token
  *
  * Throws if the repo link has no usable auth credentials.
@@ -39,6 +40,10 @@ export async function resolveRepoLinkAuth(
           eq(oauthConnections.status, 'ACTIVE'),
           isNull(oauthConnections.deletedAt)
         )
+      )
+      .orderBy(
+        desc(sql`${oauthConnections.id} = ${repoLink.oauthConnectionId}`),
+        desc(oauthConnections.updatedAt)
       )
       .limit(1)
 

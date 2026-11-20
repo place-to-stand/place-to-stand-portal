@@ -1,4 +1,5 @@
 // permission: public — unguessable share token
+import { after } from 'next/server'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
@@ -48,34 +49,37 @@ export default async function PublicInvoicePage({
   const session = await getSession()
 
   if (!session) {
-    recordInvoiceView(invoice.id)
-      .then(previousCount => {
-        // Log activity only for the first view
-        if (previousCount === 0) {
-          const event = invoiceViewedEvent({
-            invoiceNumber: invoice.invoice_number,
-            viewCount: 1,
-          })
+    // after(): the view still records once the page has been sent.
+    after(() =>
+      recordInvoiceView(invoice.id)
+        .then(previousCount => {
+          // Log activity only for the first view
+          if (previousCount === 0) {
+            const event = invoiceViewedEvent({
+              invoiceNumber: invoice.invoice_number,
+              viewCount: 1,
+            })
 
-          return logActivity({
-            actorId: null,
-            source: 'SYSTEM',
-            verb: event.verb,
-            summary: event.summary,
-            targetType: 'INVOICE',
-            targetId: invoice.id,
-            targetCompanyId: invoice.client?.id ?? null,
-            metadata: event.metadata,
-          })
-        }
-      })
-      .catch(err => {
-        console.error(
-          '[invoice-view] Failed to record view for invoice',
-          invoice.id,
-          err
-        )
-      })
+            return logActivity({
+              actorId: null,
+              source: 'SYSTEM',
+              verb: event.verb,
+              summary: event.summary,
+              targetType: 'INVOICE',
+              targetId: invoice.id,
+              targetCompanyId: invoice.client?.id ?? null,
+              metadata: event.metadata,
+            })
+          }
+        })
+        .catch(err => {
+          console.error(
+            '[invoice-view] Failed to record view for invoice',
+            invoice.id,
+            err
+          )
+        })
+    )
   }
 
   const resolvedSearchParams = await searchParams
