@@ -46,7 +46,7 @@ function assertToolAccess(name: McpToolName, user: AppUser) {
   )
 }
 
-/** Agreed with Kris 2026-10-19 (PRD 009 §7). */
+/** The PostHog event every MCP tool call records. */
 const MCP_TOOL_CALLED_EVENT = 'mcp.tool_call'
 
 type ToolDefinition<Shape extends z.ZodRawShape> = {

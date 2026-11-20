@@ -95,7 +95,7 @@ export function closerSplitsEqual(
   return b.every(c => shares.get(closerKey(c)) === c.sharePercent)
 }
 
-/** "Kris Crawford (50%), Chris Donahue (50%)" — a lone closer drops the share. */
+/** "Alex Rivera (50%), Sam Lee (50%)" — a lone closer drops the share. */
 export function describeClosers(closers: readonly ClientCloser[]): string {
   if (closers.length === 1) return closers[0].name
   return closers

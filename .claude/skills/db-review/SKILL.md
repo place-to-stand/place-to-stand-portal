@@ -43,7 +43,6 @@ Review schema files and queries for:
 
 ### 5. Relationship Patterns
 
-- Verify relations in `lib/db/relations.ts` match schema
 - Many-to-many join table design
 - Proper ON DELETE/ON UPDATE behaviors
 - Missing relationships that should exist
@@ -69,7 +68,7 @@ Review schema files and queries for:
 
 - `ENABLE ROW LEVEL SECURITY` in any migration
 - `CREATE POLICY` statements in migrations
-- `pgPolicy()` calls in `lib/db/schema.ts`
+- `pgPolicy()` calls in `packages/db/src/schema.ts`
 - Import of `pgPolicy` from `drizzle-orm/pg-core`
 - Helper functions like `is_admin()` for RLS
 
@@ -168,7 +167,7 @@ For column/enum usage audit, include a summary table:
 
 ## Actions
 
-1. Read `lib/db/schema.ts` and `lib/db/relations.ts`
+1. Read `packages/db/src/schema.ts` (there are no Drizzle relations; queries join explicitly)
 2. **Check for RLS violations** - search for `pgPolicy`, `ENABLE ROW LEVEL SECURITY`, `CREATE POLICY`
 3. Analyze recent migrations in `drizzle/migrations/`
 4. Review query patterns in `lib/queries/`

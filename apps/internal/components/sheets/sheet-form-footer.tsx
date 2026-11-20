@@ -26,7 +26,7 @@ import {
 /**
  * A save button's hover hint: what it does and its keys, in the same tooltip
  * style as Undo and Redo ("Save and close ⌘S"). The keys stay out of the
- * button itself (Jason, Nov 6). A disabled button shows its reason instead.
+ * button itself. A disabled button shows its reason instead.
  */
 function SaveKeysTooltip({
   label,

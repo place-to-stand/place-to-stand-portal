@@ -47,9 +47,9 @@ type SaveConflictDialogProps = {
 
 /** Who saved, in the words the dialog uses. */
 type Saver = {
-  /** "Kris Crawford", "You", "Someone". */
+  /** "Alex Rivera", "You", "Someone". */
   full: string
-  /** "Kris's", "the saved", "their". */
+  /** "Alex's", "the saved", "their". */
   versionOf: string
   self: boolean
 }

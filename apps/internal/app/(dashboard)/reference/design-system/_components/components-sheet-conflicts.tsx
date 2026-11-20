@@ -14,7 +14,7 @@ import { Specimen } from './specimen'
 
 const KRIS: SheetViewer = {
   userId: 'design-kris',
-  name: 'Kris Crawford',
+  name: 'Alex Rivera',
   hasPhoto: false,
   editing: false,
 }

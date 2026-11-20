@@ -43,9 +43,9 @@ test('names the sender', () => {
 
 test('opens the thread in the account it belongs to', () => {
   assert.equal(
-    gmailThreadUrl('1a18d2d1749e2961', 'jason@placetostandagency.com'),
+    gmailThreadUrl('1a18d2d1749e2961', 'ada@example.com'),
     // The link Gmail's own API hands back for this thread.
-    'https://mail.google.com/mail/?authuser=jason%40placetostandagency.com#all/thread-f:1880484641473702241'
+    'https://mail.google.com/mail/?authuser=ada%40example.com#all/thread-f:1880484641473702241'
   )
 })
 

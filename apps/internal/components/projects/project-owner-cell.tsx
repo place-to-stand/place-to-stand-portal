@@ -136,8 +136,8 @@ export function ProjectOwnerCell({
           onClick={event => event.stopPropagation()}
           className={cn(
             // ProjectStatusCell's hover treatment: accent surface plus a
-            // reveal-on-hover caret, per Jason's ask that the owner cell
-            // match the status column.
+            // reveal-on-hover caret, so the owner cell matches the status
+            // column.
             // `flex` (block-level), not `inline-flex`: an inline box whose
             // avatar shows an image (no text) baseline-aligns by its bottom
             // edge, and the cell's font strut adds ~4px of phantom space

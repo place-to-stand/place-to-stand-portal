@@ -100,7 +100,7 @@ export function SheetPresence({
 const REVEAL_MS = 200
 
 /**
- * Who else has the record open: their avatars and one line, "Kris Crawford
+ * Who else has the record open: their avatars and one line, "Alex Rivera
  * is editing this company". Nothing when no one else is here. Also the
  * design system specimen.
  */

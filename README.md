@@ -31,7 +31,7 @@ You need Node 26 (see `.nvmrc`), Docker, and the [Supabase CLI](https://supabase
 5. Create the first admin (see [The first admin](#the-first-admin)).
 6. `npm run dev` starts both apps. Sign in at http://localhost:3000.
 
-Local mail lands in Mailpit (the URL `supabase start` prints), so you don't need Resend to work locally.
+Local mail lands in Mailpit (the URL `supabase start` prints), so you don't need a Resend account to work locally. The internal portal checks its required variables at start, so give the services you don't use locally a placeholder: any text for `RESEND_API_KEY`, `NEXT_PUBLIC_POSTHOG_KEY`, `AI_GATEWAY_API_KEY`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`, and a real `openssl rand -base64 32` value for `OAUTH_TOKEN_ENCRYPTION_KEY`.
 
 ## Set it up in production
 
@@ -45,8 +45,7 @@ Local mail lands in Mailpit (the URL `supabase start` prints), so you don't need
 
    The `/auth/**` pattern matters: without it, invite and sign-in links that carry a query string fall back to the Site URL and fail.
 
-3. Under Storage, create a private bucket named `user-avatars`.
-4. Apply the migrations to the new database: `DATABASE_URL=<connection string> npm run db:migrate` from `packages/db`.
+3. Apply the migrations to the new database: `DATABASE_URL=<connection string> npm run db:migrate` from `packages/db`.
 
 ### 2. Vercel
 
@@ -59,7 +58,7 @@ Create two Vercel projects from this repo, one for each app:
 
 Add the environment variables below to each project. A merge to `main` deploys both apps to production. Vercel skips builds of `claude/*` branches (`apps/internal/vercel.json`).
 
-The internal portal runs four cron jobs, set in `apps/internal/vercel.json`. Vercel runs them by itself once `CRON_SECRET` is set.
+The internal portal runs four cron jobs, set in `apps/internal/vercel.json`. Vercel runs them by itself once `CRON_SECRET` is set. One runs every 15 minutes, which needs a Vercel Pro plan; Hobby allows only daily crons.
 
 ### 3. Environment variables: internal portal
 
@@ -111,7 +110,7 @@ Optional:
 
 #### Google
 
-Create an OAuth client (Web application) in Google Cloud. Add `https://portal.example.com/api/auth/callback/google` as a redirect URI and use the same value for `GOOGLE_REDIRECT_URI`. Enable the Gmail, Calendar, Drive, Docs and Sheets APIs. Staff connect their Google account from the Account sheet; lead email then syncs from Gmail.
+Create an OAuth client (Web application) in Google Cloud. Add `https://portal.example.com/api/auth/callback/google` as a redirect URI and use the same value for `GOOGLE_REDIRECT_URI`. Enable the Gmail API. Staff connect their Google account from the Account sheet; lead email then syncs from Gmail.
 
 #### GitHub
 
@@ -187,19 +186,12 @@ Outside production, mail goes to Mailpit and needs none of this.
 
 ## Database migrations
 
-- The current schema lives in `packages/db/src/schema.ts`. Keep these definitions in sync with the database.
-- Existing Supabase migrations are captured in the baseline migration `drizzle/migrations/0000_supabase_baseline.sql` and the journal at `drizzle/meta/_journal.json`. Apply the baseline once (`npm run db:migrate`) after configuring `DATABASE_URL`; it will only register the existing state.
-- Commands:
-  - `npm run db:pull` – introspect the database into the schema file (use sparingly, only when the DB is the source of truth).
-  - `npm run db:generate -- --name <change>` – create a SQL migration from schema edits.
-  - `npm run db:migrate` – apply migrations using the configured `DATABASE_URL`.
-- Typical change flow:
-  1. Update the schema file in code.
-  2. Run `npm run db:generate -- --name descriptive_label`.
-  3. Review the generated SQL under `drizzle/migrations/`.
-  4. Run `npm run db:migrate` locally, then in staging/production via the same command once reviewed.
-- **Migrate production before you merge.** A merge to `main` deploys both apps at once, so new code must never reach production before its migration. Run `npm run db:migrate:prod` from `packages/db` (it reads `apps/internal/.env.prod`), check it exits 0, then merge. Write migrations so the code already in production keeps working: add first, remove in a later release.
-- Ensure `DATABASE_URL` is present in your shell (export it or prefix the command) before running any of the Drizzle scripts. Use the Docker Postgres connection string for local development.
+The schema lives in `packages/db/src/schema.ts`, and the SQL migrations in `packages/db/drizzle/migrations/`. Run these from `packages/db`, with `DATABASE_URL` set (locally, `postgresql://postgres:postgres@127.0.0.1:54322/postgres`):
+
+- `npm run db:generate -- --name <change>` writes a SQL migration from your schema edits. Read the SQL before you apply it.
+- `npm run db:migrate` applies any migrations the database doesn't have yet.
+
+**Migrate production before you merge.** A merge to `main` deploys both apps at once, so new code must never reach production before its migration. Run `npm run db:migrate:prod` from `packages/db` (it reads `apps/internal/.env.prod`), check it exits 0, then merge. Write migrations so the code already in production keeps working: add first, remove in a later release.
 
 ## License
 
