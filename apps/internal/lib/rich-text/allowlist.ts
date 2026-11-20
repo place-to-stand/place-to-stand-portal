@@ -7,7 +7,7 @@
  * which go with their content. Attributes are kept only where the editor
  * needs them to read the content back (`cleanRichTextAttributes`): a link's
  * safe `href`, a highlight's colour, a paragraph's or heading's alignment,
- * and a checklist's markers and ticks. Everything the toolbar can make
+ * a checklist's markers and ticks, and an @mention's person. Everything the toolbar can make
  * survives a save.
  */
 export const ALLOWED_RICH_TEXT_TAGS = [
@@ -45,11 +45,19 @@ export const ALLOWED_RICH_TEXT_ATTRIBUTES = [
   'checked',
   'data-checked',
   'data-color',
+  'data-id',
+  'data-label',
   'data-type',
   'href',
   'style',
   'type',
 ] as const
+
+/** An @mention: `<span data-type="mention" data-id="<user id>">`. */
+export const MENTION_TYPE = 'mention'
+const MENTION_ID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const MENTION_LABEL_MAX = 120
 
 const ALIGNABLE = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
 const ALIGNMENTS = new Set(['left', 'center', 'right', 'justify'])
@@ -113,6 +121,16 @@ export function cleanRichTextAttributes(
     out['data-type'] = 'taskItem'
     out['data-checked'] =
       attributes['data-checked'] === 'true' ? 'true' : 'false'
+  }
+
+  if (name === 'span' && attributes['data-type'] === MENTION_TYPE) {
+    const id = attributes['data-id'] ?? ''
+    if (MENTION_ID.test(id)) {
+      out['data-type'] = MENTION_TYPE
+      out['data-id'] = id.toLowerCase()
+      const label = (attributes['data-label'] ?? '').trim()
+      if (label) out['data-label'] = label.slice(0, MENTION_LABEL_MAX)
+    }
   }
 
   if (name === 'input') {

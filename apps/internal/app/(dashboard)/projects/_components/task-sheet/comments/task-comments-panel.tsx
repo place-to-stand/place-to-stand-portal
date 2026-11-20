@@ -36,6 +36,10 @@ export type TaskCommentsPanelProps = {
 export function TaskCommentsPanel(props: TaskCommentsPanelProps) {
   const state = useTaskComments(props)
   const { composer } = state
+  // The task's assignee options: the people who can open it.
+  const mentionOptionsUrl = props.taskId
+    ? `/api/tasks/${props.taskId}/assignee-options`
+    : undefined
 
   return (
     <>
@@ -60,6 +64,7 @@ export function TaskCommentsPanel(props: TaskCommentsPanelProps) {
             disabled={composer.disabled}
             pending={composer.isSubmitting}
             canComment={composer.canComment}
+            mentionOptionsUrl={mentionOptionsUrl}
           />
         }
         inlineFormOpen={composer.isOpen}
@@ -93,6 +98,7 @@ export function TaskCommentsPanel(props: TaskCommentsPanelProps) {
               onCancelEdit={state.editing.cancel}
               onConfirmEdit={state.editing.confirm}
               onRequestDelete={state.deletion.request}
+              mentionOptionsUrl={mentionOptionsUrl}
               // The optimistic row's id isn't a real comment yet, so it
               // stays inert until the refetch swaps in the saved one.
               disableActions={

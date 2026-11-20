@@ -67,6 +67,11 @@ export type RichTextEditorProps = {
   contentFooter?: ReactNode
   /** Pass false inside a sheet whose form history owns Cmd+Z. */
   undoRedo?: boolean
+  /**
+   * GET route (`{ ok, data: AssigneeOption[] }`) listing who `@` can
+   * mention: the record's assignee options, so only people who can open it.
+   */
+  mentionOptionsUrl?: string
 }
 
 const ClearFormattingButton = () => {
@@ -204,6 +209,7 @@ export function RichTextEditor({
   contentHeader,
   contentFooter,
   undoRedo,
+  mentionOptionsUrl,
 }: RichTextEditorProps) {
   useEffect(() => {
     ensureEditorStyles()
@@ -221,6 +227,7 @@ export function RichTextEditor({
     placeholder,
     disabled,
     undoRedo,
+    mentionOptionsUrl,
   })
 
   // Reset mobile view when switching to desktop, using the

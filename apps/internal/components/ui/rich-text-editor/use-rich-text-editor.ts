@@ -15,6 +15,7 @@ import LinkExtension from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import { HorizontalRule } from '@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension'
 import { MarkdownPaste } from '@/lib/tiptap/markdown-paste'
+import { buildMentionExtension } from './mention/mention-extension'
 
 // Import node styles
 import '@/components/tiptap-node/blockquote-node/blockquote-node.css'
@@ -38,6 +39,8 @@ type UseRichTextEditorArgs = {
    * (useSheetFormControls) already owns Cmd+Z, or the two stacks interleave.
    */
   undoRedo?: boolean
+  /** GET route listing who `@` can mention; without it, `@` is plain text. */
+  mentionOptionsUrl?: string
 }
 
 type UseRichTextEditorReturn = {
@@ -46,7 +49,8 @@ type UseRichTextEditorReturn = {
 
 const buildExtensions = (
   placeholder: string | undefined,
-  undoRedo: boolean
+  undoRedo: boolean,
+  mentionOptionsUrl: string | undefined
 ) => {
   // Extend Strike extension to add Cmd/Ctrl+Shift+X keyboard shortcut
   const StrikeWithShortcut = Strike.extend({
@@ -148,6 +152,7 @@ const buildExtensions = (
     TaskList,
     TaskItem.configure({ nested: true }),
     MarkdownPaste,
+    buildMentionExtension(mentionOptionsUrl),
     Highlight.configure({ multicolor: true }),
     Image,
     Typography,
@@ -181,12 +186,13 @@ export function useRichTextEditor({
   placeholder,
   disabled = false,
   undoRedo = true,
+  mentionOptionsUrl,
 }: UseRichTextEditorArgs): UseRichTextEditorReturn {
   const lastEmittedValueRef = useRef(value || '')
 
   const editor = useEditor(
     {
-      extensions: buildExtensions(placeholder, undoRedo),
+      extensions: buildExtensions(placeholder, undoRedo, mentionOptionsUrl),
       content: value || '',
       editable: !disabled,
       immediatelyRender: false,
@@ -217,7 +223,7 @@ export function useRichTextEditor({
         onChange(normalized)
       },
     },
-    [placeholder, undoRedo]
+    [placeholder, undoRedo, mentionOptionsUrl]
   )
 
   useEffect(() => {

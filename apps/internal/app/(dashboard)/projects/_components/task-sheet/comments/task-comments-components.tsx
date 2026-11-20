@@ -36,10 +36,13 @@ export type TaskCommentComposerProps = {
   canComment: boolean
   open: boolean
   onCancel: () => void
+  /** Who `@` can mention (people who can open the task). */
+  mentionOptionsUrl?: string
 }
 
 export function TaskCommentComposer(props: TaskCommentComposerProps) {
   const {
+    mentionOptionsUrl,
     value,
     onChange,
     onSubmit,
@@ -96,6 +99,7 @@ export function TaskCommentComposer(props: TaskCommentComposerProps) {
             }
             disabled={disabled}
             contentMinHeightClassName='[&_.ProseMirror]:min-h-20'
+            mentionOptionsUrl={mentionOptionsUrl}
           />
           <InlineFormActions
             submitLabel='Post comment'
@@ -128,6 +132,8 @@ export type TaskCommentItemProps = {
   onConfirmEdit: () => void
   onRequestDelete: (id: string) => void
   disableActions: boolean
+  /** Who `@` can mention while editing. */
+  mentionOptionsUrl?: string
 }
 
 export function TaskCommentItem(props: TaskCommentItemProps) {
@@ -142,6 +148,7 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
     onConfirmEdit,
     onRequestDelete,
     disableActions,
+    mentionOptionsUrl,
   } = props
 
   // Matches the time-log history component: a user with no display name
@@ -172,6 +179,7 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
           disabled={disableActions}
           placeholder='Update your comment…'
           contentMinHeightClassName='[&_.ProseMirror]:min-h-20'
+          mentionOptionsUrl={mentionOptionsUrl}
         />
         <div className='mt-3'>
           <InlineFormActions

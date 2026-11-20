@@ -9,7 +9,10 @@ import { db } from '@/lib/db'
 import { tasks } from '@/lib/db/schema'
 import { findAssigneesWithoutAccess } from '@/lib/projects/access'
 import { resolveTaskStatusStamps } from '@/lib/projects/task-status'
-import { notifyTaskAssigned } from '@/lib/notifications/in-app/events'
+import {
+  notifyMentions,
+  notifyTaskAssigned,
+} from '@/lib/notifications/in-app/events'
 
 import { assigneeAccessError } from './assignee-access'
 import { resolveTaskHome } from './home'
@@ -125,6 +128,7 @@ export async function createTaskForActor({
   // Committed. What follows are side effects of the save, not part of it:
   // each logs its own failure and the save still stands.
   await notifyTaskAssigned(actor, { id: taskId, title }, assigneeIds)
+  await notifyMentions(actor, { kind: 'task', id: taskId, title }, description)
 
   const event = taskCreatedEvent({
     title,

@@ -24,10 +24,11 @@ import { Badge } from '@pts/ui/badge'
 import { LazyRichTextEditor as RichTextEditor } from '@/components/ui/rich-text-editor/lazy'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { DatePicker } from '@/components/ui/date-picker'
-import type { UseFormReturn } from 'react-hook-form'
+import { useWatch, type UseFormReturn } from 'react-hook-form'
 
 import type { TaskSheetFormValues } from '@/lib/projects/task-sheet/task-sheet-schema'
 import { normalizeRichTextContent } from '@/lib/projects/task-sheet/task-sheet-utils'
+import { taskMentionOptionsUrl } from '@/lib/tiptap/mention-urls'
 import type { AttachmentItem } from '@/lib/projects/task-sheet/use-task-sheet-state'
 import { cn } from '@/lib/utils'
 
@@ -85,6 +86,14 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
   } = props
 
   const firstFieldRef = useRef<HTMLInputElement>(null)
+  const [homeProjectId, homeLeadId] = useWatch({
+    control: form.control,
+    name: ['projectId', 'leadId'],
+  })
+  const mentionOptionsUrl = taskMentionOptionsUrl({
+    projectId: homeProjectId,
+    leadId: homeLeadId,
+  })
 
   useEffect(() => {
     if (isSheetOpen && firstFieldRef.current) {
@@ -277,6 +286,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                     disabled={disabled}
                     placeholder='Add helpful context for collaborators'
                     undoRedo={false}
+                    mentionOptionsUrl={mentionOptionsUrl}
                   />
                 </DisabledFieldTooltip>
               </FormControl>

@@ -15,6 +15,8 @@ import {
 } from '@/lib/db/schema'
 import { LEAD_STATUS_LABELS, type LeadStatusValue } from '@/lib/leads/constants'
 import { findBlockedAssignees } from '@/lib/projects/access'
+import { htmlToPlainText } from '@/lib/activity/text-diff'
+import { addedMentionIds } from '@/lib/rich-text/mentions'
 import { leadHref, myTaskHref } from '@/lib/sheets/hrefs'
 
 import { createNotifications } from './queries'
@@ -105,10 +107,14 @@ async function taskFollowers(taskId: string) {
 export function notifyTaskComment(
   actor: AppUser,
   task: { id: string; title: string },
-  excerpt: string
+  excerpt: string,
+  /** People already told by a mention in this comment: one notice each. */
+  skip: readonly string[] = []
 ) {
   return bestEffort('task comment', async () => {
-    const recipients = await taskFollowers(task.id)
+    const recipients = (await taskFollowers(task.id)).filter(
+      userId => !skip.includes(userId)
+    )
     await createNotifications(
       recipients.map(userId => ({
         userId,
@@ -148,6 +154,19 @@ export function notifyTaskStatusChanged(
   })
 }
 
+/** A live lead's name for a notification (its contact, else its company). */
+async function leadName(leadId: string) {
+  const [row] = await db
+    .select({ contactName: contacts.name, companyName: companies.name })
+    .from(leads)
+    .leftJoin(contacts, eq(contacts.id, leads.contactId))
+    .leftJoin(companies, eq(companies.id, leads.companyId))
+    .where(and(eq(leads.id, leadId), isNull(leads.deletedAt)))
+    .limit(1)
+  if (!row) return null
+  return row.contactName ?? row.companyName ?? 'a lead'
+}
+
 /** A lead's owner and how to name it in a notification. */
 async function leadNotice(leadId: string) {
   const [row] = await db
@@ -171,12 +190,16 @@ export function notifyLeadUpdate(
   actor: AppUser,
   leadId: string,
   typeLabel: string,
-  excerpt: string
+  excerpt: string,
+  /** People already told by a mention in this update: one notice each. */
+  skip: readonly string[] = []
 ) {
   return bestEffort('lead update', async () => {
     const lead = await leadNotice(leadId)
     if (!lead) return
-    const recipients = await staffRecipients([lead.assigneeId])
+    const recipients = (await staffRecipients([lead.assigneeId])).filter(
+      userId => !skip.includes(userId)
+    )
     const kind = typeLabel.toLowerCase()
     const article = /^[aeiou]/.test(kind) ? 'an' : 'a'
     await createNotifications(
@@ -234,4 +257,76 @@ export function notifyLeadAssigned(
       }))
     )
   })
+}
+
+/** Up to 140 characters of the text, cut on a whole character. */
+function mentionExcerpt(html: string) {
+  const chars = Array.from(htmlToPlainText(html).replace(/\s+/g, ' ').trim())
+  return chars.length > 140
+    ? `${chars.slice(0, 139).join('')}…`
+    : chars.join('')
+}
+
+export type MentionTarget =
+  | { kind: 'task'; id: string; title: string }
+  | { kind: 'lead'; id: string }
+
+/**
+ * Tells each person newly @mentioned in `html` (and not in `previousHtml`),
+ * when they can open the task or lead. Never the actor. Returns who was
+ * told, so a comment or update notice can skip them (one notice, not two).
+ */
+export async function notifyMentions(
+  actor: AppUser,
+  target: MentionTarget,
+  html: string | null | undefined,
+  previousHtml: string | null | undefined = null
+): Promise<string[]> {
+  const added = addedMentionIds(html, previousHtml).filter(
+    id => id !== actor.id
+  )
+  if (!added.length) return []
+  let told: string[] = []
+  await bestEffort('mention', async () => {
+    const staff = await staffRecipients(added)
+    if (target.kind === 'task') {
+      const [task] = await db
+        .select({ projectId: tasks.projectId })
+        .from(tasks)
+        .where(and(eq(tasks.id, target.id), isNull(tasks.deletedAt)))
+        .limit(1)
+      if (!task) return
+      const blocked = new Set(
+        (await findBlockedAssignees(task.projectId, staff)).map(
+          person => person.id
+        )
+      )
+      told = staff.filter(userId => !blocked.has(userId))
+      await createNotifications(
+        told.map(userId => ({
+          userId,
+          type: 'task_mention',
+          title: `${actorName(actor)} mentioned you in ${target.title}`,
+          body: mentionExcerpt(html ?? '') || null,
+          href: myTaskHref(target.id),
+          actorId: actor.id,
+        }))
+      )
+      return
+    }
+    const name = await leadName(target.id)
+    if (!name) return
+    told = staff
+    await createNotifications(
+      told.map(userId => ({
+        userId,
+        type: 'lead_mention',
+        title: `${actorName(actor)} mentioned you on ${name}`,
+        body: mentionExcerpt(html ?? '') || null,
+        href: leadHref(target.id),
+        actorId: actor.id,
+      }))
+    )
+  })
+  return told
 }

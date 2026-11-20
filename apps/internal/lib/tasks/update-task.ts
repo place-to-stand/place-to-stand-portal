@@ -47,6 +47,7 @@ import {
   SaveConflictError,
 } from '@/lib/sheets/save-conflict/server'
 import {
+  notifyMentions,
   notifyTaskAssigned,
   notifyTaskStatusChanged,
 } from '@/lib/notifications/in-app/events'
@@ -284,6 +285,13 @@ export async function updateTaskForActor(
   if (existingTask.status !== status) {
     await notifyTaskStatusChanged(actor, { id: taskId, title }, status)
   }
+
+  await notifyMentions(
+    actor,
+    { kind: 'task', id: taskId, title },
+    description,
+    existingTask.description
+  )
 
   const event = buildTaskUpdateEvent(
     {

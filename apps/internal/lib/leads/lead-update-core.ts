@@ -10,7 +10,10 @@ import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { leadUpdates } from '@/lib/db/schema'
 import { LEAD_UPDATE_LABELS } from '@/lib/leads/updates'
-import { notifyLeadUpdate } from '@/lib/notifications/in-app/events'
+import {
+  notifyLeadUpdate,
+  notifyMentions,
+} from '@/lib/notifications/in-app/events'
 import { htmlToPlainText } from '@/lib/activity/text-diff'
 import type { ActivitySourceValue } from '@/lib/types'
 
@@ -105,12 +108,18 @@ export async function createLeadUpdateForActor(
       }),
     })
 
+    const mentioned = await notifyMentions(
+      actor,
+      { kind: 'lead', id: leadId },
+      body
+    )
     const text = htmlToPlainText(body ?? '').trim()
     await notifyLeadUpdate(
       actor,
       leadId,
       LEAD_UPDATE_LABELS[type],
-      excerpt(text)
+      excerpt(text),
+      mentioned
     )
 
     return { success: true, leadId, updateId: inserted.id }

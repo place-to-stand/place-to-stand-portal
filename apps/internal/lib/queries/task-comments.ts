@@ -16,7 +16,10 @@ import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { leads, projects, taskComments, tasks, users } from '@/lib/db/schema'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
-import { notifyTaskComment } from '@/lib/notifications/in-app/events'
+import {
+  notifyMentions,
+  notifyTaskComment,
+} from '@/lib/notifications/in-app/events'
 import { clampLimit, decodeCursor, encodeCursor } from '@/lib/pagination/cursor'
 import { sanitizeRichTextHtml } from '@/lib/rich-text/sanitize-server'
 import type {
@@ -318,11 +321,18 @@ export async function createTaskComment(
     .where(eq(tasks.id, input.taskId))
     .limit(1)
   if (task) {
+    const target = { id: input.taskId, title: task.title }
+    const mentioned = await notifyMentions(
+      user,
+      { kind: 'task', ...target },
+      body
+    )
     const text = htmlToPlainText(body).trim()
     await notifyTaskComment(
       user,
-      { id: input.taskId, title: task.title },
-      text.length > 140 ? `${text.slice(0, 139)}…` : text
+      target,
+      text.length > 140 ? `${text.slice(0, 139)}…` : text,
+      mentioned
     )
   }
 
@@ -368,6 +378,21 @@ export async function updateTaskComment(
     commentId: input.commentId,
     buildEvent: taskCommentUpdatedEvent,
   })
+
+  // An edit tells only the people it newly mentions.
+  const [task] = await db
+    .select({ title: tasks.title })
+    .from(tasks)
+    .where(eq(tasks.id, comment.taskId))
+    .limit(1)
+  if (task) {
+    await notifyMentions(
+      user,
+      { kind: 'task', id: comment.taskId, title: task.title },
+      body,
+      comment.body
+    )
+  }
 }
 
 export async function softDeleteTaskComment(

@@ -25,6 +25,7 @@ const OPTIONS: sanitizeHtml.IOptions = {
     ul: ['data-type'],
     li: ['data-type', 'data-checked'],
     input: ['type', 'checked'],
+    span: ['data-type', 'data-id', 'data-label'],
   },
   // Styles were already cut down to alignment and highlight colour by
   // `cleanRichTextAttributes`; this is the same list as a second fence.
@@ -46,7 +47,7 @@ const OPTIONS: sanitizeHtml.IOptions = {
   disallowedTagsMode: 'discard',
   transformTags: {
     ...Object.fromEntries(
-      [...ALIGNABLE_TAGS, 'mark', 'ul', 'li', 'input'].map(tag => [
+      [...ALIGNABLE_TAGS, 'mark', 'ul', 'li', 'input', 'span'].map(tag => [
         tag,
         cleanTag,
       ])
