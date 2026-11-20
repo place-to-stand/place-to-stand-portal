@@ -16,21 +16,36 @@
  * review checks the wording.
  */
 import { execFileSync } from 'node:child_process'
+import { realpathSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
 const CHANGELOG = 'apps/internal/CHANGELOG.md'
 // Code people see: both apps and the shared UI package.
 const VISIBLE = [/^apps\/internal\//, /^apps\/client\//, /^packages\/ui\//]
 // Inside those, files no one sees.
 const HIDDEN = [
-  /\.test\.[cm]?[jt]sx?$/,
+  /\.(test|spec)\.[cm]?[jt]sx?$/,
+  /(^|\/)(__tests__|__snapshots__|fixtures)\//,
   /\.md$/,
   /(^|\/)lint-suppressions\.json$/,
   /(^|\/)oxlint\.config\.mjs$/,
 ]
 const ITEM = /^- \*\*[^*]+:\*\* \S/
-const SKIP = /^\s*changelog:\s*none\b/im
+// One line of its own, outside comments and code blocks.
+const SKIP = /^[ \t]*changelog:[ \t]*none\b/im
 
-export function checkChangelog({ files, addedLines, body }) {
+/** The body without HTML comments or fenced code, so a template can't skip for everyone. */
+function visibleBody(body) {
+  return (body ?? '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/```[\s\S]*?```/g, '')
+}
+
+/**
+ * `addedLines`: lines the PR adds to CHANGELOG.md. `baseLines`: the file on
+ * the base branch, so rewording or moving an old entry doesn't count as new.
+ */
+export function checkChangelog({ files, addedLines, baseLines = [], body }) {
   const visible = files.filter(
     file =>
       file !== CHANGELOG &&
@@ -38,15 +53,24 @@ export function checkChangelog({ files, addedLines, body }) {
       !HIDDEN.some(re => re.test(file))
   )
   if (visible.length === 0) return { ok: true, why: 'no visible changes' }
-  if (addedLines.some(line => ITEM.test(line))) {
+  const existing = new Set(baseLines.map(line => line.trim()))
+  const added = addedLines.filter(
+    line => ITEM.test(line) && !existing.has(line.trim())
+  )
+  if (added.length > 0) {
     return { ok: true, why: 'CHANGELOG.md has a new line' }
   }
-  if (SKIP.test(body ?? '')) return { ok: true, why: 'Changelog: none' }
+  if (SKIP.test(visibleBody(body))) return { ok: true, why: 'Changelog: none' }
   return { ok: false, visible }
 }
 
 function git(...args) {
-  return execFileSync('git', args, { encoding: 'utf8' })
+  // Plain paths: non-ASCII names aren't quoted into a form the patterns miss.
+  return execFileSync('git', ['-c', 'core.quotePath=false', ...args], {
+    encoding: 'utf8',
+    // Errors carry git's message; a missing file on the base prints nothing.
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
 }
 
 function main() {
@@ -56,7 +80,18 @@ function main() {
     process.exit(2)
   }
   const range = `${base}...${head}`
-  const files = git('diff', '--name-only', range).split('\n').filter(Boolean)
+  // --no-renames lists both sides of a rename, so moving a file out of the
+  // apps still counts.
+  const files = git('diff', '--name-only', '--no-renames', range)
+    .split('\n')
+    .filter(Boolean)
+  const mergeBase = git('merge-base', base, head).trim()
+  let baseLines = []
+  try {
+    baseLines = git('show', `${mergeBase}:${CHANGELOG}`).split('\n')
+  } catch {
+    // No CHANGELOG.md on the base yet: every line is new.
+  }
   const addedLines = git('diff', '--unified=0', range, '--', CHANGELOG)
     .split('\n')
     .filter(line => line.startsWith('+') && !line.startsWith('+++'))
@@ -65,6 +100,7 @@ function main() {
   const result = checkChangelog({
     files,
     addedLines,
+    baseLines,
     body: process.env.PR_BODY,
   })
   if (result.ok) {
@@ -89,4 +125,11 @@ function main() {
   process.exit(1)
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main()
+// Run only as a script, never on import. Compared as real paths, so a
+// symlink or a space in the path can't skip the check and pass silently.
+if (
+  process.argv[1] &&
+  realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
+) {
+  main()
+}
