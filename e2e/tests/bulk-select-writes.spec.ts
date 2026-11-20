@@ -156,6 +156,10 @@ test('hour blocks, invoices and time logs: archive and restore', async ({
         ? selectable.filter({ hasNotText: 'Paid' })
         : selectable
     const before = await rows.count()
+    const picked = [
+      (await rows.nth(0).locator('td').nth(1).innerText()).trim(),
+      (await rows.nth(1).locator('td').nth(1).innerText()).trim(),
+    ]
     await rows.nth(0).locator('td[data-slot=table-select-cell]').click()
     await rows.nth(1).locator('td[data-slot=table-select-cell]').click()
     await confirmArchive(page)
@@ -164,6 +168,8 @@ test('hour blocks, invoices and time logs: archive and restore', async ({
     // Both lists sort newest first, so the two just archived lead the
     // archive, above anything archived before.
     await open(page, `${list}/archive`)
+    await expect(rows.nth(0)).toContainText(picked[0])
+    await expect(rows.nth(1)).toContainText(picked[1])
     await rows.nth(0).locator('td[data-slot=table-select-cell]').click()
     await rows.nth(1).locator('td[data-slot=table-select-cell]').click()
     await bar(page).getByRole('button', { name: 'Restore' }).click()

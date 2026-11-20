@@ -24,7 +24,7 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   fullyParallel: false,
   workers: 1,
-  reporter: [['list']],
+  reporter: [['list'], ['./no-skips-reporter.ts']],
   outputDir: path.join(__dirname, 'test-results'),
   globalSetup: './global-setup.ts',
   use: {

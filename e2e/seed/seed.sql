@@ -1,9 +1,9 @@
 -- Made-up data for local development and the browser tests: a studio
 -- ("Northwind Studio"), four clients, leads, projects, tasks, time, invoices,
 -- plus rows the tests change in bulk. Loaded by `npm run test:e2e:seed`, which
--- creates the three sign-ins first. Never load it into a real database.
+-- creates the sign-ins first. Never load it into a real database.
 begin;
--- Staff: the three sign-ins seed.mjs created, at the staff company.
+-- Staff: the three staff sign-ins seed.mjs created, at the staff company.
 insert into companies (name, slug, is_staff) values ('Northwind Studio', 'northwind-studio', true);
 insert into users (id, email, role, onboarding_completed_at)
  select au.id, au.email, v.role::user_role, now()
