@@ -139,7 +139,9 @@
      ===================== */
 .tiptap.ProseMirror [data-type='mention'] {
   display: inline-block;
-  color: var(--tt-brand-color-500);
+  /* The name in the text colour, on the muted chip (editor-styles.ts), the
+     same as saved text shows it. The template's brand purple read as a link. */
+  color: inherit;
 }
 
 /* =====================
