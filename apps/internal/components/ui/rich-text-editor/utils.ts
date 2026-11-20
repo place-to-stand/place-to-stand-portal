@@ -1,7 +1,9 @@
 import DOMPurify from 'dompurify'
 
 import {
+  ALLOWED_RICH_TEXT_ATTRIBUTES,
   ALLOWED_RICH_TEXT_TAGS,
+  cleanRichTextAttributes,
   RICH_TEXT_LINK_REL,
   RICH_TEXT_LINK_TARGET,
   ensureUrlProtocol,
@@ -63,11 +65,39 @@ export const richTextToPlainText = (content: string) =>
 export const isContentEmpty = (content: string) =>
   richTextToPlainText(content).length === 0
 
+/** Rebuilds a non-link element's attributes from the shared allowlist. */
+const cleanElementAttributes = (node: Element) => {
+  const tag = node.tagName.toLowerCase()
+  const current: Record<string, string> = {}
+  for (const attribute of Array.from(node.attributes)) {
+    current[attribute.name] = attribute.value
+  }
+  const cleaned = cleanRichTextAttributes(tag, current)
+  if (cleaned === null) {
+    node.remove()
+    return
+  }
+  for (const name of Object.keys(current)) {
+    if (!(name in cleaned)) node.removeAttribute(name)
+  }
+  for (const [name, value] of Object.entries(cleaned)) {
+    node.setAttribute(name, value)
+  }
+}
+
 const purify = (content: string) => {
   // Hooks are global to the DOMPurify instance, so add and remove ours
   // around each call.
   DOMPurify.addHook('afterSanitizeAttributes', node => {
-    if (node.tagName !== 'A') return
+    if (node.tagName !== 'A') {
+      cleanElementAttributes(node)
+      return
+    }
+    // A link keeps only its href (checked here) and the target and rel set
+    // below; the other allowed names are for other tags.
+    for (const attribute of Array.from(node.attributes)) {
+      if (attribute.name !== 'href') node.removeAttribute(attribute.name)
+    }
     const href = ensureUrlProtocol(node.getAttribute('href') ?? '')
     if (!href) {
       node.removeAttribute('href')
@@ -80,7 +110,7 @@ const purify = (content: string) => {
   try {
     return DOMPurify.sanitize(content, {
       ALLOWED_TAGS: [...ALLOWED_RICH_TEXT_TAGS],
-      ALLOWED_ATTR: ['href'],
+      ALLOWED_ATTR: [...ALLOWED_RICH_TEXT_ATTRIBUTES],
       ALLOW_DATA_ATTR: false,
     })
   } finally {

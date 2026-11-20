@@ -15,6 +15,7 @@ import LinkExtension from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import { HorizontalRule } from '@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension'
 import { KeepTabInLists } from '@/lib/tiptap/list-indent'
+import { MarkdownPaste } from '@/lib/tiptap/markdown-paste'
 
 // Import node styles
 import '@/components/tiptap-node/blockquote-node/blockquote-node.css'
@@ -148,6 +149,7 @@ const buildExtensions = (
     TaskList,
     TaskItem.configure({ nested: true }),
     KeepTabInLists,
+    MarkdownPaste,
     Highlight.configure({ multicolor: true }),
     Image,
     Typography,
