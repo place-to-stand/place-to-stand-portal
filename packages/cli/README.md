@@ -96,7 +96,7 @@ address; an unmatched reference is an error rather than a silent no-op, so a typ
 quietly unassign everyone.
 
 `tasks comment` and the `--description` flags take plain text or minimal markdown — paragraphs
-on blank lines, `- ` bullets, `1. ` numbered lists, `**bold**`, `*italic*`, `` `code` ``, and
+on blank lines, `- ` bullets, `1. ` numbered lists (indent an item two spaces to nest it), `**bold**`, `*italic*`, `` `code` ``, and
 `[text](https://…)` links — and store the HTML the portal's editor would have produced. Raw HTML
 tags in the text are escaped, not rendered. Both `--body -` and `--description -` read from
 stdin, so multi-paragraph text can come from a heredoc instead of one long shell argument.

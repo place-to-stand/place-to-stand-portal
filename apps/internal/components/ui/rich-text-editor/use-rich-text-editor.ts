@@ -14,6 +14,7 @@ import { Selection } from '@tiptap/extensions'
 import LinkExtension from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import { HorizontalRule } from '@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension'
+import { KeepTabInLists } from '@/lib/tiptap/list-indent'
 
 // Import node styles
 import '@/components/tiptap-node/blockquote-node/blockquote-node.css'
@@ -146,6 +147,7 @@ const buildExtensions = (
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
     TaskList,
     TaskItem.configure({ nested: true }),
+    KeepTabInLists,
     Highlight.configure({ multicolor: true }),
     Image,
     Typography,

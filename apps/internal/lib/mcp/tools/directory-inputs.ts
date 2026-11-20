@@ -11,7 +11,7 @@ export const richText = z
   .string()
   .max(20_000)
   .describe(
-    'Plain text or minimal markdown: paragraphs, - bullets, 1. lists, **bold**, *italic*, `code`, [links](https://…).'
+    'Plain text or minimal markdown: paragraphs, - bullets, 1. lists (indent two spaces to nest), **bold**, *italic*, `code`, [links](https://…).'
   )
 
 /** Web address; a bare domain ("acme.com") is fine. */

@@ -150,7 +150,7 @@ export function registerTaskCommands(program: Command): void {
   tasks
     .command('comment <taskId>')
     .description(
-      'Add a comment to a task. The body is minimal markdown: paragraphs on blank lines, - bullets, 1. numbered lists, **bold**, *italic*, `code`, [text](https://…) links.'
+      'Add a comment to a task. The body is minimal markdown: paragraphs on blank lines, - bullets (indent two spaces to nest), 1. numbered lists, **bold**, *italic*, `code`, [text](https://…) links.'
     )
     .requiredOption('--body <text>', 'Comment body; "-" reads stdin')
     .action(async (taskId: string, options: { body: string }) => {

@@ -47,7 +47,7 @@ const STATUSES =
   'NEW_OPPORTUNITIES | ACTIVE_OPPORTUNITIES | PROPOSAL_SENT | ON_ICE | CLOSED_WON | CLOSED_LOST | UNQUALIFIED'
 
 const MARKDOWN_HELP =
-  'Plain text or minimal markdown: paragraphs on blank lines, - bullets, 1. numbered lists, **bold**, *italic*, `code`, [text](https://…) links; "-" reads stdin'
+  'Plain text or minimal markdown: paragraphs on blank lines, - bullets (indent two spaces to nest), 1. numbered lists, **bold**, *italic*, `code`, [text](https://…) links; "-" reads stdin'
 
 /** Same stdin convention as `tasks`: `-` reads the whole of stdin. */
 function textOrStdin(value: string | undefined): string | undefined {

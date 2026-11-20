@@ -11,6 +11,11 @@ import { ChevronDownIcon } from '@/components/tiptap-icons/chevron-down-icon'
 
 // --- Tiptap UI ---
 import { ListButton, type ListType } from '@/components/tiptap-ui/list-button'
+import {
+  ListIndentButton,
+  canChangeListIndent,
+} from '@/components/tiptap-ui/list-indent-button'
+import type { ListIndentDirection } from '@/lib/tiptap/list-indent'
 
 import { useListDropdownMenu } from '@/components/tiptap-ui/list-dropdown-menu/use-list-dropdown-menu'
 
@@ -24,6 +29,12 @@ import {
   DropdownMenuItem,
 } from '@/components/tiptap-ui-primitive/dropdown-menu'
 import { Card, CardBody } from '@/components/tiptap-ui-primitive/card'
+import { Separator } from '@/components/tiptap-ui-primitive/separator'
+
+const INDENT_ITEMS: { direction: ListIndentDirection; label: string }[] = [
+  { direction: 'indent', label: 'Indent' },
+  { direction: 'outdent', label: 'Outdent' },
+]
 
 export interface ListDropdownMenuProps extends Omit<ButtonProps, 'type'> {
   /**
@@ -104,6 +115,25 @@ export function ListDropdownMenu({
                     editor={editor}
                     type={option.type}
                     text={option.label}
+                    showTooltip={false}
+                  />
+                </DropdownMenuItem>
+              ))}
+            </ButtonGroup>
+            {/* Nesting: the same as Tab and Shift+Tab in a list item. */}
+            <Separator orientation='horizontal' />
+            <ButtonGroup>
+              {INDENT_ITEMS.map(({ direction, label }) => (
+                <DropdownMenuItem
+                  key={direction}
+                  asChild
+                  disabled={!canChangeListIndent(editor, direction)}
+                >
+                  <ListIndentButton
+                    editor={editor}
+                    direction={direction}
+                    text={label}
+                    showShortcut
                     showTooltip={false}
                   />
                 </DropdownMenuItem>

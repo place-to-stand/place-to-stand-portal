@@ -30,7 +30,7 @@ const richTextSchema = (max: number) =>
     .string()
     .max(max)
     .describe(
-      'Plain text or minimal markdown: paragraphs, - bullets, 1. lists, **bold**, *italic*, `code`, [links](https://…).'
+      'Plain text or minimal markdown: paragraphs, - bullets, 1. lists (indent two spaces to nest), **bold**, *italic*, `code`, [links](https://…).'
     )
 
 export const cliCreateLeadFields = {
