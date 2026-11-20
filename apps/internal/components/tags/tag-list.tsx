@@ -35,7 +35,7 @@ export function TagList({
           <HoverCardTrigger asChild>
             <button
               type='button'
-              aria-label={`${hiddenNames.length} more ${hiddenNames.length === 1 ? 'tag' : 'tags'}: ${hiddenNames.join(', ')}`}
+              aria-label={`+${hiddenNames.length} more ${hiddenNames.length === 1 ? 'tag' : 'tags'}: ${hiddenNames.join(', ')}`}
               className={cn(
                 HOVER_COUNT_TRIGGER_CLASS,
                 'text-muted-foreground shrink-0 text-xs'
@@ -46,7 +46,7 @@ export function TagList({
           </HoverCardTrigger>
           <HoverCardContent className='w-max max-w-64 p-2'>
             {/* One tag a line, the card as wide as the longest. */}
-            <span className='flex flex-col items-start gap-1'>
+            <span className='flex max-h-[min(20rem,var(--available-height))] flex-col items-start gap-1 overflow-y-auto'>
               {hiddenNames.map(name => (
                 <TagBadge key={name} name={name} />
               ))}

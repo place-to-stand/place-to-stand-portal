@@ -25,6 +25,15 @@ type HoverCardContextValue = {
   hoveredRef: React.RefObject<boolean>
 }
 
+/**
+ * Hover means a mouse. A finger or a pen that can't hover fires enter and
+ * leave around every tap, and that leave would close the card the tap just
+ * opened; a tap (like Enter or Space) opens it as a press instead.
+ */
+function isHover(event: React.PointerEvent) {
+  return event.pointerType === 'mouse'
+}
+
 const HoverCardContext = React.createContext<HoverCardContextValue | null>(null)
 
 function useHoverCard() {
@@ -145,6 +154,7 @@ function HoverCard({
             details.reason === 'trigger-press' &&
             hoveredRef.current
           ) {
+            details.cancel()
             return
           }
           setOpenState(nextOpen)
@@ -175,18 +185,19 @@ function HoverCardTrigger({
     <PopoverPrimitive.Trigger
       data-slot='hover-card-trigger'
       className={className}
-      // Hover is for mice and pens. A finger fires enter and leave around
-      // every tap, and that leave would close the card the tap just opened;
-      // a tap (like Enter or Space) opens it as a press instead.
       onPointerEnter={event => {
-        if (event.pointerType === 'touch') return
+        if (!isHover(event)) return
         hoveredRef.current = true
         setOpen(true)
       }}
       onPointerLeave={event => {
-        if (event.pointerType === 'touch') return
+        if (!isHover(event)) return
         hoveredRef.current = false
         setOpen(false)
+      }}
+      // Enter and Space toggle the card even with the mouse resting on it.
+      onKeyDown={() => {
+        hoveredRef.current = false
       }}
       {...renderProps}
       {...props}
@@ -206,16 +217,25 @@ function HoverCardContent({
   }) {
   const { setOpen, closeTimeoutRef } = useHoverCard()
 
-  const handlePointerEnter = React.useCallback(() => {
-    if (closeTimeoutRef.current) {
-      clearTimeout(closeTimeoutRef.current)
-      closeTimeoutRef.current = null
-    }
-  }, [closeTimeoutRef])
+  const handlePointerEnter = React.useCallback(
+    (event: React.PointerEvent) => {
+      if (!isHover(event)) return
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current)
+        closeTimeoutRef.current = null
+      }
+    },
+    [closeTimeoutRef]
+  )
 
-  const handlePointerLeave = React.useCallback(() => {
-    setOpen(false)
-  }, [setOpen])
+  // A finger lifting off the card (or ending a scroll in it) isn't leaving.
+  const handlePointerLeave = React.useCallback(
+    (event: React.PointerEvent) => {
+      if (!isHover(event)) return
+      setOpen(false)
+    },
+    [setOpen]
+  )
 
   return (
     <PopoverPrimitive.Portal>
