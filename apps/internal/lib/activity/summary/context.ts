@@ -106,8 +106,8 @@ function compactMetadata(metadata: Json | null | undefined): string | null {
 
 /**
  * Resolves project/client display names for the AI prompt. No per-user
- * filtering: this route is admin-only (assertAdmin above), so the caller may
- * see every referenced project and client.
+ * filtering: its one caller, the dashboard summary route, is admin-only
+ * (`assertAdmin`), so the caller may see every referenced project and client.
  */
 export async function buildActivityContext(
   logs: ActivityLogWithActor[]

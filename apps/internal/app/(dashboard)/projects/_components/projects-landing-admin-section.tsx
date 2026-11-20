@@ -65,8 +65,8 @@ export function ProjectsLandingAdminSection({
       tabs={memberView ? PROJECTS_TABS.slice(0, 1) : PROJECTS_TABS}
       activeTab='projects'
       count={
-        // R2/03.E5: the implicit default status view must not read as
-        // filtered — show a plain visible-count until a filter is active.
+        // The implicit default status view must not read as filtered: show
+        // a plain visible count until a filter is active.
         filtersActive
           ? {
               label: 'projects',

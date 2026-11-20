@@ -36,8 +36,7 @@ export function appRestrictedPaths({ dir, entityRegistry, sheetRegistry }) {
         'A section +, its list and its clickable empty state come together: use EntityList (@/components/sheets/entity-list). See docs/design-system/components/entity-list.md.',
     })
     // Every sheet shares one header and one footer, so none drifts from the
-    // rest (the Filters sheet once did). The shared parts import these by
-    // relative path.
+    // rest. The shared parts import these by relative path.
     restrictedPaths.push({
       name: '@/components/ui/sheet',
       importNames: [

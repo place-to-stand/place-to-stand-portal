@@ -35,10 +35,7 @@ export function assertAdmin(user: AppUser) {
   }
 }
 
-/**
- * CRM access (leads, contacts and their activity): ADMIN or SALES. Only the
- * CRM layer calls this; every other guard stays `assertAdmin`.
- */
+/** CRM access (leads and their updates): roles holding `leads.manage`. */
 export function assertCrmAccess(user: AppUser) {
   if (!can(user, 'leads.manage')) {
     throw new ForbiddenError('CRM access required')
@@ -46,9 +43,10 @@ export function assertCrmAccess(user: AppUser) {
 }
 
 /**
- * The internal portal is admin-only (CLIENT users are redirected to the
- * client portal at sign-in), so these guards assert the admin role and then
- * verify the target entity exists and is not soft-deleted.
+ * Admin-only entity guards: they assert the admin role, then verify the
+ * target entity exists and is not soft-deleted. Project members (SALES) go
+ * through `ensureProjectWorkAccess` / `ensureTaskWorkAccess` in
+ * `lib/projects/access.ts` instead.
  */
 export async function ensureProjectAccess(user: AppUser, projectId: UUID) {
   assertAdmin(user)

@@ -4,7 +4,7 @@ import { isoTimestamp } from './timestamp'
 
 type CliHourBlock = {
   id: string
-  /** Since 0111 the client is its company: same value as companyId. */
+  /** A client is its company: same value as companyId. */
   clientId: string
   companyId: string
   clientName: string | null

@@ -9,10 +9,6 @@ import {
   tasks,
 } from '@/lib/db/schema'
 
-// ---------------------------------------------------------------------------
-// Sessions
-// ---------------------------------------------------------------------------
-
 /**
  * A task's planning session, regardless of status. `status` is a display
  * flag ('active' = still drafting, 'deployed' = dispatched at least once) —
@@ -76,10 +72,6 @@ export async function getPlanningContextForThread(threadId: string) {
   return row ?? null
 }
 
-// ---------------------------------------------------------------------------
-// Threads
-// ---------------------------------------------------------------------------
-
 export async function getThreadById(threadId: string) {
   const [thread] = await db
     .select()
@@ -121,10 +113,8 @@ export async function updateThreadVersion(
     .where(eq(planThreads.id, threadId))
 }
 
-// ---------------------------------------------------------------------------
-// Generation status (lets the frontend detect and resume an in-flight or
-// just-finished generation after navigating away mid-stream and back)
-// ---------------------------------------------------------------------------
+// Generation status: lets the page detect and resume an in-flight or
+// just-finished generation after navigating away mid-stream and back.
 
 /**
  * A write still marked streaming this long after its session was last
@@ -144,8 +134,8 @@ const sessionGenerationStaleSql = sql<boolean>`${planningSessions.updatedAt} < n
  * `updated_at`, which is how a later claim or read tells a dead write
  * (older than STALE_GENERATION_MINUTES) from a live one. The clock is per
  * session, not per thread, so activity on a sibling thread delays a dead
- * thread's timeout; sessions have one thread today. A per-thread start
- * column would fix that and is left for a later migration.
+ * thread's timeout. Sessions hold one thread, so this doesn't bite; a
+ * per-thread start column would fix it.
  */
 export async function claimThreadGeneration(
   threadId: string,
@@ -217,10 +207,6 @@ export async function failThreadGeneration(threadId: string, error: string) {
     .where(eq(planThreads.id, threadId))
 }
 
-// ---------------------------------------------------------------------------
-// Revisions
-// ---------------------------------------------------------------------------
-
 export async function getRevisions(threadId: string) {
   return db
     .select()
@@ -257,10 +243,6 @@ export async function createRevision(
 
   return revision
 }
-
-// ---------------------------------------------------------------------------
-// Messages
-// ---------------------------------------------------------------------------
 
 export async function getMessages(threadId: string) {
   return db

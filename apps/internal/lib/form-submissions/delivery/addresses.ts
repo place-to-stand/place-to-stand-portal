@@ -6,8 +6,8 @@ import { serverEnv } from '@/lib/env.server'
 
 /**
  * Sender and inbox for the marketing form emails. Separate from the portal's
- * own transactional sender so visitors keep seeing `hello@…`, the address the
- * marketing site sent from before PRD 008 moved the sends here.
+ * own transactional sender so visitors see the marketing site's own
+ * `hello@…` address.
  */
 export function resolveFormEmailAddresses(business: {
   name: string

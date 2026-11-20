@@ -82,8 +82,8 @@ export async function fetchHoursSnapshot(
     sql`${billingTypeAsOfSql(startDate)} = 'prepaid'`,
   ]
 
-  // All five aggregates and the log page derive from the clamped cursor
-  // alone — awaiting them one by one cost a serial DB round trip each.
+  // The four sums and the log page depend only on the clamped cursor, so
+  // they run in parallel rather than one round trip after another.
   const [
     // My hours: billable (CLIENT project) hours only
     myHours,
@@ -225,8 +225,6 @@ export async function fetchTimeLogPage(
       .leftJoin(companies, eq(projects.companyId, companies.id))
       .leftJoin(users, eq(users.id, timeLogs.userId))
       .where(where)
-      // createdAt breaks ties within a day; id makes the order total, so paging
-      // can't show or skip a row because two logs share a timestamp.
       // The chosen column first; date (newest), createdAt and id break ties
       // so paging can't show or skip a row.
       .orderBy(

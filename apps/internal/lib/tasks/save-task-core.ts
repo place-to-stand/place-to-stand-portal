@@ -11,7 +11,7 @@ import { updateTaskForActor } from './update-task'
 import type { SaveTaskResult } from './types'
 
 /**
- * The one create-and-update path for tasks, with the acting admin injected
+ * The one create-and-update path for tasks, with the acting user injected
  * rather than resolved from a session.
  *
  * This lives outside the `'use server'` action module on purpose. Exports of a

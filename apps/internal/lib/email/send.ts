@@ -20,18 +20,17 @@ type OutboundEmail = {
 
 /**
  * Local Supabase runs Mailpit on this port. `supabase/config.toml` leaves
- * `smtp_port` commented out, so its HTTP send API is used instead — no SMTP
- * client, and therefore no new dependency.
+ * `smtp_port` commented out, so its HTTP send API is used instead: no SMTP
+ * client, and no extra dependency.
  */
 const MAILPIT_URL = 'http://127.0.0.1:54324'
 
 /**
  * Sends through Resend when deployed, and into Mailpit when running locally.
  *
- * Local development has no verified Resend sender domain, so every send used to
- * fail with a 403 that surfaced as "unable to send invite email". Routing
- * local mail to Mailpit makes the flow
- * testable end to end and puts the invite next to Supabase's own emails.
+ * Local development has no verified Resend sender domain, so Resend would
+ * refuse every local send with a 403. Routing local mail to Mailpit makes the
+ * flow testable end to end and puts the invite next to Supabase's own emails.
  */
 export async function sendEmail(message: OutboundEmail): Promise<void> {
   if (process.env.NODE_ENV === 'production') {

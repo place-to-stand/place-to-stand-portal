@@ -87,10 +87,10 @@ type LeadContact = {
 
 /**
  * Which contact a save links the lead to; the lead reads its name, email and
- * phone from it. The sheet's picker sends `contactId`. The CLI,
- * MCP and intake send contact fields instead: an existing lead edits its
- * linked contact; a new lead links the contact with that email, or a new
- * contact (name-only when there's no email).
+ * phone from it. The sheet's picker sends `contactId`. The CLI and MCP send
+ * contact fields instead: an existing lead edits its linked contact; a new
+ * lead links the contact with that email, or a new contact (name-only when
+ * there's no email).
  */
 export async function resolveLeadContact(
   { tx, actor, defer }: SaveContext,
@@ -223,9 +223,8 @@ export async function resolveLeadContact(
   }
 
   if (email) {
-    // Same rule as the 0096 backfill: a live contact wins, then an
-    // exact-case match, then the oldest. An archived match is restored,
-    // since a live lead now points at them.
+    // A live contact wins, then an exact-case match, then the oldest. An
+    // archived match is restored, since a live lead now points at them.
     const [match] = await tx
       .select({ ...fields, deletedAt: contacts.deletedAt })
       .from(contacts)

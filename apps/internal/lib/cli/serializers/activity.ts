@@ -17,7 +17,7 @@ type CliActivity = {
     type: string
     id: string | null
     projectId: string | null
-    /** Since 0111 the client is its company: same value as companyId. */
+    /** A client is its company: same value as companyId. */
     clientId: string | null
     companyId: string | null
   }

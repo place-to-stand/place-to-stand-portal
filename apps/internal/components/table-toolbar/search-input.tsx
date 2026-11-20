@@ -19,8 +19,8 @@ type SearchInputProps = {
 }
 
 /**
- * Debounced table search (PRD 004 §03, D7). Fuzzy `%`-join semantics come
- * from the server's `createSearchPattern` (W3 decision — no escaping).
+ * Debounced table search. The server's `createSearchPattern` joins the words
+ * with `%` for a fuzzy match and does not escape `%` or `_`.
  */
 export function SearchInput({
   value,

@@ -48,8 +48,8 @@ const ADDRESS_PATTERN = /^[^\s@"(){}<>]+@[^\s@"(){}<>]+\.[^\s@"(){}<>]+$/
 
 /**
  * A Gmail search for threads any of `addresses` sent, received or was
- * copied (or blind copied) on. Addresses that don't look like one are dropped, so nothing
- * typed into a contact can widen the search.
+ * copied (or blind copied) on. Addresses that don't look like one are
+ * dropped, so nothing typed into a contact can widen the search.
  */
 export function buildAddressQuery(addresses: string[]): string | null {
   const clean = [
@@ -101,7 +101,7 @@ export function parseFromName(from: string | null): string | null {
 /**
  * Opens a thread in Gmail, signed in as the account it belongs to. The API's
  * thread id is hex; Gmail's own links use it as a decimal `thread-f:` id
- * (checked against the links Gmail itself returns, Nov 2026).
+ * (matching the links Gmail itself returns).
  */
 export function gmailThreadUrl(
   threadId: string,

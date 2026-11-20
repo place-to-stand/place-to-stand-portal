@@ -12,7 +12,7 @@ type SnapshotErrorNoticeProps = {
 }
 
 /**
- * A closed month whose saved numbers failed validation (F9). The page falls
+ * A closed month whose saved numbers failed validation. The page falls
  * back to a live derivation, and says so.
  */
 export function SnapshotErrorNotice({ message }: SnapshotErrorNoticeProps) {

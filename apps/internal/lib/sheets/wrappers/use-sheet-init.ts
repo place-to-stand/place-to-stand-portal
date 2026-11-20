@@ -50,8 +50,7 @@ export function prefetchSheetInit(entity: SheetInitEntity, value: string) {
 
 /**
  * Fetches `/api/sheets/init` for a host-rendered sheet wrapper. While
- * loading, callers render nothing (precedent: the lead task overlay) so the
- * sheet animates in exactly once, with real data. A failed load surfaces a
+ * loading, callers render nothing so the sheet animates in exactly once, with real data. A failed load surfaces a
  * toast and closes the sheet's param so the URL doesn't point at a sheet
  * that can't render.
  */
@@ -83,12 +82,11 @@ export function useSheetInit<E extends SheetInitEntity & SheetEntityKey>(
   }, [close, toast, ownId])
 
   // Retire the cached payload once this sheet leaves the DOM (or swaps
-  // value, e.g. create→edit). The sheet is where the record gets EDITED, so
-  // a payload cached before a session of edits is exactly the one that must
-  // not seed the next open: the form baselines on the first data it sees and
-  // deliberately never re-baselines on a same-id refetch, so a stale seed
-  // showed pre-edit values and read as "my change didn't save". Prefetch
-  // warming (the cache's real win) is unaffected.
+  // value, e.g. create→edit). The sheet is where the record gets edited, so
+  // a payload cached before a session of edits must not seed the next open:
+  // the form baselines on the first data it sees and never re-baselines on a
+  // same-id refetch, so a stale seed would show pre-edit values. Prefetch
+  // warming is unaffected.
   useEffect(
     () => () => {
       initCache.delete(cacheKey(entity, value))
@@ -124,7 +122,7 @@ export function useSheetInit<E extends SheetInitEntity & SheetEntityKey>(
         console.error(`[sheets] failed to load ${entity} sheet`, error)
         handlersRef.current.toast({
           variant: 'destructive',
-          // Name the entity: "hourBlock" -> "hour block".
+          // Name the entity, splitting any camelCase key into words.
           title: `Unable to open the linked ${entity
             .replace(/([A-Z])/g, ' $1')
             .toLowerCase()}`,

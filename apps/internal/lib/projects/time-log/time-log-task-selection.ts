@@ -23,7 +23,7 @@ export function useTimeLogTaskSelection(
   tasks: ProjectTimeLogDialogParams['tasks'],
   options?: {
     /**
-     * Task ids that bypass the eligibility filter (task-sheet pre-link, C5):
+     * Task ids that bypass the eligibility filter (task-sheet pre-link):
      * an accepted task can take hours from its own sheet even though the
      * picker normally hides accepted tasks. Archived/deleted tasks never
      * reach here — the sheet disables the Log time button instead.
@@ -51,7 +51,6 @@ export function useTimeLogTaskSelection(
         return true
       })
       .sort((a, b) => {
-        // Sort by most recently updated first
         const aTime = new Date(a.updated_at).getTime()
         const bTime = new Date(b.updated_at).getTime()
         return bTime - aTime

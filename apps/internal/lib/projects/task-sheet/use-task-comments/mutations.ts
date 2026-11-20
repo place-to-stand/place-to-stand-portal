@@ -143,8 +143,8 @@ export function useCreateTaskCommentMutation({
 
       queryClient.setQueryData<CommentsCache>(queryKey, {
         ...previous,
-        // Pages are newest-first, and the panel reverses the flattened list —
-        // so the head of page 0 is what renders last, next to the composer.
+        // Pages are newest-first and the panel keeps that order, so the head
+        // of page 0 renders first, right under the composer.
         pages: previous.pages.map((page, index) =>
           index === 0 ? { ...page, items: [optimistic, ...page.items] } : page
         ),

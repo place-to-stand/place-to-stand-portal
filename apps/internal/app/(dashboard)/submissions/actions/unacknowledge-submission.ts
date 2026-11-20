@@ -14,7 +14,7 @@ import {
 import { submissionIdSchema } from './schemas'
 import type { ActionResult, SubmissionActionInput } from './types'
 
-// W2 (PRD 001 architecture review): deliberately no PostHog server tracking.
+// Deliberately no PostHog server tracking (see acknowledge-submission.ts).
 export async function unacknowledgeSubmission(
   input: SubmissionActionInput
 ): Promise<ActionResult> {
@@ -72,7 +72,7 @@ export async function unacknowledgeSubmission(
     }
   }
 
-  // D6: the badge count increases when a row goes back to unacknowledged.
+  // The badge count increases when a row goes back to unacknowledged.
   revalidatePath('/', 'layout')
 
   return {}

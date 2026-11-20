@@ -1,6 +1,6 @@
 /**
- * Rules that guard a written "never" (docs/design-system/README.md, CLAUDE.md)
- * which used to rest on review alone: soft deletes and the env schema.
+ * Rules that guard a written "never" (docs/design-system/README.md, CLAUDE.md):
+ * soft deletes and the env schema.
  */
 import { staticStrings } from './utils.mjs'
 
@@ -83,7 +83,7 @@ export const noHardDelete = {
  * Env vars are read through the app's zod schema (lib/env*.ts), which
  * validates them and treats an empty string as unset. Build-time and
  * platform values stay direct: NODE_ENV, NEXT_PUBLIC_* (inlined into the
- * browser bundle) and VERCEL_*.
+ * browser bundle), VERCEL_* and CI.
  */
 export const envThroughSchema = {
   meta: {

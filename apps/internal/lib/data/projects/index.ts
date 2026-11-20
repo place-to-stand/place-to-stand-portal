@@ -23,10 +23,6 @@ import { loadClientRows, mapClientRows } from './relations/clients'
 import { UUID_PATTERN } from '@pts/db/uuid'
 export { fetchProjectCalendarTasks } from './fetch-project-calendar-tasks'
 
-// ============================================================
-// TYPES
-// ============================================================
-
 type ProjectDetail = {
   id: string
   name: string
@@ -53,7 +49,7 @@ type FetchProjectsWithRelationsOptions = {
   search?: string
   /**
    * Hydrate archived tasks (unbounded, monotonically growing set). Only the
-   * review and archive tabs render them; default false skips the query.
+   * review tab and the task sheet need them; default false skips the query.
    */
   includeArchivedTasks?: boolean
 }
@@ -96,8 +92,8 @@ export type LandingProject = ProjectWithRelations & {
 
 /**
  * Landing table needs progress numbers, owner, client, and first repo per
- * project — never the task rows themselves. One grouped aggregate replaces
- * hydrating every task (with description, counts, assignees) per request.
+ * project, never the task rows themselves, so one grouped aggregate counts
+ * tasks instead of hydrating them.
  */
 export async function fetchProjectsForLanding(
   options: Pick<FetchProjectsWithRelationsOptions, 'statuses' | 'search'> = {}
@@ -199,7 +195,7 @@ export async function fetchProjectsWithRelationsByIds(
   const baseProjects = await fetchBaseProjects({ projectIds })
 
   // Client hours must be queried per CLIENT, not derived from the hydrated
-  // projects — these routes hydrate a single project, so deriving the client
+  // projects: callers often hydrate a single project, so deriving the client
   // burndown from `timeLogSummaries` would ignore the client's other projects.
   // Both need only the ids above, so they run alongside the relations.
   const [relations, timeLogSummaries, clientHours] = await Promise.all([
@@ -223,10 +219,6 @@ export async function fetchProjectsWithRelationsByIds(
   })
 }
 
-// ============================================================
-// LANDING COUNTS
-// ============================================================
-
 type LandingProjectCounts = {
   /** All projects visible to this user, pre-filter. */
   total: number
@@ -236,7 +228,7 @@ type LandingProjectCounts = {
 }
 
 /**
- * Unfiltered per-type counts for the projects landing (PRD 004 §03):
+ * Unfiltered per-type counts for the projects landing:
  * powers the `total` in `Showing N of M` and the per-section
  * "match the current filters" empty-state wording. PERSONAL projects only
  * count for their creator, mirroring the landing's visibility rules.
@@ -270,10 +262,6 @@ export const fetchLandingProjectCounts = cache(
     }
   }
 )
-
-// ============================================================
-// SIMPLE PROJECT LOOKUPS
-// ============================================================
 
 /**
  * Fetch a project by ID
@@ -338,7 +326,6 @@ export const resolveProjectIdentifier = cache(
     user: AppUser,
     identifier: string
   ): Promise<ProjectDetail & { resolvedId: string }> => {
-    // Check if identifier looks like a UUID
     const isUUID = UUID_PATTERN.test(identifier)
 
     let project: ProjectDetail

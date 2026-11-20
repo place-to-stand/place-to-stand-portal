@@ -33,8 +33,8 @@ type DateRangePickerProps = {
   disabled?: boolean
   className?: string
   /**
-   * True while the range is the filter's default (this month): the label
-   * shows muted and the × hides.
+   * True while the range is the filter's default (this month for time logs,
+   * all time for hour blocks): the label shows muted and the × hides.
    */
   isDefault?: boolean
   /** Shows a clear (×) back to the default while the range differs from it. */

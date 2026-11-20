@@ -17,7 +17,7 @@ const loggedOn = z.iso.date()
 
 /**
  * Read-only on purpose: hours feed the shared bank account and profit share,
- * so logging time stays a manual human step (D5).
+ * so logging time stays a manual human step.
  */
 export function registerTimeLogTools(server: McpServer) {
   defineTool(server, {

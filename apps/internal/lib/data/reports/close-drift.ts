@@ -81,7 +81,7 @@ function diffRows<T>(
 }
 
 /**
- * Canonical snapshot-vs-live comparison (F2). The snapshot freezes every value
+ * Canonical snapshot-vs-live comparison. The snapshot freezes every value
  * the page renders, so this compares every one of them — anything omitted here
  * is a number that can change under a closed month without the banner firing.
  *
@@ -125,7 +125,7 @@ export function computeDeltas(
     }
   }
 
-  // ---- Section totals: hours, dollars, and the rate each section applied ----
+  // Section totals: hours, dollars, and the rate each section applied
   const sections: ReadonlyArray<{
     section: CloseDriftDelta['section']
     label: string
@@ -185,7 +185,7 @@ export function computeDeltas(
     push(section, `${label} rate`, 'rate', snap.rate, liveSection.rate)
   }
 
-  // ---- House and the summary figures ----
+  // House and the summary figures
   push(
     'house',
     'House hours',
@@ -281,7 +281,7 @@ export function computeDeltas(
     live.salesTax.totalTaxable
   )
 
-  // ---- Rate schedule: an edit here silently re-prices every payout ----
+  // Rate schedule: an edit here silently re-prices every payout
   push(
     'rates',
     'Billable rate',
@@ -325,7 +325,7 @@ export function computeDeltas(
     live.rates.internalOriginationPayable ? 1 : 0
   )
 
-  // ---- Per-client billing rows ----
+  // Per-client billing rows
   for (const [section, prefix, snapSection, liveSection] of [
     ['prepaidBilling', 'Prepaid', snapshot.prepaidBilling, live.prepaidBilling],
     ['net30Billing', 'Net 30', snapshot.net30Billing, live.net30Billing],
@@ -344,7 +344,7 @@ export function computeDeltas(
     })
   }
 
-  // ---- Per-person payroll ----
+  // Per-person payroll
   diffRows(rowDeltas, {
     section: 'payroll',
     prefix: 'Payroll',
@@ -358,7 +358,7 @@ export function computeDeltas(
     ],
   })
 
-  // ---- Per-originator, then the per-client detail inside each group ----
+  // Per-originator, then the per-client detail inside each group
   diffRows(rowDeltas, {
     section: 'origination',
     prefix: 'Origination',
@@ -403,7 +403,7 @@ export function computeDeltas(
     })
   }
 
-  // ---- Per-closer, then the per-client detail inside each group ----
+  // Per-closer, then the per-client detail inside each group
   diffRows(rowDeltas, {
     section: 'closer',
     prefix: 'Closer',
@@ -441,7 +441,7 @@ export function computeDeltas(
     })
   }
 
-  // ---- Per-payee payouts, split by component ----
+  // Per-payee payouts, split by component
   // The combined total is compared last and separately: an offsetting swap
   // (origination up, closer down by the same amount) leaves it untouched, so
   // the components are what actually catch a reassignment.

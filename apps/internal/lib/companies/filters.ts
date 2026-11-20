@@ -6,8 +6,7 @@ import { firstParam } from '@/lib/pagination/params'
 import { splitTagInput, tagKey } from '@/lib/tags/names'
 
 /** Companies list filters and sort (`?type=&leads=&tags=&sort=`). Client-safe. */
-// Clients (billed now) and everyone else. Any other `?type=` (an old
-// `prospect` or `former` link) means All.
+// Clients (billed now) and everyone else. Any other `?type=` means All.
 export const COMPANY_TYPE_VALUES = ['client', 'none'] as const
 export type CompanyTypeFilter = (typeof COMPANY_TYPE_VALUES)[number]
 export const COMPANY_TYPE_LABELS: Record<CompanyTypeFilter, string> = {
@@ -22,7 +21,7 @@ export const COMPANY_LEADS_LABELS: Record<CompanyLeadsFilter, string> = {
   none: 'No leads',
 }
 
-// An old `?sort=updated` falls back to the default (the column is gone).
+// Any other `?sort=` falls back to the default (name A-Z).
 const COMPANY_SORT_FIELDS = [
   'name',
   'tags',

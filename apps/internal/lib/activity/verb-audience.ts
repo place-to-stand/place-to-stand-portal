@@ -117,8 +117,8 @@ const ACTIVITY_VERB_AUDIENCE = {
 } as const satisfies Record<ActivityVerb, 'billing' | 'any'>
 
 /**
- * Retired verbs whose old rows still sit on task and lead feeds (the removed
- * suggestions feature). None is about billing, so they stay readable.
+ * Verbs nothing writes, whose old rows still sit on task and lead feeds
+ * (task and lead suggestions). None is about billing, so they stay readable.
  */
 const RETIRED_NON_BILLING_VERBS = [
   'TASK_SUGGESTION_REJECTED',

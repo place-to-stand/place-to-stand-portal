@@ -20,7 +20,7 @@ interface Props {
   user: AppUser
   children: ReactNode
   unacknowledgedSubmissionsCount?: number
-  /** Server-read `sidebar_state` cookie value (PRD 004 §02). */
+  /** Server-read `sidebar_state` cookie value. */
   sidebarDefaultOpen?: boolean
   /** Names sheet presence channels (`presenceRoomKey`). */
   presenceKey?: string
@@ -31,9 +31,9 @@ interface Props {
 }
 
 /**
- * Dashboard chrome (PRD 004 §01/§02): sidebar + command palette + content
- * column. Pages own their header via `PageShell` — the shell renders no
- * header row of its own, so header ownership is server-known everywhere (R4).
+ * Dashboard chrome: sidebar + command palette + content column. Pages own
+ * their header via `PageShell`: the shell renders no header row of its own,
+ * so header ownership is server-known everywhere.
  */
 export function AppShell({
   user,
@@ -54,8 +54,8 @@ export function AppShell({
   )
 
   return (
-    // Palette provider wraps the sidebar too — the search affordance lives
-    // there (user-revised placement of PW1). The shortcuts provider sits
+    // Palette provider wraps the sidebar too: the search box lives there.
+    // The shortcuts provider sits
     // outside it so the palette and the user menu can both open the list.
     <ViewerAccessProvider
       role={user.role}

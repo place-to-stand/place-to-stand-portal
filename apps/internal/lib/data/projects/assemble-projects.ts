@@ -129,7 +129,7 @@ function organizeMembers(
       const projectMembers: ProjectMemberWithUser[] = clientMembers.map(
         member => ({
           id: member.id,
-          project_id: projectId, // Map to project for backwards compatibility
+          project_id: projectId, // Members belong to the client; the type keys them by project
           user_id: member.user_id,
           created_at: member.created_at,
           deleted_at: member.deleted_at,

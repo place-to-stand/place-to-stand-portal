@@ -6,7 +6,7 @@ import { expect, test } from '@playwright/test'
 test('a draft invoice with unsaved edits cannot be sent', async ({ page }) => {
   await page.goto('/invoices')
   await page.waitForLoadState('networkidle')
-  const draft = page.getByRole('row').filter({ hasText: /Draft/ }).first()
+  const draft = page.locator('tbody tr').filter({ hasText: 'Draft' }).first()
   test.skip((await draft.count()) === 0, 'No draft invoice to open.')
   await draft.click()
 

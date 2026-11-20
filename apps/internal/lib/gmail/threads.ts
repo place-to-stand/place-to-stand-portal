@@ -149,8 +149,7 @@ async function threadsForConnection(
 /**
  * Gmail threads with any of `addresses`, read live from the viewer's own
  * connected Google accounts, newest first. Never another person's mailbox:
- * each viewer sees only their own mail. Nothing
- * is stored.
+ * each viewer sees only their own mail. Nothing is stored.
  */
 export async function listViewerThreadsWith(
   userId: string,

@@ -105,9 +105,8 @@ const STALE_COMPANY_MESSAGE =
 /**
  * The company sheet's Save: one server action, one transaction. The company
  * and its people, its billing (start, edit, stop or restart) and who has
- * portal access commit together or not at all. Supabase Auth can't join
- * the transaction, so sign-ins for people given portal access are made just
- * before it and deleted again if it fails; invites and activity rows go out
+ * portal access commit together or not at all. Portal access never makes a
+ * sign-in, so nothing outside the database is written; activity rows go out
  * after the commit.
  */
 export async function saveCompanySheet(
@@ -286,7 +285,7 @@ export async function saveCompanySheet(
     }
   }
 
-  // Committed: a logging or email failure must not report the save as failed.
+  // Committed: a logging failure must not report the save as failed.
   try {
     await logAfterCommit(actor, plan, billingPlan, portal, committed)
   } catch (error) {
@@ -455,8 +454,9 @@ async function planBilling(
 
 /**
  * Who gains and loses portal access with this save. Portal access never
- * makes a sign-in (that's the person sheet's User section). Everyone listed must be at the company once the save's people
- * changes land, and the company must be billed.
+ * makes a sign-in (that's the person sheet's User section). Everyone listed
+ * must be at the company once the save's people changes land, and the
+ * company must be billed.
  */
 async function planPortalAccess(
   plan: CompanyWritePlan,

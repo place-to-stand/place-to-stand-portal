@@ -95,7 +95,7 @@ export async function readRecordTags(
 
 /** What a save does to one record's tags, worked out before writing. */
 export type TagChange = {
-  /** The full list after the save, as typed. */
+  /** The full list after the save; existing tags keep their stored spelling. */
   next: string[]
   before: string[]
   added: string[]

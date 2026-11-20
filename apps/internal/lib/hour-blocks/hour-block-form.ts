@@ -46,7 +46,7 @@ type HourBlockRow = {
   created_at: string
   updated_at: string
   deleted_at: string | null
-  /** Month the block's hours are billed in ('yyyy-MM-dd', PRD 002 D13). */
+  /** Month the block's hours are billed in ('yyyy-MM-dd'). */
   billing_month: string
 }
 

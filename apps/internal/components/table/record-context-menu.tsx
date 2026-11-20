@@ -114,9 +114,10 @@ type RecordContextMenuProps = {
 /**
  * The right-click menu on every record row and card: Edit, Duplicate (for
  * records that can be copied, see `DUPLICABLE_SHEET_ENTITIES`), Set assignee
- * (tasks and leads), Set due date (tasks), Send to top / bottom (board
- * cards), then Archive or Restore. Each action is the same one the row's buttons and the sheet
- * already run, so the menu adds a way in, never a second behaviour.
+ * (tasks and leads), Set due date (tasks), Mark as done and Send to top /
+ * bottom (board cards), then Archive or Restore. Each action is the same one
+ * the row's buttons and the sheet already run, so the menu adds a way in,
+ * never a second behaviour.
  */
 export function RecordContextMenu({
   children,

@@ -50,10 +50,6 @@ import {
 } from '@/lib/queries/product-catalog'
 import { listTaxRates, type TaxRateRow } from '@/lib/queries/tax-rates'
 
-// ---------------------------------------------------------------------------
-// Selection objects
-// ---------------------------------------------------------------------------
-
 const invoiceSelection = {
   id: invoices.id,
   invoiceNumber: invoices.invoiceNumber,
@@ -104,10 +100,6 @@ const clientSelection = {
   state: companies.state,
   deletedAt: clientEndedAtSql,
 } as const
-
-// ---------------------------------------------------------------------------
-// Internal selection types (raw query shapes)
-// ---------------------------------------------------------------------------
 
 type InvoiceSelectionRow = {
   invoice: {
@@ -161,10 +153,6 @@ type LineItemSelectionRow = {
   deletedAt: string | null
 }
 
-// ---------------------------------------------------------------------------
-// List invoices
-// ---------------------------------------------------------------------------
-
 type ListInvoicesInput = {
   status?: 'active' | 'archived'
   offset?: number | null
@@ -173,7 +161,7 @@ type ListInvoicesInput = {
   invoiceStatus?: InvoiceStatusValue
   /** Only this client's invoices. */
   companyId?: string
-  /** Fuzzy search on invoice number + client name (PRD 004 §03). */
+  /** Fuzzy search on invoice number + client name. */
   search?: string
   sort?: ParsedSort<InvoiceSortField>
 }
@@ -205,7 +193,7 @@ const INVOICE_SHARE_RANK_SQL = sql`(case
 end)`
 
 /**
- * Per-sort ORDER BY expressions (PRD 004 §03, offset pagination — no cursor
+ * Per-sort ORDER BY expressions (offset pagination — no cursor
  * descriptors needed). `number` is nullable (drafts), so it declares NULLS
  * LAST in both directions; the id tie-breaker keeps ordering stable.
  */
@@ -394,10 +382,6 @@ async function fetchHourBlocksByInvoice(
   return byInvoice
 }
 
-// ---------------------------------------------------------------------------
-// Invoice sheet reference data
-// ---------------------------------------------------------------------------
-
 type InvoiceReferenceData = {
   clients: InvoiceClient[]
   productCatalog: ProductCatalogItemRow[]
@@ -425,10 +409,6 @@ export async function listInvoiceReferenceData(
     taxRates: activeTaxRates,
   }
 }
-
-// ---------------------------------------------------------------------------
-// Get invoice by ID (admin)
-// ---------------------------------------------------------------------------
 
 export async function getInvoiceById(
   user: AppUser,
@@ -477,10 +457,7 @@ export async function getInvoiceById(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Get invoice by share token (public - no auth check)
-// ---------------------------------------------------------------------------
-
+/** The invoice behind a public share link. No auth check. */
 export async function getInvoiceByShareToken(
   token: string
 ): Promise<InvoiceWithLineItems | null> {
@@ -526,10 +503,7 @@ export async function getInvoiceByShareToken(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Get invoice by Stripe checkout session (webhook - no auth, no deletedAt filter)
-// ---------------------------------------------------------------------------
-
+/** Stripe webhook lookups: no auth check and no deletedAt filter. */
 async function getInvoiceForWebhook(
   where: SQL
 ): Promise<InvoiceWithLineItems | null> {
@@ -596,10 +570,7 @@ export async function getInvoiceByPaymentIntent(
   return getInvoiceForWebhook(eq(invoices.id, metadataInvoiceId))
 }
 
-// ---------------------------------------------------------------------------
-// Record invoice view (atomic)
-// ---------------------------------------------------------------------------
-
+/** Counts a view in one atomic update; returns the count before it. */
 export async function recordInvoiceView(invoiceId: string): Promise<number> {
   const result = await db
     .update(invoices)
@@ -618,10 +589,6 @@ export async function recordInvoiceView(invoiceId: string): Promise<number> {
   const newCount = result[0]?.previousCount ?? 0
   return newCount - 1
 }
-
-// ---------------------------------------------------------------------------
-// Mappers
-// ---------------------------------------------------------------------------
 
 function mapInvoiceWithClient(row: InvoiceSelectionRow): InvoiceWithClient {
   const client =

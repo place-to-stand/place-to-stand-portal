@@ -4,7 +4,7 @@ import { formatHours } from '@pts/ui/numbers'
 /**
  * Normalised view of what an activity log actually changed.
  *
- * Writers record diffs in three shapes today:
+ * Writers record diffs in three shapes:
  *   1. `metadata.details = { before: {...}, after: {...} }` (most updates)
  *   2. `metadata.details = { dueOn: { from, to } }` (board due-date changes)
  *   3. `metadata.status = { from, to }` (TASK_STATUS_CHANGED)
@@ -89,7 +89,7 @@ const FIELD_SPECS: Record<string, FieldSpec> = {
   originationContactId: { label: 'Originating person', kind: 'contact' },
   projectId: { label: 'Project', kind: 'project' },
   companyId: { label: 'Client', kind: 'client' },
-  // Rows logged before the clientId → companyId rename.
+  // Older rows name the client `clientId`.
   clientId: { label: 'Client', kind: 'client' },
   clientName: { label: 'Client', kind: 'text' },
   invoiceNumber: { label: 'Invoice', kind: 'text' },
@@ -331,9 +331,6 @@ function collectFacts(
 
   return facts
 }
-
-// ---------------------------------------------------------------------------
-// helpers
 
 export function toRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {

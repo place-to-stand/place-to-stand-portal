@@ -34,8 +34,8 @@ function PopoverTrigger({
 
 function PopoverContent({
   className,
-  // House rule: dropdown popups left-align with their trigger; deviations
-  // opt in with an explicit `align` at the call site.
+  // House rule 4: popovers left-align with their trigger; deviations opt in
+  // with an explicit `align` at the call site.
   align,
   alignOffset = 0,
   side = 'bottom',

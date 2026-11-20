@@ -45,10 +45,6 @@ import { sortRows } from '@/lib/table/sort-rows'
 import { newRowId, RowChangeBadge, rowChange } from './row-change'
 import { DialogForm } from '@/components/ui/dialog-form'
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
 // Every column sorts; the default is Name A-Z.
 const PRODUCT_SORT_FIELDS = [
   'name',
@@ -63,10 +59,6 @@ const DEFAULT_PRODUCT_SORT = { field: 'name', direction: 'asc' } as const
 const DISCARD_TITLE = 'Discard changes?'
 const DISCARD_DESCRIPTION =
   'You have unsaved product changes that will be lost. Continue without saving?'
-
-// ---------------------------------------------------------------------------
-// Form Schema
-// ---------------------------------------------------------------------------
 
 const productFormSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(100),
@@ -88,10 +80,6 @@ const productFormSchema = z.object({
 })
 
 type ProductFormValues = z.infer<typeof productFormSchema>
-
-// ---------------------------------------------------------------------------
-// Product Row
-// ---------------------------------------------------------------------------
 
 type ProductRowProps = {
   item: ProductCatalogItemRow
@@ -143,10 +131,6 @@ function ProductRow({
   )
 }
 
-// ---------------------------------------------------------------------------
-// Main Component
-// ---------------------------------------------------------------------------
-
 type ProductCatalogSectionProps = {
   /** The rows as they stand in the page form. */
   items: ProductCatalogItemRow[]
@@ -176,7 +160,7 @@ export function ProductCatalogSection({
   const [editingItem, setEditingItem] = useState<ProductCatalogItemRow | null>(
     null
   )
-  // Local sort state (PRD 004 §03): two small config tables share this page,
+  // Local sort state: two small config tables share this page,
   // so sort stays out of the URL. undefined = the 'name:asc' default.
   const [sort, setSort] = useState<SortValue | undefined>(undefined)
 
@@ -408,7 +392,6 @@ export function ProductCatalogSection({
         </Table>
       </div>
 
-      {/* Product Form Dialog */}
       <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent>
           <DialogHeader>

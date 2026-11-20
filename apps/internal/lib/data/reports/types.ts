@@ -4,9 +4,10 @@ import type { PartnerRateSchedule } from '@/lib/billing/partner-rates'
 import type { ProfitShareData } from '@/lib/billing/profit-share'
 
 /**
- * The profit share as the page shows it. `inactive`: the month predates the
- * policy. `not_saved`: the month was closed without one (closed before the
- * policy shipped). `unavailable`: Mercury couldn't be read for a live month.
+ * The profit share as the page shows it. `inactive`: no profit share applies
+ * (it is off, or the month predates its start). `not_saved`: the month was
+ * closed without one. `unavailable`: Mercury couldn't be read for a live
+ * month.
  */
 export type ProfitShareState =
   | { status: 'inactive' }
@@ -195,8 +196,8 @@ export type PartnerPayoutData = {
 //   nominalAmount        = billingHours × rates.housePerHour
 //   unassignedCloserAmount = billing hours not credited to any closer (no
 //                            closer on the as-of term, or an archived one)
-//                            × rates.closerPerHour (PRD 007 — the closer
-//                            share is not paid out, it stays in house)
+//                            × rates.closerPerHour (the closer share is
+//                            not paid out, it stays in house)
 //   unassignedOriginationAmount = billing hours on clients with no
 //                            originator on the as-of term (e.g. inbound from
 //                            ads) × rates.originationPerHour — likewise kept
@@ -241,7 +242,7 @@ export type MonthlyCloseReport = {
   workBillableTotal: number
   /** Combined billing in (prepaid purchased + net_30 logged) — cash-flow view. */
   combinedBillingTotal: number
-  /** Combined payouts (payroll + origination + closer). */
+  /** Combined payouts (payroll + origination + closer + house). */
   combinedPayoutTotal: number
   /** The partner rate schedule that was in effect for this reporting period. */
   rates: PartnerRateSchedule

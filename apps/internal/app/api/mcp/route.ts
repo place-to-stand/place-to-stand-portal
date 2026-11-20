@@ -8,7 +8,7 @@ import {
 import { registerMcpTools } from '@/lib/mcp/server'
 
 /**
- * Remote MCP server (PRD 009). Stateless Streamable HTTP: every request is a
+ * Remote MCP server. Stateless Streamable HTTP: every request is a
  * self-contained POST, authenticated by an OAuth access token issued by
  * Supabase Auth, so any function instance can serve any call.
  *

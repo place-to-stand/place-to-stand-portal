@@ -15,8 +15,7 @@ type CliContactCompany = {
    * portal login). Only for callers who manage clients; omitted otherwise.
    */
   portalAccess?: boolean
-  /** The company's client, if it is one. */
-  /** The company's id when it is a client (0111: a client is its company). */
+  /** The company's id when it is a client (a client is its company). */
   clientId: string | null
 }
 

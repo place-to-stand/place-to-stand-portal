@@ -102,7 +102,7 @@ function bounded<T>(items: T[], totalCount: number) {
 }
 
 /**
- * Invoices, hour blocks and the monthly close: read-only (D9 as revised).
+ * Invoices, hour blocks and the monthly close: read-only.
  * Nothing here creates, sends, voids or closes anything.
  */
 export function registerBillingTools(server: McpServer) {

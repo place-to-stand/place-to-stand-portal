@@ -62,7 +62,7 @@ type UseProjectSheetStateArgs = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   project: ProjectWithClient | null
-  /** Prefills the create sheet's client (a company's Projects (its sheet's Client column)). */
+  /** Prefills the create sheet's client (set when created from a company's Projects list). */
   initialCompanyId?: string
   clients: ClientPickerRow[]
   contractorDirectory?: ContractorUserSummary[]

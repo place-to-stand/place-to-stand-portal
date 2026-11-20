@@ -48,7 +48,7 @@ async function snapshotContact(
 /**
  * The shared tail of the marketing intake routes: record, log, then send.
  *
- * Order is the point (PRD 008 §1). The row is written before any email is
+ * Order is the point. The row is written before any email is
  * attempted, so a Resend outage costs a delayed notification rather than a
  * lost lead, and nothing after the upsert can fail the request.
  *
@@ -107,7 +107,7 @@ export async function recordSubmission(
       })
     } catch (error) {
       // The submission is already stored. An audit-trail hiccup must not turn
-      // into a visitor-facing error now that the site waits on this response.
+      // into a visitor-facing error: the site waits on this response.
       console.error('Failed to log submission activity', error)
     }
 

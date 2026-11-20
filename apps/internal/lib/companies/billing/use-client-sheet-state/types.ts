@@ -31,18 +31,18 @@ export type OriginationContactOption = {
   hasPhoto?: boolean
 }
 
-/** An admin user available as an internal origination partner or closer. */
+/** A staff user (ADMIN or SALES) available as an internal origination partner or closer. */
 export type PartnerUserOption = {
   id: string
   fullName: string | null
   email: string
-  /** Set when the admin can no longer sign in; resolvable for display, never offered. */
+  /** Set when they can no longer sign in; resolvable for display, never offered. */
   disabledAt?: string | null
   /** Their person has a photo; the picker shows it, else initials. */
   hasPhoto?: boolean
 }
 
-/** An admin or contact the closer picker offers. */
+/** A staff user or contact the closer picker offers. */
 export type CloserCandidate = {
   kind: CloserKind
   id: string

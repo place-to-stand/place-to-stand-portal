@@ -24,11 +24,6 @@ export const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/spreadsheets',
 ]
 
-// Scopes required for sending emails (used to check if re-auth needed)
-// Scopes required for Calendar/Meet functionality
-// Scopes required for Meet functionality (transcripts, recordings)
-// Scopes required for Sheets functionality
-
 interface GoogleTokenResponse {
   access_token: string
   refresh_token?: string

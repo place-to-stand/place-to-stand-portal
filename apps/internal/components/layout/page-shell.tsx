@@ -35,8 +35,9 @@ type PageShellCount = {
   label: string
   total: number
   /**
-   * When filters/search are active (03): total matching rows. Renders
-   * `Showing {filteredTotal} of {total}`; absent → `{total} {label}`.
+   * When filters/search are active: total matching rows. Renders
+   * `Showing {filteredTotal} of {total}`; absent or equal to `total` →
+   * `{total} {label}`.
    */
   filteredTotal?: number
 }
@@ -54,8 +55,8 @@ type PageShellProps = {
 }
 
 /**
- * The shared page shell (PRD 004 §01, D1/D2/D3/D11): one compact header
- * row (trigger · breadcrumb · palette affordance · optional right slot),
+ * The shared page shell: one compact header row (trigger · breadcrumb ·
+ * optional right slot · notifications bell),
  * an optional toolbar row (tabs · count · primary action), then content.
  * Owns the page scroll pane — the body never scrolls.
  */

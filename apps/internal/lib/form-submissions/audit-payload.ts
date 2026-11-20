@@ -121,7 +121,7 @@ export const auditPayloadSchema = z.object({
   attribution: attributionSchema,
   client: clientSchema,
 
-  // Opt-in email delivery (PRD 008). Only the marketing site's BotID-gated
+  // Opt-in email delivery. Only the marketing site's BotID-gated
   // server action sets this, and only on the `captured` push. Its progress
   // beacon route is unauthenticated by design and must never forward it:
   // honouring `deliver` from a beacon would let anyone mail any address.

@@ -38,11 +38,9 @@ const SNAPSHOT_SCHEMA_VERSION = 1
 
 import type { CloseDriftDelta, SnapshotReport } from './close-drift'
 
-// ---------------------------------------------------------------------------
-// Snapshot payload validation (F9). The snapshot must decode without running
-// live queries, and a shape mismatch must surface as an explicit error state
-// — never a crash or a silent misread.
-// ---------------------------------------------------------------------------
+// Snapshot payload validation. The snapshot must decode without running
+// live queries, and a shape mismatch must surface as an explicit error state,
+// never a crash or a silent misread.
 
 const payrollRowSchema = z.object({
   userId: z.string(),
@@ -74,8 +72,8 @@ const originationGroupRowSchema = z.object({
   totalCommission: z.number(),
 })
 
-// Closer details carry the closer's share. Snapshots taken before closer
-// splits had one closer per client, so a missing share is exactly 100.
+// Closer details carry the closer's share. Snapshots without one had a single
+// closer per client, so a missing share is exactly 100.
 const closerClientDetailSchema = billingClientDetailSchema.extend({
   sharePercent: z.number().default(100),
 })
@@ -90,8 +88,8 @@ const closerGroupRowFields = {
   totalCommission: z.number(),
 }
 
-// Pre-split snapshots keyed a closer by `closerUserId` (always an admin user)
-// and allowed a null name; normalize them to the `closerKind` / `closerId`
+// Older snapshots key a closer by `closerUserId` (always an admin user) and
+// allow a null name; normalize them to the `closerKind` / `closerId`
 // shape so drift compares like with like.
 const closerGroupRowSchema = z.union([
   z.object({
@@ -182,8 +180,8 @@ const snapshotReportSchema = z.object({
     totalAmount: z.number(),
     hourlyRate: z.number(),
   }),
-  // Added Oct 2026. Closes frozen before it carry none, so it stays optional
-  // and the view fills it from live (paid-invoice tax doesn't move).
+  // Older closes carry none, so it stays optional and the view fills it from
+  // live (paid-invoice tax doesn't move).
   salesTax: z
     .object({
       rows: z.array(
@@ -207,14 +205,13 @@ const snapshotReportSchema = z.object({
       billableHours: z.number(),
       ratePerHour: z.number(),
       totalAmount: z.number(),
-      // PRD 007 fields. Snapshots frozen before them carry none; every such
-      // month had a closer on every billed client, so the split is exact.
+      // Older snapshots carry none of these; every such month had a closer
+      // on every billed client, so the defaults are exact.
       nominalAmount: z.number().optional(),
       unassignedCloserHours: z.number().default(0),
       unassignedCloserAmount: z.number().default(0),
-      // Origination became optional in Oct 2026. Earlier snapshots froze a
-      // house total that never included an unassigned origination share, so
-      // zero is what they actually recorded.
+      // Older snapshots froze a house total that never included an
+      // unassigned origination share, so zero is what they recorded.
       unassignedOriginationHours: z.number().default(0),
       unassignedOriginationAmount: z.number().default(0),
     })
@@ -276,7 +273,7 @@ type SnapshotParseResult =
   | { ok: false; error: string }
 
 /**
- * Snapshots closed before the clientId → companyId rename store `clientId`.
+ * Older snapshots store `clientId` where the report now says `companyId`.
  * The stored report is never rewritten (a closed month stays as closed), so
  * the key is mapped on read.
  */
@@ -295,8 +292,8 @@ function withCompanyIdKeys(value: unknown): unknown {
 /**
  * Single decode point for persisted snapshots. Version 1 is identity; future
  * report-shape changes bump the version and migrate on read here. An unknown
- * version or failed parse returns an explicit error the UI renders as
- * "snapshot unreadable — reopen to re-derive".
+ * version or failed parse returns an explicit error that tells the admin to
+ * reopen the month to re-derive it.
  */
 function parseSnapshotReport(payload: unknown): SnapshotParseResult {
   const parsed = snapshotEnvelopeSchema.safeParse(withCompanyIdKeys(payload))
@@ -320,10 +317,6 @@ function parseSnapshotReport(payload: unknown): SnapshotParseResult {
     profitShare: parsed.data.profitShare ?? null,
   }
 }
-
-// ---------------------------------------------------------------------------
-// Period helpers
-// ---------------------------------------------------------------------------
 
 const MONTH_NAMES = [
   'January',
@@ -444,10 +437,6 @@ async function resolveProfitShareForClose(params: {
   return { ok: true, profitShare }
 }
 
-// ---------------------------------------------------------------------------
-// Close / reopen / re-close
-// ---------------------------------------------------------------------------
-
 /**
  * Closes a month: captures the cutoff BEFORE deriving (any record committed
  * after `closedAt` is by definition detectable as late), derives the live
@@ -543,7 +532,7 @@ export async function reopenMonth(
 }
 
 /**
- * Atomic swap (F3), NOT sequential reopen→close: the replacement report is
+ * Atomic swap, NOT sequential reopen→close: the replacement report is
  * derived first, then the old snapshot is soft-deleted and the new one
  * inserted in one transaction. A derivation or insert failure leaves the
  * original snapshot untouched — the month never transiently loses its close.
@@ -612,8 +601,8 @@ export async function recloseMonth(
 }
 
 /**
- * Adds the profit share to a month that was closed before the profit share
- * existed (August 2026, whose distribution went out by hand). It uses the
+ * Adds the profit share to a month the policy covers that was closed without
+ * one. It uses the
  * payouts frozen in that close, not live ones, and edits the snapshot in
  * place: nothing else in the close changes, so it is not a re-close.
  */
@@ -664,14 +653,15 @@ export async function addProfitShareToClose(
 
 /**
  * True when the month containing `date` ('yyyy-MM-dd') has an active close.
- * Gates billing-basis rewrites (hard block) and powers write-time warnings.
+ * Gates billing-term and commission changes (hard block) and powers
+ * write-time warnings.
  */
 export async function isMonthClosed(date: string): Promise<boolean> {
   return hasActiveSnapshotForDate(date)
 }
 
 /**
- * Non-blocking closed-month warning for time-log/hour-block writes (D9).
+ * Non-blocking closed-month warning for time-log/hour-block writes.
  * Checks every provided date and warns on the first closed month found.
  */
 export async function closedMonthWarning(
@@ -698,10 +688,6 @@ export async function closedMonthWarning(
   return undefined
 }
 
-// ---------------------------------------------------------------------------
-// Snapshot-aware report view + drift detection (F2/F8)
-// ---------------------------------------------------------------------------
-
 type CloseDriftLateRecord = {
   kind: 'time_log' | 'hour_block'
   id: string
@@ -724,7 +710,7 @@ type MonthlyCloseView = {
     status: 'open' | 'closed'
     closedAt?: string
     closedByName?: string | null
-    /** Set when the persisted snapshot failed validation (F9). */
+    /** Set when the persisted snapshot failed validation. */
     snapshotError?: string
     /**
      * Streamed, not awaited: the profit-share half re-reads the Mercury
@@ -917,7 +903,7 @@ export async function fetchMonthlyCloseView(
     }
   }
 
-  // Closes frozen before sales tax was tracked fall back to the live figure;
+  // Closes frozen without sales tax fall back to the live figure;
   // comparing live against itself keeps it out of drift. Only those wait for
   // the live report.
   const salesTaxIsLive = parsed.report.salesTax === undefined
@@ -982,7 +968,7 @@ type MonthlyCloseForAgent = {
   status: 'open' | 'closed'
   closedAt: string | null
   closedByName: string | null
-  /** Set when the month is closed but its snapshot failed validation (F9). */
+  /** Set when the month is closed but its snapshot failed validation. */
   snapshotError: string | null
   /** A closed month that predates frozen sales tax shows the live figure. */
   salesTaxIsLive: boolean
@@ -1014,7 +1000,7 @@ export async function fetchMonthlyCloseForAgent(
   const parsed = snapshot ? parseSnapshotReport(snapshot.report) : null
 
   if (snapshot && parsed?.ok) {
-    // Only closes frozen before sales tax was tracked need a live read.
+    // Only closes frozen without sales tax need a live read.
     const salesTaxIsLive = parsed.report.salesTax === undefined
     const salesTax =
       parsed.report.salesTax ??

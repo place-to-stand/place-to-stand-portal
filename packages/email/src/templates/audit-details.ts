@@ -23,7 +23,7 @@ export type AuditDetailsEmailArgs = {
 
 /**
  * Team follow-up for an audit whose visitor added their name, company or a
- * note after the capture. The capture now asks for an email alone, so the
+ * note after the capture. The capture asks for an email alone, so the
  * team notification usually goes out before any of this exists; without a
  * second email the details would only be visible to whoever reopens the row.
  *

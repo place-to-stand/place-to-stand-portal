@@ -98,7 +98,7 @@ export default function SignInPage() {
     try {
       // Sent by us, not Supabase: the action mints the token with the admin API
       // and mails it with our own template, from the same verified sender the
-      // invite uses. Supabase's stock template was the one landing in spam.
+      // invite uses. Supabase's stock template lands in spam.
       //
       // It never creates an account for an unknown address, and never reports
       // whether one existed — the copy below is identical either way, so this

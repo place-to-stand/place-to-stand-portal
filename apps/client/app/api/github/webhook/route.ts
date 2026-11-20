@@ -19,7 +19,6 @@ import {
 export async function POST(request: NextRequest) {
   const env = getGitHubAppEnv()
 
-  // Verify webhook signature
   const signature = request.headers.get('x-hub-signature-256')
   const body = await request.text()
 
@@ -41,11 +40,10 @@ export async function POST(request: NextRequest) {
       await handleInstallationEvent(payload)
       break
     case 'installation_repositories':
-      // Repository selection changed — no DB update needed currently.
-      // The installation token will automatically scope to the updated repos.
+      // Nothing to store: installation tokens scope to the selected repos
+      // on their own.
       break
     default:
-      // Ignore unhandled events
       break
   }
 
@@ -89,8 +87,8 @@ async function handleInstallationEvent(payload: {
 
   switch (action) {
     case 'created':
-      // Installation was already saved in the callback route.
-      // This webhook fires as a confirmation — update if needed.
+      // The callback route saves the installation; this refreshes its
+      // permissions, events and repository selection.
       await db
         .update(githubAppInstallations)
         .set({

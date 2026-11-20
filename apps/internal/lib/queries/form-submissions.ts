@@ -32,7 +32,7 @@ type FormSubmissionFilters = {
   kind?: FormSubmission['kind']
   status?: FormSubmission['status']
   /**
-   * D1 unacknowledged predicate (PW1 filter) — MUST stay in sync with
+   * The unacknowledged predicate (the quick filter). MUST stay in sync with
    * `isUnacknowledgedSubmission` in
    * apps/internal/lib/form-submissions/constants.ts.
    */
@@ -41,10 +41,10 @@ type FormSubmissionFilters = {
   acknowledgedOnly?: boolean
   /** false/undefined: active rows (deleted_at IS NULL). true: archived rows. */
   archived?: boolean
-  /** Fuzzy identity search (PRD 004 §03) — name, email, company, subject. */
+  /** Fuzzy identity search: name, email, company, subject. */
   search?: string
   /**
-   * PRD 008 §7. true: rows that identify someone (a name or an email).
+   * true: rows that identify someone (a name or an email).
    * false: anonymous rows only. Anonymous in-progress/abandoned audits are
    * most of the list at ad volume, so this is the "show me people" switch.
    */
@@ -142,11 +142,11 @@ function buildFilters({
  * the array. That is a cosmetic edge case, and preferable to a zeroing beacon
  * wiping real progress.
  *
- * Acknowledgement (D8, PRD 001): `acknowledged_at`/`acknowledged_by` reset to
- * NULL when status advances or when results-page feedback lands. A reviewed
- * row that gains new signal (completed -> captured, or a vote/comment on the
- * result) must re-flag as unread; any other beacon leaves the acknowledgement
- * alone.
+ * Acknowledgement: `acknowledged_at`/`acknowledged_by` reset to NULL when
+ * status advances, when results-page feedback lands, or when the contact
+ * gains details. A reviewed row that gains new signal (completed -> captured,
+ * a vote/comment on the result, a name or company) must re-flag as unread;
+ * any other beacon leaves the acknowledgement alone.
  *
  * Feedback columns use COALESCE like the lead block, so a later beacon that
  * omits feedback never wipes it. A re-vote or re-sent comment carries a
@@ -239,10 +239,10 @@ export async function upsertFormSubmission(
 
         // Acknowledgement resets when status advances, feedback lands, or the
         // contact gains details: a reviewed row that gains new signal must
-        // re-flag as unread. Status
-        // can only advance (GREATEST above), so a strict > comparison is
-        // exactly "advanced". Feedback is "new" when the beacon's submit time
-        // is later than what is stored (or nothing is stored yet).
+        // re-flag as unread. Status can only advance (GREATEST above), so a
+        // strict > comparison is exactly "advanced". Feedback is "new" when
+        // the beacon's submit time is later than what is stored (or nothing
+        // is stored yet).
         acknowledgedAt: sql`
           CASE
             WHEN excluded.status > ${formSubmissions.status}
@@ -307,8 +307,8 @@ export async function upsertFormSubmission(
   return result ?? null
 }
 
-// R5 (offset variant): each allowlisted sort field maps to its ORDER BY
-// expressions — offset pagination needs no cursor descriptors. Empty values
+// Each allowlisted sort field maps to its ORDER BY expressions — offset
+// pagination needs no cursor descriptors. Empty values
 // (no name, no company, not archived) sort last either way; the newest
 // activity breaks ties. `source` is sorted in memory (see below).
 type SqlSortField = Exclude<SubmissionSortField, 'source'>
@@ -420,7 +420,7 @@ async function listBySource({
 }
 
 /**
- * D1 unacknowledged predicate — MUST stay in sync with
+ * The unacknowledged predicate. MUST stay in sync with
  * `isUnacknowledgedSubmission` in
  * apps/internal/lib/form-submissions/constants.ts. Served by the partial
  * index idx_form_submissions_unread (deleted_at IS NULL AND
@@ -497,7 +497,7 @@ export async function abandonStaleFormSubmissions(cutoffHours: number) {
  * double-click or two admins racing never overwrites the first reviewer.
  *
  * `expectedLastActivityAt` is the version token the admin actually SAW: if
- * a beacon advanced the row between render and click (the D8 re-flag case),
+ * a beacon advanced the row between render and click (the re-flag case),
  * the UPDATE misses and the caller surfaces "changed since you viewed it"
  * instead of marking never-reviewed data as acknowledged.
  *

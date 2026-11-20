@@ -210,8 +210,8 @@ export const useBoardSheetState = ({
       setPendingTaskId(task.id)
       setDefaultTaskDueOn(null)
       // Open from the task the click already carries. Going through the effect
-      // instead meant the update sat in a transition behind the router's, so
-      // the sheet and the card highlight both landed ~300ms late. The effect
+      // instead would put the update in a transition behind the router's, so
+      // the sheet and the card highlight would both land ~300ms late. The effect
       // below still reconciles once the route delivers `activeTaskId`.
       setSheetTask(task)
       setIsSheetOpen(true)

@@ -20,7 +20,8 @@ const agentStorage = new AsyncLocalStorage<ActivityAgent>()
  * save, comments, lead updates), each already taking a `source`. Threading an
  * agent argument through all of them would touch every signature for one
  * channel; carrying it in request-scoped context keeps the cores unaware of
- * MCP, and `logActivity` is the single place that reads it.
+ * MCP. `logActivity` reads it, and so do comment and lead-update writes,
+ * which keep the app's name (`currentAgentName`).
  */
 export function runAsAgent<T>(agent: ActivityAgent, fn: () => T): T {
   return agentStorage.run(agent, fn)

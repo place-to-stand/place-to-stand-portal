@@ -3,9 +3,10 @@ import { redirect } from 'next/navigation'
 import type { RawSearchParams } from './params'
 
 /**
- * Users was once a list preset (`/people?role=…`), and the Clients and Users
- * pages take no type. Sends a link to the page it meant, keeping its other
- * params; `keep` says whether the preset param means something there.
+ * Redirects a link whose preset param the page doesn't take (a `/people?role=…`
+ * link meant for Users, or a type on Clients or Users) to the page it meant,
+ * keeping its other params; `keep` says whether the preset param means
+ * something there.
  */
 export function redirectLegacyPreset(
   params: RawSearchParams,

@@ -1,8 +1,8 @@
 import { defineConfig } from 'tsup'
 
-// The rest of packages/* declare `"build": "tsc"`, which emits nothing here —
-// tsconfig.base.json sets `noEmit: true` and no package overrides it. A CLI
-// needs real output, so this bundles to a single executable ESM file instead.
+// The other packages ship TypeScript source and have no build step, and
+// tsconfig.base.json sets `noEmit: true`. A CLI needs real output, so this
+// bundles to a single executable ESM file.
 export default defineConfig({
   entry: ['src/index.ts'],
   format: ['esm'],

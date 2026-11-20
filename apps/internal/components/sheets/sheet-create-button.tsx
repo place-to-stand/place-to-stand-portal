@@ -24,7 +24,7 @@ type SheetCreateButtonProps = {
 }
 
 /**
- * The page-header "Add …" button. It opens the entity's create sheet through
+ * The page toolbar's "Create …" button. It opens the entity's create sheet through
  * `?<entity>=new`, so the page's own sheet instance (or the global SheetHost
  * on other routes) renders it and the button never mounts one itself.
  */

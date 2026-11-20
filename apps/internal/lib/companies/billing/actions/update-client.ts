@@ -49,16 +49,13 @@ type UpdateClientPayload = {
   /** Month boundary the Monthly Close switches closer/origination at. */
   commissionEffective: 'current_month' | 'next_month'
   state: string | null
-  /**
-   * Deprecated: the company owns the website. Fills the client's company
-   * website when it has none; the client's legacy copy is left as is.
-   */
+  /** Deprecated and ignored: the company owns the website. */
   website?: string | null
   originationContactId: string | null
   originationUserId: string | null
   closers: CloserShare[]
   notes: string | null
-  /** Omitted keeps the client's company; null unlinks it. */
+  /** Checked to exist and logged when it differs; never written (a client is its company). */
   companyId?: string | null
   /** Deprecated and ignored: a company has one client. */
   label?: string | null
@@ -194,7 +191,7 @@ export async function planClientUpdate(
       : nextMonthStartUtc()
     : null
 
-  // Closers + origination are one logical "commission split" (PRD 007): any
+  // Closers + origination are one logical "commission split": any
   // change to either writes one effective-dated term so closed months keep
   // resolving to the assignment they were paid under.
   const commission = { closers, originationUserId, originationContactId }
@@ -405,7 +402,7 @@ async function calculateDiff({
     changedFields.push('billing type')
     previousDetails.billingType = previousBillingType
     nextDetails.billingType = nextBillingType
-    // Month boundary the report basis switches at (the cache flips at save).
+    // Month boundary the report basis switches at.
     nextDetails.billingTypeEffectiveFrom = updatedValues.billingEffectiveFrom
   }
 
@@ -438,7 +435,7 @@ async function calculateDiff({
     nextDetails.closers = describeClosersOrNone(
       await resolveClosers(updatedValues.closers)
     )
-    // Month boundary the Monthly Close switches at (the cache flips at save).
+    // Month boundary the Monthly Close switches at.
     nextDetails.commissionEffectiveFrom = updatedValues.commissionEffectiveFrom
   }
 

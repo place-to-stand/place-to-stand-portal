@@ -17,7 +17,7 @@ function getEnv() {
   return _env
 }
 
-// For backwards compatibility
+// Validated on first property read, not at import.
 export const env = new Proxy({} as z.infer<typeof schema>, {
   get(_target, prop) {
     return getEnv()[prop as keyof z.infer<typeof schema>]

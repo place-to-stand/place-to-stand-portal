@@ -42,8 +42,9 @@ type ContactSheetFormProps = {
   form: UseFormReturn<ContactFormValues>
   isPending: boolean
   isEditing: boolean
-  /** The contact's companies failed to load; the list can't be edited. */
+  /** The contact's companies have loaded. */
   companiesLoaded: boolean
+  /** The contact's companies failed to load; the list can't be edited. */
   companiesLoadFailed: boolean
   pendingReason: string
   submitDisabled: boolean
@@ -51,10 +52,9 @@ type ContactSheetFormProps = {
   onSubmit: (data: ContactFormValues, mode?: SheetSaveMode) => void
   isSheetOpen: boolean
   historyKey: string
-  // Promote to client props
   /** The person's id (null while creating). */
   contactId: string | null
-  /** The portal user this contact was promoted to, if any. */
+  /** Their sign-in's user id (`contacts.user_id`), if they have one. */
   portalUserId: string | null
   /** Their sign-in (admins only); undefined while loading. */
   signInAccount: PortalAccountSummary | null | undefined

@@ -23,8 +23,8 @@ export const saveLeadSchema = z.object({
   contactEmail: z.string().trim().max(160).optional().nullable(),
   contactPhone: z.string().trim().max(40).optional().nullable(),
   /**
-   * The lead's contact (the lead sheet's picker). Its name, email and phone
-   * are copied onto the lead. Omitted (CLI, MCP) = find or create the contact
+   * The lead's contact (the lead sheet's picker). The lead reads its name,
+   * email and phone from it. Omitted (CLI, MCP) = find or create the contact
    * from contactName/contactEmail/contactPhone.
    */
   contactId: z.string().uuid().optional(),
@@ -36,8 +36,8 @@ export const saveLeadSchema = z.object({
   companyId: z.string().uuid().nullable().optional(),
   /**
    * Deprecated: the company owns its website. Still accepted (CLI, MCP) and
-   * written to the linked company when it has none, plus the lead's copy.
-   * Omitted (the lead sheet) = leave the lead's copy alone.
+   * written to the linked company when it has none. Omitted (the lead
+   * sheet) = leave the website alone.
    */
   companyWebsite: z.string().trim().max(255).optional().nullable(),
   /** TipTap HTML, as the sheet's editor produces it. */
@@ -65,7 +65,7 @@ export type NormalizedLead = {
   companyName: string | null
   /** `undefined` = resolve the company from `companyName`. */
   companyId?: string | null
-  /** `undefined` = not sent; keep the lead's copy. */
+  /** `undefined` = not sent; leave the company's website alone. */
   companyWebsite?: string | null
   notes: string | null
 }

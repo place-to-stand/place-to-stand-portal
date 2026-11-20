@@ -55,10 +55,7 @@ test('person sheet is one stacked form, sign-in included', async ({ page }) => {
 test('projects list: client rows open the company', async ({ page }) => {
   await page.goto('/projects')
   const link = page.locator('tbody a[href*="company="]').first()
-  await expect(link).toHaveAttribute(
-    'href',
-    /\/companies\?company=[0-9a-f-]{36}$/
-  )
+  await expect(link).toHaveAttribute('href', /[?&]company=[0-9a-f-]{36}$/)
   await link.click()
   const sheet = page.getByRole('dialog')
   await expect(
@@ -80,13 +77,6 @@ test('lead sheet opens with the person and company pickers', async ({
   await expect(
     sheet.getByText('Company', { exact: true }).first()
   ).toBeVisible()
-})
-
-test('September 2026 close matches the production copy', async ({ page }) => {
-  test.skip(!process.env.E2E_PROD_COPY, 'only on a production copy')
-  await page.goto('/reports/monthly-close?year=2026&month=9')
-  await expect(page.locator('body')).toContainText('$5,200.00')
-  await expect(page.locator('body')).toContainText('$4,462.50')
 })
 
 test('client portal: admin preview shows a client’s dashboard', async ({

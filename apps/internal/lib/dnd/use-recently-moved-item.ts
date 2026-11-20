@@ -4,8 +4,8 @@ import { BOARD_DROP_ANIMATION_MS } from './kanban'
 
 /**
  * A dropped card skips its CSS transitions until its preview has finished
- * gliding into place, plus a couple of frames. Ending sooner let the card
- * fade back in from hidden after the preview vanished, which read as a flash.
+ * gliding into place, plus a couple of frames. Ending sooner lets the card
+ * fade back in from hidden after the preview vanishes, which reads as a flash.
  */
 const RECENTLY_MOVED_MS = BOARD_DROP_ANIMATION_MS + 70
 

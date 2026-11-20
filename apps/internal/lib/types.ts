@@ -37,7 +37,7 @@ type SnakeRow<T extends Table> = {
 }
 
 /**
- * A client: a company you bill (0111), read from `companies`. `id` and
+ * A client: a company you bill, read from `companies`. `id` and
  * `company_id` are the same id. `billing_type` and `origination_*` come
  * from the newest terms; `deleted_at` means billing stopped
  * (billing ended, or the company archived).
@@ -94,10 +94,11 @@ export type DbUser = {
   created_at: string
   updated_at: string
   deleted_at: string | null
-  // Optional: only populated where sign-in access matters (settings/users).
+  // Optional: only populated where sign-in access matters.
   // NULL/undefined means the user may sign in; set means auth rejects them.
   disabled_at?: string | null
-  // Optional: only populated by the settings/users list (from auth.users).
+  // Optional: the sign-in time from auth.users. No query that builds a
+  // DbUser fills it in.
   last_sign_in_at?: string | null
 }
 

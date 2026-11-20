@@ -31,9 +31,8 @@ export async function computeMetrics(since: Date): Promise<ActivityMetrics> {
 }
 
 /**
- * Page views were logged as activity until Sep 2026; historical rows still
- * carry `*_VIEWED` verbs and must not count as project activity or feed the
- * prompt.
+ * Old page-view rows carry `*_VIEWED` verbs and must not count as project
+ * activity or feed the prompt. INVOICE_VIEWED is a real event and stays.
  */
 export function isViewEvent(log: ActivityLogWithActor): boolean {
   return log.verb.endsWith('_VIEWED') && log.target_type !== 'INVOICE'

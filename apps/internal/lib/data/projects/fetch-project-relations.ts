@@ -37,8 +37,8 @@ type ProjectRelationsFetchArgs = {
   companyIds: string[]
   ownerIds: string[]
   /**
-   * Archived tasks grow without bound and only the project review/archive
-   * tabs render them — every other surface skips the query entirely.
+   * Archived tasks grow without bound and only the project review tab and
+   * the task sheet need them; every other surface skips the query.
    */
   includeArchivedTasks?: boolean
   /** Only these tasks (see `loadTaskRows`). */
@@ -137,7 +137,6 @@ export async function fetchProjectRelations({
     assigneesByTask
   )
 
-  // Map GitHub repos to summary format
   const githubReposByProject = new Map<string, GitHubRepoLinkSummary[]>()
   githubReposMap.forEach((repos, projectId) => {
     githubReposByProject.set(

@@ -1,7 +1,7 @@
 /**
- * In-browser search for boards (PRD 004 §03): every word of the query must
- * appear, in any order, in one of the fields, ignoring case. "under press"
- * finds "Under Pressure Screen Printing".
+ * In-browser search for boards: every word of the query must appear in some
+ * field, in any order, ignoring case. "under press" finds "Under Pressure
+ * Screen Printing".
  */
 export function matchesSearch(
   fields: ReadonlyArray<string | null | undefined>,

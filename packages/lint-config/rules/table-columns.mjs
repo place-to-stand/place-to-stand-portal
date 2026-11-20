@@ -270,8 +270,6 @@ export const fixedTableColumns = {
   },
 }
 
-// ── figure cells (table.md) ─────────────────────────────────────────────
-
 const FIGURE_CALLS = new Set(['formatCurrency', 'formatHours', 'formatPercent'])
 
 /** A figure printed straight into the cell: `{formatCurrency(n)}`. */

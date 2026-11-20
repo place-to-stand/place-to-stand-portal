@@ -54,7 +54,7 @@ const SAMPLE_AUDIT_RESULT = {
 }
 
 /**
- * Catalog entries for the marketing form emails (PRD 008). Kept apart from the
+ * Catalog entries for the marketing form emails. Kept apart from the
  * auth entries only for file size; `buildEmailTemplateCatalog` splices them in.
  * Samples call the real templates with obviously fake data, as everywhere else.
  */

@@ -6,11 +6,8 @@ import { db, type DbTx } from '@/lib/db'
 
 /** The default client, or the transaction Settings → Billing saves in. */
 type Executor = typeof db | DbTx
-import { taxRates } from '@/lib/db/schema'
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+import { taxRates } from '@/lib/db/schema'
 
 export type TaxRateRow = {
   id: string
@@ -29,10 +26,6 @@ type TaxRateInput = {
   isActive: boolean
 }
 
-// ---------------------------------------------------------------------------
-// Selection
-// ---------------------------------------------------------------------------
-
 const taxRateSelection = {
   id: taxRates.id,
   state: taxRates.state,
@@ -42,10 +35,6 @@ const taxRateSelection = {
   createdAt: taxRates.createdAt,
   updatedAt: taxRates.updatedAt,
 } as const
-
-// ---------------------------------------------------------------------------
-// Queries
-// ---------------------------------------------------------------------------
 
 export async function listTaxRates(): Promise<TaxRateRow[]> {
   const rows = await db
@@ -106,10 +95,6 @@ export async function updateTaxRate(
 
   return mapTaxRateRow(rows[0]!)
 }
-
-// ---------------------------------------------------------------------------
-// Mapper
-// ---------------------------------------------------------------------------
 
 function mapTaxRateRow(row: {
   id: string

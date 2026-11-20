@@ -77,8 +77,7 @@ async function resolveAgentName(clientId: string): Promise<string> {
  * refused here even though it is a valid Supabase JWT — every MCP call must be
  * attributable to an agent.
  *
- * The MCP admits the internal portal's staff roles (ADMIN, SALES — PRD 009
- * D6, revised 2026-10-27); each tool then applies the same role rule the
+ * The MCP admits the internal portal's staff roles (ADMIN, SALES); each tool then applies the same role rule the
  * portal does (`lib/mcp/tool.ts`). A valid token for anyone else (CLIENT) is
  * not an authentication failure; a 401 would just send the client round the
  * OAuth loop again. It is passed through as `forbidden` so the route can

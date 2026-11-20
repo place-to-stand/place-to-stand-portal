@@ -21,7 +21,7 @@ export function withoutPortalAccess<
     ...membership,
     portalAccess: false,
     ...('hasPortalAccess' in membership ? { hasPortalAccess: false } : {}),
-    // Billing is admin-only too (security review, Nov 2026).
+    // Billing is admin-only too.
     ...('billingType' in membership ? { billingType: null } : {}),
   }
 }

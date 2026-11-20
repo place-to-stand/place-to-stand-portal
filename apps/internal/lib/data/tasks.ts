@@ -68,10 +68,6 @@ type AssignedTaskSummaryResult = {
 const DEFAULT_LIMIT = 12
 
 /**
- * Shared row filter for "tasks assigned to this user that still matter":
- * not deleted, not archived, and not yet accepted.
- */
-/**
  * ON clause for the (left) assignee join. Person-scoping and the soft-delete
  * filter live HERE, not in WHERE — in the everyone view an unassigned task
  * joins to no assignee row, and a WHERE filter on assignee columns would
@@ -88,7 +84,7 @@ function assigneeJoinCondition(userId: string | null) {
 /**
  * Whose drag order sorts the board: the person's own, or in the everyone
  * view (`userId` null) the viewer's (`orderFor`), whose drags there save to
- * their own order. Without either, each assignee's order, as before.
+ * their own order. Without either, each assignee's own order.
  */
 function sortOrderJoinCondition(
   userId: string | null,
@@ -138,6 +134,10 @@ function projectScopeConditions(
   ]
 }
 
+/**
+ * Shared row filter for tasks that still matter: not deleted, not on an
+ * archived project, and not yet accepted.
+ */
 function assignedTaskConditions(userId: string | null) {
   return [
     // A person-scoped board keeps assigned-only semantics; the everyone

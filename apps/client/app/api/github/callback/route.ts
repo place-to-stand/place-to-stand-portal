@@ -170,14 +170,12 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Fetch installation details from GitHub using App JWT
     const installation = await getInstallationById(
       verifiedId,
       env.GITHUB_APP_ID,
       env.GITHUB_APP_PRIVATE_KEY
     )
 
-    // Upsert the installation record
     const existing = await db
       .select({
         id: githubAppInstallations.id,
@@ -196,7 +194,6 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      // Update existing installation
       await db
         .update(githubAppInstallations)
         .set({
@@ -214,7 +211,6 @@ export async function GET(request: NextRequest) {
         })
         .where(eq(githubAppInstallations.id, existing[0].id))
     } else {
-      // Create new installation
       await db.insert(githubAppInstallations).values({
         companyId: returnClientId,
         installedByUserId: user.id,

@@ -131,12 +131,11 @@ export async function POST(request: Request) {
       repoLink.defaultBranch,
       repoAuth
     )
-    // Filter to key file types, limit depth
+    // Files only, minus dependency and build folders.
     repoTreePaths = tree.entries
       .filter(e => e.type === 'blob')
       .map(e => e.path)
       .filter(p => {
-        // Exclude node_modules, .git, dist, etc.
         const excluded = [
           'node_modules/',
           '.git/',
@@ -254,13 +253,10 @@ export async function POST(request: Request) {
     },
     onFinish: async ({ text }) => {
       if (text) {
-        // Persist assistant message
         await appendMessage(threadId, 'assistant', text)
 
-        // Save as revision
         await createRevision(threadId, nextVersion, text, feedback || undefined)
 
-        // Update thread version
         await updateThreadVersion(threadId, nextVersion)
 
         // One event per finished generation — the partial-content autosaves

@@ -49,7 +49,7 @@ export type ContactsSettingsResult = {
 export type ListContactsForSettingsInput = {
   status?: 'active' | 'archived'
   search?: string | null
-  /** Only contacts with a live link to this client (validated UUID). */
+  /** Only contacts with a live link to this company (validated UUID). */
   companyId?: string | null
   /** Who can sign in; only honoured for admins. */
   signIn?: SignInFilter | null

@@ -173,7 +173,7 @@ export function useHourBlockSheetState({
             })
           }
 
-          // PRD 002 section 05: closed-month / future-billing notice.
+          // Closed-month / future-billing notice.
           if (result.warning) {
             toast({
               title: 'Review billing details',

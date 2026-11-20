@@ -24,8 +24,9 @@ type ViewAsBannerProps = {
 /**
  * Admin-only strip for previewing the portal as a given contact.
  *
- * Shows all non-deleted contacts; promoted contacts (those with a portal
- * account) display a "Portal" badge so admins can tell who has an account.
+ * Lists every live contact at a current client; promoted contacts (those
+ * with a portal account) display a "Portal" badge so admins can tell who has
+ * an account.
  *
  * Styled to be unmistakable so it can never be confused for the real client
  * view. Rendering is gated by the layout; the authority check lives in the

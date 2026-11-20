@@ -110,7 +110,7 @@ export async function POST(request: Request) {
   const denied = await clientAccessDenied(user, companyId)
   if (denied) return denied
 
-  // Verify project belongs to this client
+  // The project must belong to this client.
   const [project] = await db
     .select({ id: projects.id, companyId: projects.companyId })
     .from(projects)
@@ -124,7 +124,6 @@ export async function POST(request: Request) {
     )
   }
 
-  // Find active installation for this client
   const [installation] = await db
     .select()
     .from(githubAppInstallations)
@@ -147,7 +146,7 @@ export async function POST(request: Request) {
   const env = getGitHubAppEnv()
 
   try {
-    // Verify repo is accessible via installation
+    // Throws unless the installation can reach the repo.
     const repo = await getInstallationRepo(
       installation.installationId,
       env.GITHUB_APP_ID,
@@ -156,7 +155,6 @@ export async function POST(request: Request) {
       repoName
     )
 
-    // Create the repo link
     const [link] = await db
       .insert(githubRepoLinks)
       .values({

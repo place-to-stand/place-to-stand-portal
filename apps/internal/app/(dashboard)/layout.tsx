@@ -23,7 +23,7 @@ export default async function DashboardLayout({
   // Started now so it runs alongside the reads below.
   const staffWithPhotosPromise = listStaffWithPhotos()
   const businessPromise = getBusinessIdentity()
-  // D6 (PRD 001): server-fetched unacknowledged count; refreshed via
+  // Server-fetched unacknowledged count; refreshed via
   // revalidatePath('/', 'layout') from the submissions actions. Submissions
   // are admin-only, so SALES users get no badge.
   const unacknowledgedSubmissionsCount = roleCan(
@@ -32,7 +32,7 @@ export default async function DashboardLayout({
   )
     ? await fetchUnacknowledgedSubmissionCount(user)
     : 0
-  // PRD 004 §02: SSR-read collapse state so the sidebar renders in the right
+  // SSR-read collapse state so the sidebar renders in the right
   // mode on first paint (the ui/sidebar primitive writes this cookie on toggle).
   const cookieStore = await cookies()
   const staffWithPhotos = await staffWithPhotosPromise

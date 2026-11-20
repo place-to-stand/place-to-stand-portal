@@ -46,8 +46,7 @@ export const contactPayloadSchema = z.object({
   attribution: attributionSchema,
   client: clientSchema,
 
-  // Opt-in email delivery (PRD 008). Absent or false means record only, which
-  // is what keeps a portal deploy inert until the marketing site switches over.
+  // Opt-in email delivery. Absent or false means record only.
   deliver: z.boolean().optional().default(false),
 })
 

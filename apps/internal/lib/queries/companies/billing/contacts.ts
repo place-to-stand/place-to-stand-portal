@@ -22,10 +22,8 @@ export type ClientContactRow = {
 }
 
 /**
- * A client's people: everyone at its company (the old client links became
- * company memberships), primary first then by email. Shared by the client
- * detail page, invoice emails and the update composer so all agree on who
- * a client's people are. Portal access is separate.
+ * A client's people: everyone currently at its company, primary first then
+ * by email. Invoice emails address them. Portal access is separate.
  */
 export async function fetchContactsForClient(
   companyId: string

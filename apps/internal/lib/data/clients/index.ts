@@ -116,7 +116,7 @@ export const fetchClientsWithMetrics = cache(
       )
     }
 
-    // PRD 004 §03: `?billing=` filter shares the landing table's conditions.
+    // The `?billing=` filter shares the landing table's conditions.
     if (billingType) {
       baseConditions.push(eq(currentBillingTypeSql(), billingType))
     }
@@ -125,11 +125,10 @@ export const fetchClientsWithMetrics = cache(
     // term, the one place commission is stored).
     const originationUsers = aliasedTable(users, 'origination_users')
 
-    // Base client data. Project counts are derived below from the per-client
-    // project rows we fetch anyway — the previous projects join + 21-column
-    // GROUP BY fanned out clients × projects only to count rows the second
-    // query re-fetched. The remaining joins are all many-to-one, so this
-    // returns exactly one row per client with no grouping.
+    // Base client data. Project counts come from the per-client project rows
+    // fetched below, not a projects join here: that would fan out clients ×
+    // projects and need a GROUP BY. The joins here are all many-to-one, so
+    // this returns exactly one row per client with no grouping.
     const rows = await db
       .select({
         id: companies.id,
@@ -168,8 +167,7 @@ export const fetchClientsWithMetrics = cache(
     const companyIds = rows.map(r => r.id)
 
     // Fetch every non-deleted project per client (any status). The active
-    // list is derived below — the definition of "active" (ACTIVE/ONBOARDING)
-    // is unchanged; "total" is any status, deletedAt IS NULL.
+    // list (ACTIVE or ONBOARDING) is derived below; "total" is any status.
     const [clientHours, projectsData, contactsByClient, closersByClient] =
       await Promise.all([
         getClientHoursTotals(db, companyIds),
@@ -193,7 +191,6 @@ export const fetchClientsWithMetrics = cache(
         fetchLatestClosersByClient(companyIds),
       ])
 
-    // Group projects by client ID
     const projectsMap = new Map<string, ClientProjectSummary[]>()
     for (const project of projectsData) {
       if (!project.companyId) continue
@@ -425,7 +422,7 @@ export const resolveClientIdentifier = cache(
     let client: ClientDetail
 
     if (isUUID) {
-      // Old client ids (before 0111) still resolve, for good (client_id_map).
+      // Legacy client ids still resolve to their company (client_id_map).
       client = await fetchClientById(
         user,
         await companyIdForLegacyClientId(identifier)

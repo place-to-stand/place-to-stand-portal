@@ -54,8 +54,9 @@ const liveParams = () => new URLSearchParams(window.location.search)
  *   for every way to open a sheet.
  * - close = replace, never scrolling; all other params are preserved
  * - writes skip the server (`writeShallowUrl`) unless the page must resolve
- *   the record itself: only `open` of a sheet the page renders, without
- *   `shallow`, goes through `router.push`
+ *   the record itself: `open` of a sheet the page renders, without
+ *   `shallow`, goes through `router.push`, and `swap` of one through
+ *   `router.replace`
  */
 export function useSheetParams() {
   const router = useRouter()
@@ -312,8 +313,7 @@ export function useOwnCreateSheetId(entity: SheetEntityKey) {
  * Param-mirrored selection for a host page's own sheet: local state opens the
  * sheet instantly while the URL catches up, and external URL changes
  * (back/forward, shared-link navigation) are adopted via the
- * adjust-state-during-render pattern rather than an effect. Mirrors the
- * submissions table precedent.
+ * adjust-state-during-render pattern rather than an effect.
  */
 export function useSheetParamSelection(entity: SheetEntityKey) {
   const { get, open, openNew, close } = useSheetParams()

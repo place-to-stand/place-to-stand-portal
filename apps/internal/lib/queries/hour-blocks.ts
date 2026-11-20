@@ -126,9 +126,9 @@ type HourBlocksSettingsResult = {
 }
 
 /**
- * Per-sort descriptor (PRD 004 §03, R5): order expression + field-tagged
- * cursor value encoding + comparison predicates. `createdAt` is
- * non-nullable so no null partition applies.
+ * Per-sort descriptor: order expression + field-tagged cursor value
+ * encoding + comparison predicates. Nullable keys (client, invoice) use
+ * `nullsLastDescriptor`.
  */
 type HourBlockSortDescriptor = {
   encode: (row: HourBlockWithClient) => string
@@ -282,7 +282,7 @@ export async function listHourBlocksForSettings(
     hourBlocksList = rows.map(mapHourBlockWithClient)
   } else {
     // Field-tagged cursor: payloads minted under a different sort are
-    // rejected and we serve page one (R5 backstop for stale deep links).
+    // rejected and we serve page one (a backstop for stale deep links).
     const cursorPayload = decodeSortCursor(
       input.cursor,
       sort.field,

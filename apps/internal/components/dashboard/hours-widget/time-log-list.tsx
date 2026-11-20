@@ -44,8 +44,8 @@ export function TimeLogList({
     <div className='flex flex-col'>
       {/*
         The label keeps its quiet uppercase treatment; separation comes from
-        whitespace alone -- a rule here on top of the row dividers below made
-        the widget read as a stack of boxes.
+        whitespace alone -- a rule here on top of the row dividers below would
+        make the widget read as a stack of boxes.
       */}
       <div className='flex items-center justify-between pt-4 pb-2'>
         <h3 className='text-muted-foreground text-overline font-semibold tracking-wide uppercase'>

@@ -1,5 +1,5 @@
 /**
- * Dev utility: exercise the MCP server (PRD 009) end to end, the way a real
+ * Dev utility: exercise the MCP server end to end, the way a real
  * connector does — dynamic client registration, PKCE authorize, consent,
  * token exchange — then call every tool and check the attribution it leaves.
  *
@@ -466,7 +466,7 @@ async function main() {
     },
   }
 
-  // SALES is admitted since PRD 009 D6 was revised; CLIENT never is.
+  // SALES is admitted; CLIENT never is.
   await checkRefused(
     discovery,
     'a CLIENT user',

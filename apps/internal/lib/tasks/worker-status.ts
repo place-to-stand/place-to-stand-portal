@@ -17,10 +17,6 @@ import {
   type GitHubComment,
 } from '@/lib/github/client'
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export type WorkerCommentStatus =
   | 'working'
   | 'plan_ready'
@@ -49,10 +45,6 @@ export type WorkerStatusResult =
     }
   | { error: string }
 
-// ---------------------------------------------------------------------------
-// Parsing helpers
-// ---------------------------------------------------------------------------
-
 const WORKER_BOT_LOGIN = 'place-to-stand[bot]'
 const PR_URL_REGEX = /\*\*Pull request:\*\*\s+(https:\/\/github\.com\/\S+)/
 const PLAN_HEADING = '## Implementation Plan'
@@ -80,11 +72,8 @@ function extractPrUrl(comments: WorkerComment[]): string | null {
   return null
 }
 
-// ---------------------------------------------------------------------------
-// Loader (GET /api/task-deployments/[deploymentId]/worker-status)
-// ---------------------------------------------------------------------------
-
 /**
+ * Backs GET /api/task-deployments/[deploymentId]/worker-status.
  * Fetch the current worker status for a deployment by reading GitHub issue
  * comments, and record a changed status on the deployment and its task.
  */
@@ -94,7 +83,6 @@ export async function loadWorkerStatus(
 ): Promise<WorkerStatusResult> {
   if (!UUID_PATTERN.test(deploymentId)) return { error: 'Invalid payload.' }
 
-  // Load deployment
   const [deployment] = await db
     .select()
     .from(taskDeployments)
@@ -103,7 +91,6 @@ export async function loadWorkerStatus(
 
   if (!deployment) return { error: 'Deployment not found.' }
 
-  // Auth check
   try {
     await ensureTaskAccess(user, deployment.taskId)
   } catch (error) {
@@ -113,7 +100,6 @@ export async function loadWorkerStatus(
     return { error: 'Unable to authorize request.' }
   }
 
-  // Load repo link
   const repoLink = await getRepoLinkById(deployment.repoLinkId)
   if (!repoLink) return { error: 'Repository link not found.' }
 
@@ -148,7 +134,7 @@ export async function loadWorkerStatus(
     }
   }
 
-  // Map all comments, classifying bot comments and marking others
+  // Only bot comments are classified; everyone else's read as 'unknown'.
   const allComments: WorkerComment[] = rawComments.map(c => {
     const isBot = c.user.login === WORKER_BOT_LOGIN
     return {
@@ -167,7 +153,6 @@ export async function loadWorkerStatus(
   // the preceding user command was an implement/execute request (no /plan flag).
   for (let i = 0; i < allComments.length; i++) {
     if (allComments[i].isBot && allComments[i].status === 'working') {
-      // Walk backwards to find the nearest preceding user command
       for (let j = i - 1; j >= 0; j--) {
         if (
           !allComments[j].isBot &&
@@ -245,7 +230,7 @@ export async function loadWorkerStatus(
       })
     }
 
-    // Sync task cached fields if this is the latest deployment
+    // The task caches the status of its latest deployment only.
     const [latest] = await db
       .select({ id: taskDeployments.id })
       .from(taskDeployments)

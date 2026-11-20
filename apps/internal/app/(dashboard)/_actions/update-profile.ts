@@ -165,7 +165,7 @@ type ProfileActivityArgs = {
 
 /**
  * One row per semantic change: profile fields land on USER_UPDATED (same
- * shape as the admin edit in settings/users) and a password change gets its
+ * shape as the person sheet's sign-in save) and a password change gets its
  * own USER_PASSWORD_CHANGED row. Avatar is recorded as a presence flag, never
  * the storage path.
  */

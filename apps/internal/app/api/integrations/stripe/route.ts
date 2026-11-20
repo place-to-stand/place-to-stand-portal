@@ -24,14 +24,6 @@ import {
 } from '@/lib/invoices/stripe-checkout-payment'
 
 /**
- * Mark an invoice as paid, log activity, and create hour blocks.
- * Shared by both checkout.session.completed and payment_intent.succeeded handlers.
- *
- * Hour block creation is idempotent (ON CONFLICT DO NOTHING), so it runs
- * even when the invoice is already PAID — this ensures retried webhooks
- * can recover from a previous incomplete execution.
- */
-/**
  * True when Stripe collected at least the invoice total (in cents, USD).
  * Logs and returns false otherwise, so a payment for a stale or tampered
  * amount never marks the invoice paid.
@@ -103,6 +95,14 @@ function unbookableReason(invoice: {
     : `the invoice is ${invoice.status.charAt(0)}${invoice.status.slice(1).toLowerCase()}`
 }
 
+/**
+ * Mark an invoice as paid, log activity, and create hour blocks.
+ * Shared by the payment_intent.succeeded and paid checkout.session handlers.
+ *
+ * Hour block creation is idempotent (ON CONFLICT DO NOTHING), so it runs
+ * even when the invoice is already PAID — this ensures retried webhooks
+ * can recover from a previous incomplete execution.
+ */
 async function markInvoicePaid(
   invoice: WebhookInvoice,
   paymentIntentId: string | null

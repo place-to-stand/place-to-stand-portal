@@ -149,8 +149,9 @@ export function LeadSheet(props: LeadSheetProps) {
                 canManage={canManage}
                 canConvert={canConvert}
                 onConvertToClient={() => {
-                  // A client is made on its company's billing (its sheet's Client column): stack the
-                  // company's sheet on the lead, on that tab.
+                  // A client is made on its company's billing (its sheet's
+                  // Client column): stack the company's sheet on the lead,
+                  // scrolled to billing.
                   if (lead?.companyId) {
                     setSheetSectionTarget('company', lead.companyId, 'billing')
                     openSheet('company', lead.companyId)

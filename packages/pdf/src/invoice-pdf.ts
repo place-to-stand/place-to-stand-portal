@@ -1,6 +1,7 @@
 /**
  * Invoice PDF, shared by the client portal (download) and the internal portal
- * (template preview). One copy, so the layout cannot drift between readers.
+ * (the shared invoice page's download and the template preview). One copy, so
+ * the layout cannot drift between readers.
  *
  * Lays out the same document as the shared invoice page — logo, number,
  * billed-to / issued, line items, a lime total strip, notes — with PAID and
@@ -115,9 +116,7 @@ export async function generateInvoicePdf(
     onNewPage?.()
   }
 
-  // ---------------------------------------------------------------------------
   // Header: logo, then the invoice number with any status stamp beside it
-  // ---------------------------------------------------------------------------
 
   drawLogo(doc, MARGIN_X, y, {
     name: issuer.name,
@@ -145,9 +144,7 @@ export async function generateInvoicePdf(
   }
   y = titleBaseline + 40 * PX
 
-  // ---------------------------------------------------------------------------
   // Billed to / Issued
-  // ---------------------------------------------------------------------------
 
   const fromLines = issuerFromLines(issuer)
   const issued = formatDate(invoice.issued_date)
@@ -162,7 +159,7 @@ export async function generateInvoicePdf(
     Boolean(field.lines)
   )
   const columnGap = 24 * PX
-  // Two columns as before; three once the From block shows.
+  // Two columns; three once the From block shows.
   const columns = Math.max(fields.length, 2)
   const columnWidth = (contentWidth - columnGap * (columns - 1)) / columns
   const fieldLineHeight = 16 * 1.35 * PX
@@ -194,9 +191,7 @@ export async function generateInvoicePdf(
   const tallest = Math.max(...wrapped.map(field => field.lines.length), 1)
   y += (12 + 11 + 6 + 20) * PX + (tallest - 1) * fieldLineHeight
 
-  // ---------------------------------------------------------------------------
   // Line items
-  // ---------------------------------------------------------------------------
 
   function drawTableHeader() {
     setType(doc, FONTS.label, 11, COLORS.muted)
@@ -248,9 +243,7 @@ export async function generateInvoicePdf(
     doc.line(MARGIN_X, y, right, y)
   }
 
-  // ---------------------------------------------------------------------------
   // Totals: subtotal and tax only when there is tax, then the lime strip
-  // ---------------------------------------------------------------------------
 
   const taxRate = invoice.tax_rate ? Number(invoice.tax_rate) : 0
   const hasTax = taxRate > 0
@@ -300,9 +293,7 @@ export async function generateInvoicePdf(
   )
   y += stripHeight
 
-  // ---------------------------------------------------------------------------
   // Notes
-  // ---------------------------------------------------------------------------
 
   if (invoice.notes) {
     const noteLineHeight = 16 * 1.55 * PX
@@ -327,9 +318,7 @@ export async function generateInvoicePdf(
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Footer on every page: dashed rule, studio + site, number + page count
-  // ---------------------------------------------------------------------------
+  // Footer on every page: dashed rule, legal name + site, number + page count
 
   const pageCount = doc.getNumberOfPages()
   for (let page = 1; page <= pageCount; page++) {

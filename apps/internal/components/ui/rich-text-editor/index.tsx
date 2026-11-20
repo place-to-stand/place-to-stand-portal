@@ -5,7 +5,6 @@ import { EditorContent, EditorContext } from '@tiptap/react'
 
 import { cn } from '@/lib/utils'
 
-// --- UI Primitives ---
 import { Spacer } from '@/components/tiptap-ui-primitive/spacer'
 import {
   Toolbar,
@@ -13,7 +12,6 @@ import {
   ToolbarSeparator,
 } from '@/components/tiptap-ui-primitive/toolbar'
 
-// --- Tiptap UI ---
 import { HeadingDropdownMenu } from '@/components/tiptap-ui/heading-dropdown-menu'
 import { ListDropdownMenu } from '@/components/tiptap-ui/list-dropdown-menu'
 import { BlockquoteButton } from '@/components/tiptap-ui/blockquote-button'
@@ -32,17 +30,14 @@ import { LinkFloatingMenu } from '@/components/tiptap-ui/link-floating-menu'
 import { MarkButton } from '@/components/tiptap-ui/mark-button'
 import { TextAlignButton } from '@/components/tiptap-ui/text-align-button'
 
-// --- Icons ---
 import { ArrowLeftIcon } from '@/components/tiptap-icons/arrow-left-icon'
 import { BanIcon } from '@/components/tiptap-icons/ban-icon'
 import { HighlighterIcon } from '@/components/tiptap-icons/highlighter-icon'
 import { LinkIcon } from '@/components/tiptap-icons/link-icon'
 
-// --- Hooks ---
 import { useIsMobile } from '@pts/ui/hooks/use-mobile'
 import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
-// --- UI Primitives ---
 import { Button } from '@/components/tiptap-ui-primitive/button'
 
 import { ensureEditorStyles } from './editor-styles'
@@ -59,9 +54,8 @@ export type RichTextEditorProps = {
   className?: string
   contentMinHeightClassName?: string
   /**
-   * Static chrome rendered on the page around the editable area — under the
+   * Static chrome rendered on the page around the editable area, under the
    * toolbar, so it reads as part of the document rather than the controls.
-   * Used by the update composer to show the email's wordmark and footer.
    */
   contentHeader?: ReactNode
   contentFooter?: ReactNode
@@ -284,10 +278,10 @@ export function RichTextEditor({
       style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
     >
       <EditorContext.Provider value={{ editor }}>
-        {/* The toolbar stays at the top of its editor on every width. The
-            TipTap template pins it to the screen bottom on phones, which
-            suits a full-page editor but detached it from these embedded
-            ones (sheet fields, the notes card) and left it over the page. */}
+        {/* The toolbar stays at the top of its editor on every width. Don't
+            pin it to the screen bottom on phones as the TipTap template
+            does: that suits a full-page editor but detaches it from these
+            embedded ones (sheet fields, the notes card). */}
         <Toolbar>
           {mobileView === 'main' ? (
             <MainToolbarContent

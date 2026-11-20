@@ -19,7 +19,7 @@ const assigneeRefSchema = z
 
 const optionalText = (max: number) => z.string().trim().max(max)
 
-/** The company owns its website; leads keep only a legacy copy. */
+/** The company owns its website; this only fills a blank one. */
 const websiteSchema = optionalText(255).describe(
   "Deprecated: sets the linked company's website when it has none (an existing company website is never overwritten). Edit the company to change it."
 )

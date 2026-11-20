@@ -1,5 +1,5 @@
 /**
- * Server-side sort parsing + field-tagged keyset cursors (PRD 004 §03, R5).
+ * Server-side sort parsing + field-tagged keyset cursors.
  *
  * Each sortable field on a view supplies its own order expressions AND
  * cursor handling — cursors minted under one sort are invalid under
@@ -20,7 +20,7 @@ export type ParsedSort<F extends string = string> = {
 
 /**
  * Parse `?sort=field:dir` against a per-view allowlist. Invalid or absent
- * values fall back to the view's default (today's hardcoded order).
+ * values fall back to the view's default.
  */
 export function parseSortParam<F extends string>(
   raw: string | undefined,
@@ -60,7 +60,7 @@ export function encodeSortCursor(payload: SortCursorPayload): string {
  * Decode + validate: rejects legacy/foreign payload shapes and payloads
  * minted under a different sort identity — field OR direction (stale
  * deep-linked URLs) — callers treat null as "no cursor" and serve page
- * one (R5). The id tie-breaker must be a UUID: it is compared against
+ * one. The id tie-breaker must be a UUID: it is compared against
  * uuid-typed columns, and a hostile payload would otherwise surface a
  * Postgres cast error instead of falling back to page one.
  */

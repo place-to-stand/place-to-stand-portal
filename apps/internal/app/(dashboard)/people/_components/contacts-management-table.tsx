@@ -32,7 +32,7 @@ type ContactsManagementTableProps = {
   totalPages: number
   pageSize: number
   mode: 'active' | 'users' | 'archive'
-  /** Route the sort/filter params live on (PRD 004 §03). */
+  /** Route the sort/filter params live on. */
   basePath: string
   /**
    * Contact resolved server-side from the `?contact=` share link. May not be

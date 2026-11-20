@@ -16,11 +16,10 @@ import { NotFoundError } from '@/lib/errors/http'
 import type { LeadConversionSummary } from '@/lib/leads/types'
 
 /**
- * What a converted lead became. The lead records the client; the contact is
- * the lead's own contact (live), and projects are the client's live
- * projects — conversion doesn't
- * tag the project it creates, so linking to an existing client can surface
- * work that predates the lead.
+ * What a converted lead became. The client is the lead's company; the
+ * contact is the lead's own contact (live), and projects are the client's
+ * live projects. Nothing ties a project to the lead, so a client that already
+ * existed can show work that predates the lead.
  *
  * Returns null when the lead isn't converted. Archived leads still resolve,
  * since their sheet opens from the leads archive.

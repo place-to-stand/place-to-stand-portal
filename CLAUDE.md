@@ -43,6 +43,7 @@ The two main apps are `apps/internal/` (internal portal) and `apps/client/` (cli
 - `npm run type-check` - Type-check all apps via Turbo
 - `npm run cli:link` - Build the `pts` CLI and link it onto your PATH (see `packages/cli/README.md`)
 - `npm run knip` - Find unused files, exports and dependencies (config in `knip.json`)
+- `npm run test:e2e:seed` - Wipe the LOCAL database and load made-up data (`e2e/seed/`); the browser tests (`E2E_WRITES=1 npm run test:e2e`) run on it
 - `npm run design-tokens` - Regenerate `docs/design-system/tokens.json` from the theme sources (`npm run lint` checks it)
 
 ### CI and pre-commit
@@ -368,7 +369,7 @@ await logTaskCreated(taskId, userId)
 ### Marketing Form Intake
 
 The marketing site's forms land in `form_submissions` and surface at `/submissions`. Nothing
-creates a lead directly — leads are promoted from a submission by hand.
+creates a lead from one: someone reads the submission and adds the lead by hand.
 
 **Endpoints:**
 

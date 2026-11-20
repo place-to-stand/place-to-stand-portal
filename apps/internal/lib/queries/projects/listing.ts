@@ -46,7 +46,7 @@ export async function getProjectById(
   return result[0]
 }
 
-// PRD 004 §03 (R5): per-sort order expressions for the settings/archive list.
+// Per-sort order expressions for the projects list and its archive.
 type ProjectSortDescriptor = {
   orderAsc: SQL
   orderDesc: SQL
@@ -177,7 +177,7 @@ export async function listProjectsForSettings(
         .select({ count: sql<number>`count(*)` })
         .from(projects)
         .where(baseConditions.length ? and(...baseConditions) : undefined),
-      // Status-scoped only — the `M` in `Showing N of M` (PRD 004 §03).
+      // Status-scoped only — the `M` in `Showing N of M`.
       db
         .select({ count: sql<number>`count(*)` })
         .from(projects)

@@ -14,19 +14,17 @@ type ColumnScrollHandlers = {
 }
 
 /**
- * Hook to persist vertical scroll position for multiple kanban columns
- * Each column's scroll position is stored separately using its column ID
+ * Persists the vertical scroll position of each kanban column in
+ * sessionStorage, keyed by its column id.
  */
 export function useColumnScrollPersistence({
   storageKey,
   columnIds,
 }: UseColumnScrollPersistenceOptions): ColumnScrollHandlers {
-  // Store refs for each column
   const columnRefsMap = useRef<
     Map<string, MutableRefObject<HTMLDivElement | null>>
   >(new Map())
 
-  // Initialize refs for all columns
   useEffect(() => {
     columnIds.forEach(columnId => {
       if (!columnRefsMap.current.has(columnId)) {

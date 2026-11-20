@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { expectHealthy } from './helpers'
 
 /**
- * R10: a Won lead moved back to an earlier stage keeps its conversion (the
+ * A Won lead moved back to an earlier stage keeps its conversion (the
  * link to the company it made a client). Changes data, then puts the lead
  * back to Closed won; run only with E2E_WRITES=1 on a throwaway database.
  */
@@ -19,6 +19,10 @@ async function setStatus(page: Page, leadUrl: string, label: string) {
   await page.getByRole('option', { name: label }).click()
   await sheet.getByRole('button', { name: 'Save and close' }).click()
   await expect(page.getByText('Lead saved').first()).toBeVisible()
+  // Saving a lead currently reloads the whole board (a full page load, not a
+  // refresh). Wait for it, or the next visit is cut off by it.
+  await page.waitForEvent('load', { timeout: 5_000 }).catch(() => {})
+  await page.waitForLoadState('networkidle')
 }
 
 test('lead: a converted Won lead moved back keeps its conversion', async ({
@@ -40,7 +44,8 @@ test('lead: a converted Won lead moved back keeps its conversion', async ({
     const sheet = page.getByRole('dialog')
     await expect(sheet).toBeVisible()
     const status = sheet.getByRole('combobox', { name: 'Status' })
-    if ((await status.innerText()).includes('Closed won')) {
+    // textContent: the badge shows the status in capitals.
+    if ((await status.textContent())?.includes('Closed won')) {
       await expect(page).toHaveURL(/[?&]lead=[0-9a-f-]{36}/)
       leadUrl = page.url()
       break

@@ -18,6 +18,7 @@
     "test": "turbo test",
     "cli:link": "npm run build -w @pts/cli && cd packages/cli && npm link",
     "test:e2e": "playwright test -c e2e/playwright.config.ts",
+    "test:e2e:seed": "node e2e/seed/seed.mjs",
     "prepare": "husky",
     "knip": "DATABASE_URL=${DATABASE_URL:-postgres://localhost/knip} knip"
   },

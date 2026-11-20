@@ -4,7 +4,7 @@ export { monthLabel } from '@/lib/billing/months'
 
 /**
  * Which month a role change takes effect from. Role history starts in
- * October 2025 (0113); a change can start any month from then through next
+ * October 2025; a change can start any month from then through next
  * month, except one that would rewrite a closed monthly close (the server
  * enforces this; the picker offers only the recent months). Client-safe.
  */

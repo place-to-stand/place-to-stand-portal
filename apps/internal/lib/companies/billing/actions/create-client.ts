@@ -50,7 +50,7 @@ export async function startClientBillingInTx(
     effectiveFrom: startsOn,
     createdBy: input.actorId,
   })
-  // Same atomicity for the commission split (PRD 007): the client's first
+  // Same atomicity for the commission split: the client's first
   // month must resolve its closers/origination.
   await insertInitialCommissionTerm(tx, {
     companyId: companyId,

@@ -18,10 +18,6 @@ import {
   getSessionByTaskId,
 } from '@/lib/queries/planning'
 
-// ---------------------------------------------------------------------------
-// Start a planning thread
-// ---------------------------------------------------------------------------
-
 const startThreadSchema = z.object({
   taskId: z.string().uuid(),
   repoLinkId: z.string().uuid(),

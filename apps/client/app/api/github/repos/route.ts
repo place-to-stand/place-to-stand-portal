@@ -39,7 +39,6 @@ export async function GET(request: Request) {
 
   const env = getGitHubAppEnv()
 
-  // Find active installation for this client
   const [installation] = await db
     .select()
     .from(githubAppInstallations)

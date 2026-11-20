@@ -39,8 +39,8 @@ async function main(): Promise<void> {
   await program.parseAsync(process.argv)
 }
 
-// Wrapped rather than awaited at the top level: an unsettled top-level await
-// makes Node report its own diagnostic instead of the actual failure.
+// Caught here rather than left to reject: an uncaught top-level rejection
+// makes Node print its own diagnostic instead of the actual failure.
 try {
   await main()
 } catch (error) {

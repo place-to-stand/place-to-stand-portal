@@ -204,8 +204,9 @@ function CommandShortcut({
 /**
  * Scrolls a picker's list so the item with this cmdk `value` sits in the
  * middle, with no animation. Pickers call it from the list's ref as it
- * mounts (and once more on the next frame, after the popup has its final
- * height), so the selected option is in view the moment the list opens.
+ * mounts. It centers at once and again on the next frame, after the popup
+ * has its final height, so the selected option is in view the moment the
+ * list opens.
  */
 function revealCommandItem(
   list: HTMLElement | null,

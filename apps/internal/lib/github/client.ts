@@ -7,13 +7,6 @@ import { markConnectionNeedsReauth } from '@/lib/oauth/needs-reauth'
 export { resolveRepoLinkAuth } from './resolve-auth'
 
 /**
- * Union type for GitHub authentication.
- *
- * - `string`           — OAuth connection ID (legacy callers)
- * - `{ token: string }` — Pre-resolved bearer token (from resolveRepoLinkAuth)
- * - `undefined`         — Use default OAuth connection for the user
- */
-/**
  * A connection id, a resolved token (with the connection it came from, when
  * it's a person's saved sign-in), or nothing for the person's first one.
  */
@@ -63,7 +56,6 @@ async function getGitHubToken(
     isNull(oauthConnections.deletedAt),
   ]
 
-  // If specific connection requested, add that filter
   if (connectionId) {
     conditions.push(eq(oauthConnections.id, connectionId))
   }
@@ -161,9 +153,7 @@ export async function listBranches(
   return githubFetch(userId, `/repos/${owner}/${repo}/branches`, {}, auth)
 }
 
-// ---------------------------------------------------------------------------
 // Issue & Comment helpers (for pts-worker integration)
-// ---------------------------------------------------------------------------
 
 interface GitHubIssue {
   number: number
@@ -269,9 +259,7 @@ export async function createCommentReaction(
   )
 }
 
-// ---------------------------------------------------------------------------
 // File / Tree / Search helpers (for AI planning tool use)
-// ---------------------------------------------------------------------------
 
 interface GitHubFileContent {
   type: 'file'

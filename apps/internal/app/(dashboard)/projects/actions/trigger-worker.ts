@@ -48,9 +48,6 @@ type TriggerResult =
       workerStatus: 'working' | 'implementing' | 'dispatched'
     }
   | { error: string }
-// ---------------------------------------------------------------------------
-// Cancel Deployment
-// ---------------------------------------------------------------------------
 
 const WORKER_BOT_LOGIN = 'place-to-stand[bot]'
 
@@ -73,7 +70,6 @@ export async function cancelDeployment(input: {
 
   const { deploymentId } = parsed.data
 
-  // Load deployment
   const [deployment] = await db
     .select()
     .from(taskDeployments)
@@ -82,7 +78,6 @@ export async function cancelDeployment(input: {
 
   if (!deployment) return { error: 'Deployment not found.' }
 
-  // Verify cancellable status
   if (
     deployment.workerStatus !== 'dispatched' &&
     deployment.workerStatus !== 'working' &&
@@ -93,7 +88,6 @@ export async function cancelDeployment(input: {
 
   const taskId = deployment.taskId
 
-  // Auth check
   try {
     await ensureTaskAccess(user, taskId)
   } catch (error) {
@@ -103,7 +97,6 @@ export async function cancelDeployment(input: {
     return { error: 'Unable to authorize request.' }
   }
 
-  // Load task for context
   const [task] = await db
     .select({
       id: tasks.id,
@@ -118,7 +111,6 @@ export async function cancelDeployment(input: {
 
   if (!task) return { error: 'Task not found.' }
 
-  // Load repo link
   const repoLink = await getRepoLinkById(deployment.repoLinkId)
   if (!repoLink) return { error: 'Repository link not found.' }
 
@@ -151,7 +143,7 @@ export async function cancelDeployment(input: {
 
   const botComments = rawComments.filter(c => c.user.login === WORKER_BOT_LOGIN)
 
-  // If the worker hasn't posted anything yet (dispatched but no reaction),
+  // If the worker hasn't posted anything yet (dispatched, no comment),
   // there's no comment to react on — just record the cancellation. pts-worker
   // only checks for a 👎 reaction on its own status comment while it runs, so
   // once one exists we react on it to actually stop the in-progress agent.
@@ -223,7 +215,6 @@ export async function cancelDeployment(input: {
       .where(eq(tasks.id, taskId))
   }
 
-  // Log activity
   const event = workerCancelledEvent({
     taskTitle: task.title,
     repoFullName: repoLink.repoFullName,
@@ -244,10 +235,6 @@ export async function cancelDeployment(input: {
   return { ok: true }
 }
 
-// ---------------------------------------------------------------------------
-// Deploy Plan (AI Planning Panel → GitHub issue with PRD instructions)
-// ---------------------------------------------------------------------------
-
 const deployPlanSchema = z.object({
   threadId: z.string().uuid(),
   version: z.number().int().min(1),
@@ -259,8 +246,8 @@ const deployPlanSchema = z.object({
 type DeployPlanResult = TriggerResult
 
 /**
- * Deploy a finalized plan from the AI planning panel.
- * Creates a GitHub issue with the plan content + PRD file instructions.
+ * Deploy a finalized plan from the AI planning panel: creates a GitHub issue
+ * for the task, then posts the plan and where to save it as a worker comment.
  */
 export async function deployPlan(input: {
   threadId: string
@@ -276,7 +263,6 @@ export async function deployPlan(input: {
 
   const { threadId, version, taskId, repoLinkId, model } = parsed.data
 
-  // Auth check
   try {
     await ensureTaskAccess(user, taskId)
   } catch (error) {
@@ -285,11 +271,9 @@ export async function deployPlan(input: {
     return { error: 'Unable to authorize request.' }
   }
 
-  // Load the plan revision
   const revision = await getRevisionByVersion(threadId, version)
   if (!revision) return { error: 'Plan revision not found.' }
 
-  // Load task
   const [task] = await db
     .select({
       id: tasks.id,
@@ -305,7 +289,6 @@ export async function deployPlan(input: {
 
   if (!task) return { error: 'Task not found.' }
 
-  // Load repo link
   const repoLink = await getRepoLinkById(repoLinkId)
   if (!repoLink) return { error: 'Repository link not found.' }
 
@@ -350,7 +333,6 @@ export async function deployPlan(input: {
     // Directory doesn't exist — start at 001
   }
 
-  // Generate slug from task title
   const slug = task.title
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -361,12 +343,10 @@ export async function deployPlan(input: {
   const prdPath = `${prdDir}/README.md`
   const planId = `PLN-${generatePlanId()}`
 
-  // Build portal URL for issue body
   const baseUrl =
     serverEnv.APP_BASE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? ''
   const portalUrl = baseUrl ? `${baseUrl}/projects` : ''
 
-  // Create GitHub issue
   let issue: { number: number; html_url: string }
   try {
     issue = await createIssue(
@@ -393,7 +373,6 @@ export async function deployPlan(input: {
     }
   }
 
-  // Insert deployment row
   const [deployment] = await db
     .insert(taskDeployments)
     .values({
@@ -450,7 +429,6 @@ export async function deployPlan(input: {
     }
   }
 
-  // Log activity
   const event = workerPlanRequestedEvent({
     taskTitle: task.title,
     model,

@@ -36,17 +36,17 @@ type FetchOptions = {
   pageSize: number
   kind?: FormSubmissionKindValue
   status?: FormSubmissionStatusValue
-  /** D1 unacknowledged predicate (PW1 quick filter) — active rows only. */
+  /** Rows that warrant attention and are not yet acknowledged. */
   unacknowledgedOnly?: boolean
   /** Complement of the quick filter: rows already acknowledged. */
   acknowledgedOnly?: boolean
   /** true: archived rows (Archive tab). Default: active rows. */
   archived?: boolean
-  /** Fuzzy identity search (PRD 004 §03) — name, email, company. */
+  /** Fuzzy identity search: name, email, company. */
   search?: string
-  /** `?contact=` (PRD 008 §7) — true: identified rows, false: anonymous. */
+  /** `?contact=`: true for identified rows, false for anonymous ones. */
   hasContact?: boolean
-  /** Validated `?sort=` (PRD 004 §03) — defaults to received desc. */
+  /** Validated `?sort=`; defaults to received desc. */
   sort?: ParsedSort<SubmissionSortField>
 }
 

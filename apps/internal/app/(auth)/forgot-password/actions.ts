@@ -57,18 +57,17 @@ export async function requestPasswordReset(
     const tokenHash = data?.properties?.hashed_token
 
     if (error || !tokenHash) {
-      // Expected for any address without an account. `resetPasswordForEmail`
-      // used to absorb that case silently; `generateLink` reports it, so the
-      // swallowing has to happen here instead — surfacing it would turn this
-      // form into an account-enumeration oracle.
+      // Expected for any address without an account: `generateLink` reports
+      // it, so it is swallowed here. Surfacing it would turn this form into an
+      // account-enumeration oracle.
       console.error('Failed to generate password reset link', error)
       return { success: true }
     }
 
     // Our own /auth/confirm, not `properties.action_link`. Supabase's link
     // returns the session in the URL fragment, which never reaches the server,
-    // and its redirect target has to be on the allowlist — which is exactly why
-    // reset used to fall back to the sign-in screen.
+    // and its redirect target has to be on the allowlist, or the reset falls
+    // back to the sign-in screen.
     const params = new URLSearchParams({
       token_hash: tokenHash,
       type: 'recovery',

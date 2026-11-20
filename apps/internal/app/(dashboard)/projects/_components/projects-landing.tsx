@@ -68,7 +68,7 @@ import {
 } from '@/components/table/bulk-select'
 import { SheetLink } from '@/components/ui/sheet-link'
 
-// PRD 004 §03: per-view sort allowlist. One shared `?sort` drives every
+// Per-view sort allowlist. One shared `?sort` drives every
 // column in all three section tables; grouping semantics stay unchanged —
 // only the project ordering within each section/client group changes.
 const PROJECT_SORT_FIELDS = [
@@ -288,7 +288,6 @@ export function ProjectsLanding({
     DEFAULT_PROJECT_SORT
   )
 
-  // Handle status change for a project
   const handleProjectStatusChange = useCallback(
     async (projectId: string, status: ProjectStatusValue) => {
       const result = await updateProjectStatus({ projectId, status })

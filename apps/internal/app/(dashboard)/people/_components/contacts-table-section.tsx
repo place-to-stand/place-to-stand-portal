@@ -64,7 +64,7 @@ type ContactsTableSectionProps = {
   pendingDeleteId: string | null
   pendingRestoreId: string | null
   emptyMessage: string
-  /** Route the sort/filter params live on (PRD 004 §03). */
+  /** Route the sort/filter params live on. */
   basePath: string
 }
 

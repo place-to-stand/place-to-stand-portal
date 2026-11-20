@@ -1,7 +1,8 @@
 /**
  * Time logs page filters (`?q=&from=&to=&companyId=&projectId=&personId=&page=`).
- * No dates is All time, the default; `from=all` (older links) is the same.
- * Not `client`/`project`: those params open the client and project sheets.
+ * No dates is All time, the default; `from=all` means the same.
+ * Not `client`/`project`: `?project=` opens the project sheet, and `?client=`
+ * is mapped to the company sheet.
  * Client-safe.
  */
 import {
@@ -45,7 +46,7 @@ export type TimeLogsListParams = {
   isDefaultRange: boolean
 }
 
-/** `?from=all`: All time, from older links. All time is now the default. */
+/** `?from=all`: All time, the same as no dates. */
 const ALL_TIME_PARAM = 'all'
 
 /** First and last day of the current month, `YYYY-MM-DD`. */

@@ -2,7 +2,7 @@
  * Plain-text matching for cmdk-powered pickers.
  *
  * cmdk's default filter is a fuzzy scorer: any option whose text contains the
- * typed letters *in order* survives, so "Sales" matched "Bass Marketing /
+ * typed letters *in order* survives, so "Sales" matches "Bass Marketing /
  * Landing pages" (s…a…l…e…s). For a list of named records that is noise —
  * people type a word they remember from the label, not a letter sequence.
  *
@@ -105,8 +105,8 @@ export function scoreSearchMatch(
  * The hint to show under an option that matched through one of its `hints`
  * (a company found by one of its people) rather than its own text: the
  * best-matching hint, else the one holding most typed words the option's
- * own text lacks. Null when the label
- * or keywords match on their own, so a plain match shows no hint.
+ * own text lacks. Null when the label or keywords match on their own, so a
+ * plain match shows no hint.
  */
 export function matchedHint(
   label: string,

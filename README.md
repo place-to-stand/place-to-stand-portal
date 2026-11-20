@@ -33,6 +33,12 @@ You need Node 26 (see `.nvmrc`), Docker, and the [Supabase CLI](https://supabase
 
 Local mail lands in Mailpit (the URL `supabase start` prints), so you don't need a Resend account to work locally. The internal portal checks its required variables at start, so give the services you don't use locally a placeholder: any text for `RESEND_API_KEY`, `NEXT_PUBLIC_POSTHOG_KEY`, `AI_GATEWAY_API_KEY`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`, and a real `openssl rand -base64 32` value for `OAUTH_TOKEN_ENCRYPTION_KEY`.
 
+### Made-up data and browser tests
+
+`npm run test:e2e:seed` wipes your local database and fills it with a made-up studio, the one in the screenshots above. It needs `psql`, and it refuses any database that isn't on your machine. Sign in with password `localpass123` as `ada@example.com` or `grace@example.com` (admins), `miles@example.com` (sales), or, in the client portal, `rosa@harborpine.example` or `nina@fieldnote.example` (clients).
+
+The browser tests run on that data, against the internal portal on port 3003 and the client portal on port 3011. Point each app's URL variables at those ports, start both apps (`next dev`, or `next build` then `next start` for a much faster run), then run `E2E_WRITES=1 npm run test:e2e`. Without `E2E_WRITES=1`, the tests that change data are skipped.
+
 ## Set it up in production
 
 ### 1. Supabase

@@ -47,8 +47,8 @@ const decodeHtmlEntities = (content: string) =>
 /**
  * Flattens editor HTML to the text a reader would see. Entities are decoded
  * *after* tags are stripped: escaped markup like `&lt;script&gt;` is content
- * the author wrote, so it must survive tag removal and then read as `<script>`
- * \u2014 decoding first would turn it into a tag and delete it.
+ * the author wrote, so it must survive tag removal and then read as
+ * `<script>`. Decoding first would turn it into a tag and delete it.
  */
 export const richTextToPlainText = (content: string) =>
   decodeHtmlEntities(

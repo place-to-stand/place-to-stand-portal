@@ -1,11 +1,9 @@
 /**
  * Shared shell for transactional email.
  *
- * Auth mail used to come from two places — our own invite template and
- * Supabase's stock templates — which is why a password reset looked nothing
- * like an invite and landed in spam. Everything we send now renders through
- * here so the visual language, sender identity and footer are the same message
- * to message.
+ * Everything we send, auth mail included, renders through here so the visual
+ * language, sender identity and footer are the same from message to message.
+ * Mail that looks unlike the rest (a stock provider template) reads as spam.
  *
  * The look is the marketing site's: a dark masthead carrying the blueprint
  * mark, over a paper body. The body stays light on purpose — Gmail and Outlook
@@ -105,9 +103,9 @@ export type EmailAction = {
 }
 
 /**
- * Renders a link lifetime as a phrase. Callers pass Supabase's configured
- * `otp_expiry` rather than a literal, so the copy can't promise a window the
- * token doesn't actually have.
+ * Renders a link lifetime as a phrase. Callers must pass the minutes that
+ * match Supabase's `otp_expiry` (as `AUTH_LINK_EXPIRY_MINUTES` does), so the
+ * copy can't promise a window the token doesn't actually have.
  */
 export function formatExpiryWindow(minutes: number): string {
   if (minutes < 60) return `${minutes} minutes`
@@ -156,9 +154,8 @@ export type RenderedEmail = {
  * Both parts are built from the same content so they can't drift.
  *
  * A password reset with a link and almost no prose is the exact shape of a
- * phishing message, which is most of why Supabase's stock template got
- * classified as one. The layout deliberately carries real sender identity and
- * a plain-language explanation rather than a bare button.
+ * phishing message, so the layout deliberately carries real sender identity
+ * and a plain-language explanation rather than a bare button.
  */
 export function renderEmail(
   subject: string,
@@ -286,8 +283,8 @@ function renderAction(action?: EmailAction): {
  */
 /**
  * Fixed-size on purpose. A bare cell stretches to the height of its row, and on
- * a phone the wordmark wraps to two lines, so the frame turned into a tall
- * rectangle in Gmail for iOS. Nesting the mark in its own 20x20 table pins it,
+ * a phone the wordmark wraps to two lines, so the frame would turn into a
+ * tall rectangle in Gmail for iOS. Nesting the mark in its own 20x20 table pins it,
  * and the dot is a filled cell rather than an inline-block span, which Gmail
  * collapses when the font size is zero.
  */

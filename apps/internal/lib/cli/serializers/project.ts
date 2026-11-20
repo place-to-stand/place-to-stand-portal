@@ -8,7 +8,7 @@ type CliProject = {
   slug: string | null
   status: string
   type: ProjectWithRelations['type']
-  /** Since 0111 the client is its company: same value as companyId. */
+  /** A client is its company: same value as companyId. */
   clientId: string | null
   companyId: string | null
   clientName: string | null

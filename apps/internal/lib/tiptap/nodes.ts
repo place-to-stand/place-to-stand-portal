@@ -40,7 +40,6 @@ export function findNodePosition(props: {
 
   if (!editor || !editor.state?.doc) return null
 
-  // Zero is valid position
   const hasValidNode = node !== undefined && node !== null
   const hasValidPos = isValidPosition(nodePos)
 
@@ -67,7 +66,6 @@ export function findNodePosition(props: {
     }
   }
 
-  // If we have a valid position, use findNodeAtPosition
   if (hasValidPos) {
     const nodeAtPos = findNodeAtPosition(editor, nodePos!)
     if (nodeAtPos) {

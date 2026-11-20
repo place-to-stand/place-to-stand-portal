@@ -81,9 +81,9 @@ type ClientBillingFieldsProps = {
 }
 
 /**
- * A client's billing: billing type and state, commission, and portal access.
- * Shown in the company sheet (a client is its company's billing record) and
- * on the company's billing (its sheet's Client column). Renders inside the caller's `<Form>`.
+ * A client's billing fields: billing type and state, slug, when changes take
+ * effect, and commission. Shown in the company sheet's Client column (a
+ * client is its company's billing record). Renders inside the caller's `<Form>`.
  */
 export function ClientBillingFields({
   form,

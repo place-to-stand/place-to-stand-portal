@@ -39,7 +39,7 @@ type Props = {
   user: AppUser
   /** 'start' is the menu's own default; 'end' (the default here) hangs it left. */
   align?: 'start' | 'center' | 'end'
-  /** Sidebar-footer mode: collapses to a square avatar trigger in icon mode (PRD 004 §02). */
+  /** Sidebar-footer mode: collapses to a square avatar trigger in icon mode. */
   inSidebar?: boolean
 }
 

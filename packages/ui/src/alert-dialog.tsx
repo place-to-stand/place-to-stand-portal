@@ -136,8 +136,8 @@ function AlertDialogDescription({
 }
 
 /**
- * Radix's Action closes the dialog when clicked; Base UI has no dedicated
- * Action part, so it is expressed as a styled Close (onClick still fires).
+ * Base UI has no dedicated Action part, so Action is a styled Close: it closes
+ * the dialog when clicked, and its onClick still fires.
  */
 function AlertDialogAction({
   className,

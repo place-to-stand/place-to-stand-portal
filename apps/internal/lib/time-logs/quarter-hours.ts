@@ -1,6 +1,6 @@
 /**
  * Time logs and hour blocks count in quarter hours (0.25, 0.5, 0.75, 1…).
- * The database checks the same rule (0125: `% 0.25 = 0`). Client-safe.
+ * The database checks the same rule (`% 0.25 = 0` in the schema). Client-safe.
  */
 export const HOURS_STEP = 0.25
 

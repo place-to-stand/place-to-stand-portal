@@ -123,13 +123,13 @@ const SheetOverlay = ({
 
 /**
  * A sheet's width follows its layout: `columns='narrow'` (a short stack of
- * controls: the Filters sheet) is 384px; `columns={1}` (one column:
- * person, task, hour block, template) is 720px,
- * which fits the full rich text toolbar on one line with room to spare;
- * `columns={2}` (a form beside a SHEET_SIDE_COLUMN_CLASS column: company, lead,
- * invoice, submission, and project for admins) is 768px below lg and a set 1184px from lg, within the viewport.
- * Below lg a side column stacks under the form. Phones get the full screen
- * either way.
+ * controls: the Filters sheet) is 384px; `columns={1}` (one column: person,
+ * task, hour block, template) is 720px, which fits the full rich text toolbar
+ * on one line with room to spare; `columns={2}` (a form beside a
+ * SHEET_SIDE_COLUMN_CLASS column: company, lead, invoice, submission, and
+ * project for admins) is 768px below lg and a set 1184px from lg, within the
+ * viewport. Below lg a side column stacks under the form. Phones get the full
+ * screen either way.
  */
 export type SheetColumns = 'narrow' | 1 | 2
 
@@ -319,12 +319,12 @@ const SheetContent = React.forwardRef<
             ...(typeof style === 'object' ? style : undefined),
           }}
           className={cn(
-            // Open and close both 300ms: the open used to run at 500ms, which
-            // read as slower than the close it was paired with.
+            // Open and close both run 300ms, so the open never reads as
+            // slower than the close.
             'bg-background data-open:animate-in data-closed:animate-out data-closed:fill-mode-forwards pointer-events-auto fixed flex flex-col gap-4 shadow-lg transition ease-in-out data-closed:duration-300 data-open:duration-300',
             skipMountAnimation && 'data-open:animate-none',
             // Entity sheets take the whole phone screen: at 3/4 of a 375px
-            // viewport their forms and editors were too cramped to use.
+            // viewport their forms and editors are too cramped to use.
             side === 'right' &&
               'data-closed:slide-out-to-right data-open:slide-in-from-right inset-y-0 right-0 h-full w-full border-l sm:w-3/4',
             side === 'left' &&
@@ -414,8 +414,8 @@ export {
  * column. Named presets only, so sheets stay consistent:
  * - `default`: a 384px side column (the invoice's status and actions).
  * - `even`: a 480px side column, for a side column people work in as much as
- *   the form (the lead's tasks and updates, the company's Client column). The form keeps ~700px, enough
- *   for the full rich text toolbar on one line.
+ *   the form (the lead's tasks and updates, the company's Client column).
+ *   The form keeps ~700px, enough for the full rich text toolbar on one line.
  * Below lg the side column stacks under the form, full width.
  */
 export type SheetSplit = 'default' | 'even'

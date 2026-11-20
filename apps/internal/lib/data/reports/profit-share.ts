@@ -24,8 +24,8 @@ import { fetchUsersByIds } from '@/lib/queries/reports/profit-share-partners'
 /**
  * The instant a month ends for the profit share: midnight in the Business
  * time zone (Settings → Business; see companyMonthEndCutoff in @pts/ui/dates).
- * Closed months keep the profit share frozen in their snapshot whatever the
- * zone is now.
+ * Closed months keep the profit share frozen in their snapshot, even if the
+ * zone changes later.
  */
 function monthEndCutoff(year: number, month: number): Date {
   return companyMonthEndCutoff(year, month)

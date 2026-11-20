@@ -11,8 +11,8 @@ import { users } from '@/lib/db/schema'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 
 /**
- * Handles PKCE code exchange for magic links and other email-based auth flows.
- * Supabase redirects here with a `code` query param after verifying an email token.
+ * Handles the PKCE code exchange for Google sign-in and email-based auth
+ * flows. Supabase redirects here with a `code` query param.
  */
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams

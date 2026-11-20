@@ -11,7 +11,7 @@ import {
 } from '@/lib/form-submissions/delivery/constants'
 
 /**
- * Email delivery state for marketing form submissions (PRD 008 §4).
+ * Email delivery state for marketing form submissions.
  *
  * Each email has a lease (`*_email_claimed_at`) and a stamp
  * (`team_notified_at` / `confirmation_sent_at`). A sender takes the lease,

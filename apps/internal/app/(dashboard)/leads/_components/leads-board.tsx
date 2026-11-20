@@ -146,7 +146,7 @@ export function LeadsBoard({
 
       if (!result) return
 
-      // Decision 7: Won needs a company. Leave the card where it was rather
+      // Won needs a company. Leave the card where it was rather
       // than flash it into Won and back; the server enforces it too.
       const draggedLead = findLeadById(result.previousColumns, leadId)
       if (

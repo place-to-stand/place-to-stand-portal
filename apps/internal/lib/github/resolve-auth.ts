@@ -10,7 +10,8 @@ import { serverEnv } from '@/lib/env.server'
 /**
  * Resolve a repo link to a bearer token, regardless of auth method.
  *
- * - OAuth-linked repos: decrypts the stored OAuth access token
+ * - OAuth-linked repos: decrypts `userId`'s own active GitHub OAuth token
+ *   (not the connection that made the link)
  * - GitHub App-linked repos: generates a short-lived installation token
  *
  * Throws if the repo link has no usable auth credentials.
@@ -22,7 +23,7 @@ export async function resolveRepoLinkAuth(
     githubAppInstallationId: string | null
   }
 ): Promise<{ token: string; connectionId?: string }> {
-  // --- OAuth path ---
+  // OAuth path
   if (repoLink.oauthConnectionId) {
     const [conn] = await db
       .select({
@@ -50,7 +51,7 @@ export async function resolveRepoLinkAuth(
     return { token: decryptToken(conn.accessToken), connectionId: conn.id }
   }
 
-  // --- GitHub App installation path ---
+  // GitHub App installation path
   if (repoLink.githubAppInstallationId) {
     const appId = serverEnv.GITHUB_APP_ID
     const privateKey = serverEnv.GITHUB_APP_PRIVATE_KEY

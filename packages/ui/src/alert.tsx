@@ -4,12 +4,6 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from './cn'
 
 /**
- * A notice inside the page or a sheet: an icon, a title and/or description,
- * and an optional action (AlertAction) that sits after the text and wraps
- * under it on narrow screens. The icon and the action are each one text line
- * tall, so both centre on the first line of text however the text wraps.
- */
-/**
  * A leading icon one text line tall: it centres on the first line of text
  * however the text wraps. Alerts and toasts share it.
  */
@@ -36,6 +30,12 @@ const alertVariants = cva(
   }
 )
 
+/**
+ * A notice inside the page or a sheet: an icon, a title and/or description,
+ * and an optional action (AlertAction) that sits after the text and wraps
+ * under it on narrow screens. The icon and the action are each one text line
+ * tall, so both centre on the first line of text however the text wraps.
+ */
 function Alert({
   className,
   variant,

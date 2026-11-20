@@ -36,19 +36,16 @@ export async function GET(request: NextRequest) {
     return landing({ error: 'access_denied' })
   }
 
-  // Validate required params
   if (!code || !state) {
     return landing({ error: 'invalid_request' })
   }
 
-  // Validate state
   const isValidState = await validateOAuthState(state)
   if (!isValidState) {
     return landing({ error: 'invalid_state' })
   }
 
   try {
-    // Exchange code for tokens
     const tokens = await exchangeCodeForTokens(code)
     const userInfo = await getGoogleUserInfo(tokens.access_token)
 
@@ -62,7 +59,6 @@ export async function GET(request: NextRequest) {
       ? tokens.scope.split(' ').filter(Boolean)
       : GOOGLE_SCOPES
 
-    // Encrypt tokens
     const encryptedAccessToken = encryptToken(tokens.access_token)
     const encryptedRefreshToken = tokens.refresh_token
       ? encryptToken(tokens.refresh_token)
@@ -74,7 +70,6 @@ export async function GET(request: NextRequest) {
     let alreadyConnected = false
 
     await db.transaction(async tx => {
-      // Check if this specific Google account already exists
       const [existing] = await tx
         .select({
           id: oauthConnections.id,

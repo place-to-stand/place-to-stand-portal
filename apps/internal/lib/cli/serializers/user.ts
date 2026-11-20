@@ -4,11 +4,11 @@ import { isoTimestamp } from './timestamp'
 
 /**
  * Serializers exist so the CLI contract is stated once, explicitly, in
- * camelCase — rather than leaking whatever shape a query happens to return
- * today. Agents hardcode these field names, so changing one is a breaking
+ * camelCase — rather than leaking whatever shape a query happens to return.
+ * Agents hardcode these field names, so changing one is a breaking
  * change; adding one is not.
  *
- * `AppUser` is a Supabase-generated row type and is snake_case at source.
+ * `AppUser` (`lib/auth/session.ts`) is snake_case at source (`full_name`).
  */
 type CliUser = {
   id: string

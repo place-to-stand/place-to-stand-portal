@@ -18,8 +18,8 @@ type PaymentRefs = {
 }
 
 /**
- * Makes sure no open Stripe payment can still pay this invoice, before it
- * leaves Sent (void, or back to draft). See `stopOpenPaymentsWith`.
+ * Makes sure no open Stripe payment can still pay this invoice, before it is
+ * voided, reverted to draft, archived or edited. See `stopOpenPaymentsWith`.
  */
 export function stopOpenInvoicePayments(
   refs: PaymentRefs

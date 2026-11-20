@@ -75,8 +75,8 @@ export async function GET(
   const arrayBuffer = await file.arrayBuffer()
   const fileBuffer = Buffer.from(arrayBuffer)
 
-  // Rows written before the mime allowlist may carry any type: only known
-  // image/PDF types render inline, the rest download as opaque bytes.
+  // A stored row may carry any type: only known image/PDF types render
+  // inline, the rest download as opaque bytes.
   const inline = INLINE_MIME_TYPES.has(attachment.mimeType)
 
   return new NextResponse(fileBuffer, {

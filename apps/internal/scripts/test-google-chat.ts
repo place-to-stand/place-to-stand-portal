@@ -13,9 +13,10 @@
  *   npx tsx scripts/test-google-chat.ts INV-1042 4500.00 "Acme Co."
  *
  * The "View invoice" button only renders when an invoice URL is present, so the
- * sample falls back to APP_BASE_URL (or localhost) with a placeholder id.
+ * sample falls back to APP_BASE_URL, NEXT_PUBLIC_SITE_URL or localhost with a
+ * placeholder id.
  *
- * `--stuck` sends the PRD 008 "form emails not sent" card instead, so the
+ * `--stuck` sends the "form emails not sent" card instead, so the
  * alert the retry sweep posts can be eyeballed without breaking Resend:
  *   npx tsx scripts/test-google-chat.ts --stuck
  *
@@ -29,8 +30,7 @@ import {
   buildStuckEmailCard,
 } from '../lib/notifications/google-chat-messages'
 
-// Mirror drizzle.config.ts / dedupe-sales-project.ts env loading so the script
-// can run standalone.
+// Load env the way drizzle.config.ts does, so the script can run standalone.
 config({ path: '.env.local', override: false })
 config({ path: '.env', override: false })
 

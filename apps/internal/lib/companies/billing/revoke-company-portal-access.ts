@@ -9,10 +9,9 @@ import type { ContactClientLinkChange } from '@/lib/queries/contacts/settings/co
 type Executor = typeof db | DbTx
 
 /**
- * Switches off portal access on every membership at a company, for when its
- * client is unlinked from it or archived. Access is a membership flag, so
- * leaving it on would silently grant the next client linked to the company
- * (or this one, restored) to the same people. Each person whose access
+ * Switches off portal access on every membership at a company, for when a
+ * former client is archived. Access is a membership flag, so leaving it on
+ * would give the same people access again when its billing restarts. Each person whose access
  * changed has `contacts.updated_at` bumped, so a person sheet open on them
  * sees its save refused instead of writing back stale access. Returns the
  * access trail to log with `logContactClientLinkChanges` once the write has

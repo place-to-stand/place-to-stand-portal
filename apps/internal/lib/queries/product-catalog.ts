@@ -67,10 +67,7 @@ function mapRow(r: {
   }
 }
 
-// ---------------------------------------------------------------------------
-// List active product catalog items (used by invoice pages)
-// ---------------------------------------------------------------------------
-
+/** Active items, for the invoice sheet. */
 export async function listProductCatalogItems(): Promise<
   ProductCatalogItemRow[]
 > {
@@ -88,10 +85,7 @@ export async function listProductCatalogItems(): Promise<
   return rows.map(mapRow)
 }
 
-// ---------------------------------------------------------------------------
-// List all product catalog items including inactive (used by settings editor)
-// ---------------------------------------------------------------------------
-
+/** Every item, inactive included, for Settings → Billing. */
 export async function listAllProductCatalogItems(): Promise<
   ProductCatalogItemRow[]
 > {
@@ -103,10 +97,6 @@ export async function listAllProductCatalogItems(): Promise<
 
   return rows.map(mapRow)
 }
-
-// ---------------------------------------------------------------------------
-// Get single product catalog item by ID
-// ---------------------------------------------------------------------------
 
 export async function getProductCatalogItemById(
   id: string,
@@ -123,10 +113,6 @@ export async function getProductCatalogItemById(
   const row = rows[0]
   return row ? mapRow(row) : null
 }
-
-// ---------------------------------------------------------------------------
-// Create product catalog item
-// ---------------------------------------------------------------------------
 
 export async function createProductCatalogItem(
   input: ProductCatalogItemInput,
@@ -152,10 +138,6 @@ export async function createProductCatalogItem(
 
   return mapRow(row)
 }
-
-// ---------------------------------------------------------------------------
-// Update product catalog item
-// ---------------------------------------------------------------------------
 
 export async function updateProductCatalogItem(
   id: string,
@@ -193,7 +175,3 @@ export async function updateProductCatalogItem(
 
   return mapRow(row)
 }
-
-// ---------------------------------------------------------------------------
-// Bulk update sort orders (for drag-to-reorder)
-// ---------------------------------------------------------------------------

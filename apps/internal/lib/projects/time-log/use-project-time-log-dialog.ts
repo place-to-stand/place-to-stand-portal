@@ -236,7 +236,7 @@ export function useProjectTimeLogDialog(
       .filter((taskId): taskId is string => Boolean(taskId))
   }, [timeLogEntry])
 
-  // Create-mode pre-link seeding (C5). A dedicated effect because Radix only
+  // Create-mode pre-link seeding. A dedicated effect because Radix only
   // fires onOpenChange for user interaction, never a programmatic `open` —
   // handleDialogOpenChange(true) never runs for a parent-opened dialog. Seeds
   // BOTH the selection and the baseline so an untouched dialog stays clean
@@ -355,8 +355,8 @@ export function useProjectTimeLogDialog(
 
   const timeLogMutation = useProjectTimeLogMutation(mutationOptions)
 
-  // Edit-mode delete (W5): confirm-guarded, reusing the existing DELETE
-  // endpoint + activity event (same flow as the Time Logs tab's list delete).
+  // Edit-mode delete: confirm-guarded, through the same DELETE endpoint and
+  // activity event as the time-log lists' row delete.
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
 
   const deleteMutation = useMutation({

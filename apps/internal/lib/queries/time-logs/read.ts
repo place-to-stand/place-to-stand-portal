@@ -90,9 +90,8 @@ const TIME_LOG_SELECTION = {
 /**
  * Shared hydration for time-log rows: fetches each log's linked tasks and
  * maps everything into `TimeLogEntry` shape. Soft-deleted links are filtered
- * out here (`timeLogTasks.deletedAt IS NULL`) — the previous inline query in
- * `listProjectTimeLogs` missed that filter, so the edit dialog re-selected
- * previously unlinked tasks.
+ * out here (`timeLogTasks.deletedAt IS NULL`); without that filter the edit
+ * dialog re-selects tasks that were unlinked.
  */
 async function hydrateTimeLogEntries(
   timeLogRows: TimeLogSelection[]
@@ -272,16 +271,15 @@ export async function listTimeLogs(
 
 /**
  * All non-deleted time logs linked to a task, newest first, with a SQL-summed
- * total. The admin guard lives inside the query (`ensureTaskAccess`, which
- * asserts admin transitively via `ensureProjectAccess`) so any future
- * server-side caller inherits it rather than relying on the route.
+ * total. The admin guard lives inside the query (`ensureTaskAccess` asserts
+ * admin) so every server-side caller inherits it rather than relying on the
+ * route.
  */
 export async function listTaskTimeLogs(
   user: AppUser,
   taskId: string
 ): Promise<TaskTimeLogList> {
-  // Default access check: soft-deleted tasks 404 (status-ARCHIVED tasks are
-  // not soft-deleted, so their sheets can still show existing logs).
+  // Default access check: archived (soft-deleted) tasks 404.
   await ensureTaskAccess(user, taskId)
 
   const timeLogRows = (await db

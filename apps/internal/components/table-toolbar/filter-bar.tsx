@@ -28,8 +28,8 @@ type FilterBarProps = {
 }
 
 /**
- * Toolbar row above a table: search + filters, unlabeled (PRD 004 §03, D5).
- * Sorting lives in the column headers, never here (D6).
+ * Toolbar row above a table: search + filters, unlabeled. Sorting lives in
+ * the column headers, never here.
  *
  * The filters and Reset sit inline after the search while they fit on one
  * line. When they don't (below md always, and on wider screens whenever the

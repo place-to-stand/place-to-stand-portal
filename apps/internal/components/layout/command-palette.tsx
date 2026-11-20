@@ -95,7 +95,7 @@ async function fetchPaletteResults(
 export function CommandPaletteProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
 
-  // ⌘K / Ctrl+K (PW2) — matches the metaKey || ctrlKey convention of the
+  // ⌘K / Ctrl+K — matches the metaKey || ctrlKey convention of the
   // record-cycle shortcuts; no conflict with the sidebar's ⌘B.
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -132,7 +132,7 @@ function CommandPalette() {
     () => (role ? filterNavGroupsForRole(NAV_GROUPS, role) : []),
     [role]
   )
-  // Help lives in the page header, so its tabs are listed here.
+  // Get help has no place on the page, so the palette lists it.
   const { setOpen: setGetHelpOpen } = useGetHelp()
   const router = useRouter()
   const [query, setQuery] = useState('')

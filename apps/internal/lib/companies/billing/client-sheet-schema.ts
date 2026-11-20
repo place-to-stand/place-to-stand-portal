@@ -15,12 +15,14 @@ export const clientSheetFormSchema = z.object({
   // an existing client (the saved type applies to the UI/invoices at once).
   billingEffective: z.enum(['current_month', 'next_month']),
   // Month boundary the Monthly Close switches closer/origination at when
-  // either changes on an existing client (the cache columns flip at once).
+  // either changes on an existing client (screens show the newest term at once).
   commissionEffective: z.enum(['current_month', 'next_month']),
   state: z.string().max(2).optional(),
   notes: z.string().optional(),
-  /** The company this client is. */
-  /** Required on create; on edit it's shown, not changed (see the company). */
+  /**
+   * The company this client is. Required on create; on edit it's shown, not
+   * changed (see the company).
+   */
   companyId: z.string(),
 })
 

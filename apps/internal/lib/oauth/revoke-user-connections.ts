@@ -32,10 +32,10 @@ async function revokeRemotely(provider: Provider, accessToken: string) {
  * Ends every provider connection a user holds: revokes what can be revoked
  * remotely, then drops the ciphertext so nothing decryptable remains.
  *
- * Called when a staff member is disabled, archived, or destroyed. Without
- * this, offboarding leaves live Vercel, Supabase, GitHub and Google
- * credentials in `oauth_connections`, and re-enabling the account (or any
- * future code path that resolves tokens by user id) hands them straight
+ * Called when someone's sign-in is turned off, including when the person is
+ * archived. Without this, offboarding leaves live Vercel, Supabase, GitHub
+ * and Google credentials in `oauth_connections`, and re-enabling the account
+ * (or any code path that resolves tokens by user id) hands them straight
  * back.
  *
  * Remote revocation failures are logged and do not block the local wipe:

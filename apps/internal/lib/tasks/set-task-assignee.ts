@@ -21,7 +21,7 @@ import { syncAssignees } from './save-task-children'
 
 /**
  * Sets or clears a task's one assignee, and nothing else (the right-click
- * menu's "Set assignee"). Same rules, notification and activity row as a
+ * menu's "Set assignee" and the board's bulk bar). Same rules, notification and activity row as a
  * sheet save that only changes the assignee.
  */
 export async function setTaskAssigneeForActor(

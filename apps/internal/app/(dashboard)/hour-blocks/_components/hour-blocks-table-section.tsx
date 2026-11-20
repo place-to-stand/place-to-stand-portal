@@ -53,7 +53,7 @@ type HourBlocksTableSectionProps = {
   onRequestDelete: (block: HourBlockWithClient) => void
   onRestore: (block: HourBlockWithClient) => void
   emptyMessage: string
-  /** Route the sort/filter params live on (PRD 004 §03). */
+  /** Route the sort/filter params live on. */
   basePath: string
 }
 

@@ -52,7 +52,7 @@ type UseKanbanDragArgs<C extends string, T extends { id: string }> = {
   /** Each column's cards as the board renders them when nothing is dragged. */
   items: (columnId: C) => readonly T[]
   onDragStart?: (event: DragStartEvent) => void
-  /** Called once on drop, only when the card moved. */
+  /** Called once on drop: when the card moved, or for any group drop. */
   onDrop: (drop: KanbanDrop<C>) => void
   onDragCancel?: () => void
   /**
@@ -170,8 +170,8 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
       // rather than where the card slides to. The drop slot stays one card
       // tall, so the cards around it stay put.
       // Two frames: dnd-kit measures the grabbed card in the frame after
-      // the drag starts, and one frame was too soon (the stack started where
-      // the card slid to).
+      // the drag starts, and one frame is too soon (the stack would start
+      // where the card slides to).
       groupFrame.current = requestAnimationFrame(() => {
         groupFrame.current = requestAnimationFrame(() => {
           groupFrame.current = null
@@ -319,7 +319,7 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
 /**
  * dnd-kit scrolls once the pointer is in the outer 20% of a scroll area,
  * which on a wide board is most of the last visible column: aiming at it
- * raced the board to its end. Scroll only near the edges, and gently.
+ * races the board to its end. Scroll only near the edges, and gently.
  */
 const BOARD_AUTO_SCROLL: AutoScrollOptions = {
   threshold: { x: 0.08, y: 0.15 },

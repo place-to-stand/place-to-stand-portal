@@ -181,7 +181,7 @@ export function useContactSheetState({
     token: 0,
   })
 
-  // Initialize the form and load the contact's clients when the sheet opens
+  // Initialize the form and load the person's companies when the sheet opens
   useEffect(() => {
     if (!open) {
       return

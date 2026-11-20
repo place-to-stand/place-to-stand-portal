@@ -29,7 +29,6 @@ type GetAccessTokenResult = {
 
 async function getGoogleConnection(userId: string, connectionId?: string) {
   if (connectionId) {
-    // Get specific connection by ID
     const [row] = await db
       .select()
       .from(oauthConnections)
@@ -129,7 +128,7 @@ export async function getValidAccessToken(
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error'
     // Only Google refusing the refresh token means the owner must reconnect.
-    // An outage, rate limit or network error is retried on the next sync.
+    // An outage, rate limit or network error just fails this request.
     if (!/invalid_grant|unauthorized_client/.test(errorMessage)) throw error
     await markConnectionNeedsReauth(conn.id, errorMessage)
     throw new OAuthReconnectRequiredError(

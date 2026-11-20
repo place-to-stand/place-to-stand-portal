@@ -63,10 +63,10 @@ export async function GET(request: NextRequest) {
     path: '/',
   }
 
-  // Set the contact preview cookie.
   cookieStore.set(VIEW_AS_CONTACT_COOKIE, contact.id, cookieOptions)
 
-  // Clear the old client-scoped cookie to avoid stale state.
+  // The contact cookie takes precedence; drop the client-scoped one so it
+  // can't resurface later.
   cookieStore.delete(VIEW_AS_COOKIE)
 
   return NextResponse.redirect(new URL('/', request.url))

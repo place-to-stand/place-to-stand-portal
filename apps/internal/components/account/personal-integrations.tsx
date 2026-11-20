@@ -97,7 +97,6 @@ export function PersonalIntegrations() {
     }
   }, [searchParams])
 
-  // Google accounts query
   const { data: googleData, isLoading: googleLoading } = useQuery({
     queryKey: ['googleIntegrationStatus'],
     queryFn: async () => {
@@ -107,7 +106,6 @@ export function PersonalIntegrations() {
     },
   })
 
-  // GitHub accounts query
   const { data: githubData, isLoading: githubLoading } = useQuery({
     queryKey: ['githubIntegrationStatus'],
     queryFn: async () => {
@@ -117,7 +115,6 @@ export function PersonalIntegrations() {
     },
   })
 
-  // Google disconnect mutation
   const disconnectGoogle = useMutation({
     mutationFn: async (connectionId: string) => {
       const res = await fetch('/api/integrations/google/disconnect', {
@@ -142,7 +139,6 @@ export function PersonalIntegrations() {
     },
   })
 
-  // GitHub disconnect mutation
   const disconnectGitHub = useMutation({
     mutationFn: async (connectionId: string) => {
       const res = await fetch('/api/integrations/github/disconnect', {
@@ -178,7 +174,6 @@ export function PersonalIntegrations() {
 
   const handleConnectGoogle = () => {
     setIsRedirectingGoogle(true)
-    // API route redirecting to external OAuth — not a Next.js page.
     // oxlint-disable-next-line next-js/no-location-assign-relative-destination -- an API route that redirects to external OAuth, not a Next.js page
     window.location.href = `/api/auth/google?returnTo=${returnTo()}`
   }
@@ -189,7 +184,6 @@ export function PersonalIntegrations() {
     window.location.href = `/api/auth/github?returnTo=${returnTo()}`
   }
 
-  // Transform API response to ConnectedAccount format
   const transformAccounts = (
     accounts: AccountsResponse['accounts'] | undefined
   ): ConnectedAccount[] => {

@@ -3,18 +3,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 
-// --- Hooks ---
 import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
-// --- Icons ---
 import { ListIcon } from '@/components/tiptap-icons/list-icon'
 import { ListOrderedIcon } from '@/components/tiptap-icons/list-ordered-icon'
 import { ListTodoIcon } from '@/components/tiptap-icons/list-todo-icon'
 
-// --- Lib ---
 import { isNodeInSchema } from '@/lib/tiptap-utils'
 
-// --- Tiptap UI ---
 import {
   canToggleList,
   isListActive,
@@ -131,8 +127,8 @@ export function getActiveListType(
  *   const {
  *     isVisible,
  *     activeType,
- *     isAnyActive,
- *     canToggleAny,
+ *     isActive,
+ *     canToggle,
  *     filteredLists,
  *   } = useListDropdownMenu()
  *

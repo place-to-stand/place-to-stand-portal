@@ -37,10 +37,6 @@ export function isUniqueViolation(error: unknown): boolean {
   )
 }
 
-// ---------------------------------------------------------------------------
-// Diff helpers
-// ---------------------------------------------------------------------------
-
 type Diff = {
   changedFields: string[]
   details: { before: Record<string, unknown>; after: Record<string, unknown> }

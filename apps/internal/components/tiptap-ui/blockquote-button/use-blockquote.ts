@@ -4,13 +4,10 @@ import { useCallback, useEffect, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 import { NodeSelection, TextSelection } from '@tiptap/pm/state'
 
-// --- Hooks ---
 import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
-// --- Icons ---
 import { BlockquoteIcon } from '@/components/tiptap-icons/blockquote-icon'
 
-// --- UI Utils ---
 import {
   findNodePosition,
   isNodeInSchema,
@@ -90,7 +87,7 @@ export function toggleBlockquote(editor: Editor | null): boolean {
     let state = view.state
     let tr = state.tr
 
-    // No selection, find the the cursor position
+    // No selection, find the cursor position
     if (state.selection.empty || state.selection instanceof TextSelection) {
       const pos = findNodePosition({
         editor,

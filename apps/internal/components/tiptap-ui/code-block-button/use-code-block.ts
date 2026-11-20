@@ -4,10 +4,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { type Editor } from '@tiptap/react'
 import { NodeSelection, TextSelection } from '@tiptap/pm/state'
 
-// --- Hooks ---
 import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
-// --- Lib ---
 import {
   findNodePosition,
   isNodeInSchema,
@@ -16,7 +14,6 @@ import {
   selectionWithinConvertibleTypes,
 } from '@/lib/tiptap-utils'
 
-// --- Icons ---
 import { CodeBlockIcon } from '@/components/tiptap-icons/code-block-icon'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
@@ -93,7 +90,7 @@ export function toggleCodeBlock(editor: Editor | null): boolean {
     let state = view.state
     let tr = state.tr
 
-    // No selection, find the the cursor position
+    // No selection, find the cursor position
     if (state.selection.empty || state.selection instanceof TextSelection) {
       const pos = findNodePosition({
         editor,
@@ -190,7 +187,7 @@ export function shouldShowButton(props: {
  *   const { isVisible, isActive, handleToggle, label } = useCodeBlock({
  *     editor: myEditor,
  *     hideWhenUnavailable: true,
- *     onToggled: (isActive) => console.log('Code block toggled:', isActive)
+ *     onToggled: () => console.log('Code block toggled!')
  *   })
  *
  *   if (!isVisible) return null

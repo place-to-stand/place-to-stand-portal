@@ -26,8 +26,8 @@ const NEVER_YOURS =
  * Every in-app notification (the bell and Home's My notifications), for
  * Reference → Notifications. Keep it in step with the producers in
  * `events.ts` and the due-date sync in `queries.ts`: a new kind adds an
- * entry here in the same change. `task_due_today` is retired (old rows still
- * show in the feed) and so is not listed.
+ * entry here in the same change. `task_due_today` is not listed: nothing
+ * produces it, though old rows still show in the feed.
  */
 export const IN_APP_NOTIFICATIONS: InAppNotificationGroup[] = [
   {

@@ -3,13 +3,10 @@
 import { useEffect, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 
-// --- Hooks ---
 import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
-// --- Icons ---
 import { HeadingIcon } from '@/components/tiptap-icons/heading-icon'
 
-// --- Tiptap UI ---
 import {
   headingIcons,
   type Level,
@@ -59,7 +56,7 @@ export function getActiveHeadingLevel(
  *   const {
  *     isVisible,
  *     activeLevel,
- *     isAnyHeadingActive,
+ *     isActive,
  *     canToggle,
  *     levels,
  *   } = useHeadingDropdownMenu()

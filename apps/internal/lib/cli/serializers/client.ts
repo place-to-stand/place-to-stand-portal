@@ -11,13 +11,13 @@ type CliCommissionParty = {
 
 type CliClient = {
   id: string
-  /** The company this client is (the same id as `id` since 0111). */
+  /** The company this client is (the same id as `id`). */
   companyId: string | null
   name: string
   slug: string | null
   billingType: ClientWithMetrics['billingType']
   state: string | null
-  /** The company's website, falling back to the client's legacy copy. */
+  /** The company's website. */
   website: string | null
   projectCount: number
   activeProjectCount: number

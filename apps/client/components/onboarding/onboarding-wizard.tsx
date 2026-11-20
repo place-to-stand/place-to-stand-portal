@@ -106,10 +106,6 @@ export function OnboardingWizard({
   )
 }
 
-/* ------------------------------------------------------------------ */
-/*  Choose sign-in method                                             */
-/* ------------------------------------------------------------------ */
-
 type ChooseProps = {
   accountEmail: string
   googleLink: GoogleLink | null
@@ -322,10 +318,6 @@ async function unlinkGoogleIdentity(): Promise<void> {
 
   if (unlinkError) throw unlinkError
 }
-
-/* ------------------------------------------------------------------ */
-/*  Set Password Step                                                 */
-/* ------------------------------------------------------------------ */
 
 function SetPasswordStep({
   accountEmail,

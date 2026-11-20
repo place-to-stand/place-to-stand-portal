@@ -10,8 +10,8 @@ export default async function OnboardingPage({
   const user = await requireClientUser()
   const { data: authData } = await getSupabaseServerClient().auth.getUser()
 
-  // Set at invite time. Under the invite-then-choose flow this means "hasn't
-  // picked a sign-in method yet", not "must set a password" — any of the three
+  // Set at invite time. It means "hasn't picked a sign-in method yet", not
+  // "must set a password" — any of the three
   // choices clears it.
   const mustResetPassword =
     authData?.user?.user_metadata?.must_reset_password === true
@@ -19,7 +19,6 @@ export default async function OnboardingPage({
   // Google is only accepted when it carries the same address the account was
   // invited under. That keeps one guaranteed email per user, and stops a Google
   // identity from being attachable to an account it has no relationship to.
-  // Multiple addresses per user is a later feature.
   const googleIdentity = authData?.user?.identities?.find(
     identity => identity.provider === 'google'
   )

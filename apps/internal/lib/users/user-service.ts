@@ -28,8 +28,7 @@ export function generateTemporaryPassword() {
  * `type: 'magiclink'` and not `'invite'` — the auth user already exists by the
  * time this runs, and `'invite'` is for creating one.
  *
- * Throws on failure so callers can roll back; both call sites already treat a
- * failed invite as a failed operation.
+ * Throws on failure so callers can roll back.
  */
 export async function dispatchPortalInvite(options: {
   email: string
@@ -73,10 +72,10 @@ export async function dispatchPortalInvite(options: {
 }
 
 /**
- * Internal admin invite: unchanged temp-password flow.
+ * Staff invite (Admin or Sales): the temporary-password flow.
  *
- * `baseUrl` must be the internal app. Passing the client portal here is the bug
- * this split exists to prevent — admins sign in at a different origin.
+ * `baseUrl` must be the internal app, never the client portal: staff sign in
+ * at a different origin.
  */
 export async function dispatchAdminInvite(options: {
   email: string

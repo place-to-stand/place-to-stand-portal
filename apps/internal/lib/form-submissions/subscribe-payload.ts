@@ -100,7 +100,7 @@ export function toSubscribeSubmissionRow(
     // its server, so our request header is its fetch agent, not the browser.
     userAgent: client.userAgent ?? requestUserAgent,
 
-    // No team notification or confirmation email for signups (for now).
+    // Signups get no team notification or confirmation email.
     deliveryRequestedAt: null,
   }
 }
