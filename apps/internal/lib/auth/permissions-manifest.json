@@ -1352,6 +1352,13 @@
   },
   {
     "type": "route",
+    "name": "GET /api/mention-options",
+    "file": "apps/internal/app/api/mention-options/route.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "route",
     "name": "POST /api/my-tasks/done-window",
     "file": "apps/internal/app/api/my-tasks/done-window/route.ts",
     "kind": "capability",

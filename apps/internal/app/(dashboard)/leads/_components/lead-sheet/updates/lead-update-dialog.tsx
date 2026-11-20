@@ -28,6 +28,7 @@ import {
   isContentEmpty,
   sanitizeEditorHtml,
 } from '@/components/ui/rich-text-editor/utils'
+import { LEAD_MENTION_OPTIONS_URL } from '@/lib/tiptap/mention-urls'
 import { toCalendarDate } from '@/lib/dates/calendar-date'
 import type { LeadUpdateRecord } from '@/lib/leads/types'
 import { OWN_UNDO_ATTRIBUTE } from '@/lib/hooks/use-sheet-form-controls/keyboard'
@@ -260,6 +261,7 @@ export function LeadUpdateDialog({
                   }}
                   placeholder='Discussed scope and timeline…'
                   contentMinHeightClassName='[&_.ProseMirror]:min-h-[180px]'
+                  mentionOptionsUrl={LEAD_MENTION_OPTIONS_URL}
                 />
               </div>
 

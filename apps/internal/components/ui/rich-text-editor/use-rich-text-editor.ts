@@ -15,6 +15,10 @@ import LinkExtension from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import { HorizontalRule } from '@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node-extension'
 import { MarkdownPaste } from '@/lib/tiptap/markdown-paste'
+import {
+  buildMentionExtension,
+  setMentionOptionsUrl,
+} from './mention/mention-extension'
 
 import '@/components/tiptap-node/blockquote-node/blockquote-node.css'
 import '@/components/tiptap-node/code-block-node/code-block-node.css'
@@ -37,6 +41,8 @@ type UseRichTextEditorArgs = {
    * (useSheetFormControls) already owns Cmd+Z, or the two stacks interleave.
    */
   undoRedo?: boolean
+  /** GET route listing who `@` can mention; without it, `@` is plain text. */
+  mentionOptionsUrl?: string
 }
 
 type UseRichTextEditorReturn = {
@@ -147,6 +153,7 @@ const buildExtensions = (
     TaskList,
     TaskItem.configure({ nested: true }),
     MarkdownPaste,
+    buildMentionExtension(),
     Highlight.configure({ multicolor: true }),
     Image,
     Typography,
@@ -179,6 +186,7 @@ export function useRichTextEditor({
   placeholder,
   disabled = false,
   undoRedo = true,
+  mentionOptionsUrl,
 }: UseRichTextEditorArgs): UseRichTextEditorReturn {
   const lastEmittedValueRef = useRef(value || '')
 
@@ -246,6 +254,12 @@ export function useRichTextEditor({
         .run()
     }
   }, [editor, value])
+
+  // Read on each @, so a new URL (a task moved to another project) needs no
+  // new editor, which would drop focus and the cursor.
+  useEffect(() => {
+    if (editor) setMentionOptionsUrl(editor, mentionOptionsUrl)
+  }, [editor, mentionOptionsUrl])
 
   useEffect(() => {
     if (!editor) return

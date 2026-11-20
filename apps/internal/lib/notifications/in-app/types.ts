@@ -8,9 +8,11 @@ export const NOTIFICATION_TYPES = [
   'task_due_today',
   'task_overdue',
   'task_status',
+  'task_mention',
   'lead_assigned',
   'lead_update',
   'lead_stage',
+  'lead_mention',
   'connection_reauth',
 ] as const
 

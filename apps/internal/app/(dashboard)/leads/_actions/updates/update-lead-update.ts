@@ -14,6 +14,7 @@ import {
   canChangeLeadUpdate,
 } from '@/lib/leads/lead-update-access'
 import { LEAD_UPDATE_LABELS } from '@/lib/leads/updates'
+import { notifyMentions } from '@/lib/notifications/in-app/events'
 import { getLeadUpdateForLead } from '@/lib/queries/lead-updates'
 
 import type { LeadActionResult } from '../types'
@@ -125,6 +126,14 @@ export async function updateLeadUpdate(
         details: { before, after },
       }),
     })
+
+    // An edit tells only the people it newly mentions.
+    await notifyMentions(
+      user,
+      { kind: 'lead', id: leadId, text: `update:${id}` },
+      body,
+      existing.body
+    )
 
     revalidateLeadsPath()
 

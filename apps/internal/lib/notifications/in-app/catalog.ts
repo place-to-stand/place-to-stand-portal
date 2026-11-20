@@ -56,6 +56,17 @@ export const IN_APP_NOTIFICATIONS: InAppNotificationGroup[] = [
         notWhen: NEVER_YOURS,
       },
       {
+        type: 'task_mention',
+        name: 'Mentioned you',
+        sample: {
+          title: 'Kris Crawford mentioned you in Homepage mobile pass',
+          body: '@Jason Desiderio can you check the nav on your phone?',
+        },
+        recipients: 'Each person @mentioned who can open the task.',
+        when: 'Someone else mentions you in a task’s description or a comment on it.',
+        notWhen: `${NEVER_YOURS} Editing a description or comment tells only the people it newly mentions. A mention in a comment replaces the New comment notice, so you get one.`,
+      },
+      {
         type: 'task_status',
         name: 'Blocked or done',
         sample: { title: 'Alex Rivera marked Homepage mobile pass done' },
@@ -101,6 +112,18 @@ export const IN_APP_NOTIFICATIONS: InAppNotificationGroup[] = [
         recipients: "The lead's owner.",
         when: 'Someone else logs a meeting, call, text, email or note on the lead.',
         notWhen: NEVER_YOURS,
+      },
+      {
+        type: 'lead_mention',
+        name: 'Mentioned you',
+        sample: {
+          title: 'Dave Pokk mentioned you on Ada Lovelace',
+          body: '@Jason Desiderio she wants a call with an engineer this week.',
+        },
+        recipients:
+          'Each person @mentioned (every admin and Sales person can open leads).',
+        when: 'Someone else mentions you in a lead’s notes or an update on it.',
+        notWhen: `${NEVER_YOURS} Editing notes or an update tells only the people it newly mentions. A mention in an update replaces the New update notice, so you get one.`,
       },
       {
         type: 'lead_stage',

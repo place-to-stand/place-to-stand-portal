@@ -125,6 +125,16 @@ export const ensureEditorStyles = () => {
       margin-bottom: 0;
     }
 
+    /* An @mention reads as a name on a soft chip, not a link
+       (rich-text-html.ts matches). */
+    .rich-text-editor .ProseMirror span[data-type='mention'] {
+      background-color: var(--muted);
+      border-radius: 0.25rem;
+      padding: 0 0.125rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
     .rich-text-editor .ProseMirror:focus {
       outline: none;
     }

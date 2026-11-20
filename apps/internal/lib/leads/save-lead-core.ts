@@ -22,7 +22,7 @@ import {
 import { markConvertedIfClient } from '@/lib/leads/mark-converted'
 import { recordLeadStageMove } from '@/lib/leads/record-stage-move'
 import { leadStageMoveFields } from '@/lib/leads/stage-rules'
-import { serializeLeadNotes } from '@/lib/leads/notes'
+import { extractLeadNotes, serializeLeadNotes } from '@/lib/leads/notes'
 import { resolveNextLeadRank } from '@/lib/leads/rank'
 import {
   LEAD_WON_NEEDS_COMPANY_MESSAGE,
@@ -30,6 +30,7 @@ import {
 } from '@/lib/leads/won-rule'
 import {
   notifyLeadAssigned,
+  notifyMentions,
   notifyLeadStageMoved,
 } from '@/lib/notifications/in-app/events'
 import {
@@ -269,6 +270,17 @@ async function createLead(
     defer(() => notifyLeadAssigned(actor, notice, assigneeId))
   }
 
+  const notes = normalized.notes
+  defer(async () => {
+    await notifyMentions(
+      actor,
+      { kind: 'lead', id: leadId, text: 'notes' },
+      notes,
+      null,
+      assigneeId ? [assigneeId] : []
+    )
+  })
+
   return { success: true, leadId: inserted.id }
 }
 
@@ -443,6 +455,20 @@ async function updateLead(
     }
     defer(() => notifyLeadAssigned(actor, notice, assigneeId))
   }
+
+  // Notes tell only the people the save newly mentions.
+  const notes = normalized.notes
+  const previousNotes = extractLeadNotes(existing.notes)
+  defer(async () => {
+    await notifyMentions(
+      actor,
+      { kind: 'lead', id: leadId, text: 'notes' },
+      notes,
+      previousNotes,
+      // A new assignee already has a notice for the lead.
+      assigneeId && assigneeId !== existing.assigneeId ? [assigneeId] : []
+    )
+  })
 
   return { success: true, leadId }
 }

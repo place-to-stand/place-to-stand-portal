@@ -135,13 +135,13 @@ function Format({ call, result }: { call: string; result: string | null }) {
 
 export function ComponentsRichText() {
   const [value, setValue] = useState(
-    '<p>Kickoff call notes. <strong>Scope</strong> agreed: a pricing page and a <a href="https://placetostandagency.com">new site</a>.</p><ul><li>Send the proposal</li><li>Book the design review</li></ul>'
+    '<p>Kickoff call notes. <strong>Scope</strong> agreed: a pricing page and a <a href="https://placetostandagency.com">new site</a>.</p><ul><li>Send the proposal</li><li>Book the design review</li></ul><p>Over to <span data-type="mention" data-id="00000000-0000-4000-8000-000000000001" data-label="Dana Reyes">@Dana Reyes</span> for the copy.</p>'
   )
   return (
     <DesignSection
       id='rich-text'
       title='Rich text'
-      when='Long-form content people format: task descriptions, lead notes, update emails. Inside a sheet, pass undoRedo={false} so the sheet’s own history owns ⌘Z.'
+      when='Long-form content people format: task descriptions, lead notes, update emails. Inside a sheet, pass undoRedo={false} so the sheet’s own history owns ⌘Z. Pass mentionOptionsUrl (from lib/tiptap/mention-urls.ts) to let @ name people who can open the record; a mention is a muted chip.'
     >
       <Specimen
         label='RichTextEditor'

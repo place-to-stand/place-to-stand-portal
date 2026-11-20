@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@pts/ui/select'
+import { LEAD_MENTION_OPTIONS_URL } from '@/lib/tiptap/mention-urls'
 import { isSelectableUser } from '@/lib/users/selectable'
 import {
   LEAD_SOURCE_LABELS,
@@ -269,6 +270,7 @@ export function LeadSheetFormFields({
                 onChange={field.onChange}
                 contentMinHeightClassName='[&_.ProseMirror]:min-h-[180px]'
                 undoRedo={false}
+                mentionOptionsUrl={LEAD_MENTION_OPTIONS_URL}
               />
             </FormControl>
             <FormMessage />
