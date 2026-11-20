@@ -8,7 +8,7 @@ import { isMarkdownPaste, markdownToHtml } from './markdown'
  * and a lone paragraph unwrapped, so `**bold**` pasted mid-sentence joins
  * that sentence instead of splitting it into a new paragraph.
  */
-export function toEditorHtml(html: string): string {
+function toEditorHtml(html: string): string {
   const doc = new DOMParser().parseFromString(html, 'text/html')
   convertTaskLists(doc)
   dropUnsupported(doc)

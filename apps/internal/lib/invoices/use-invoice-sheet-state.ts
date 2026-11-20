@@ -283,40 +283,19 @@ export function useInvoiceSheetState({
     }
 
     if (!invoiceId) {
-      // Create mode: start from the `invoice-prefill` sessionStorage entry when
-      // one is set.
+      // Create mode: start from the defaults.
       invoiceWithLineItemsRef.current = null
-
-      let prefillData: InvoiceFormValues | null = null
-      try {
-        const raw =
-          typeof window !== 'undefined'
-            ? sessionStorage.getItem('invoice-prefill')
-            : null
-        if (raw) {
-          sessionStorage.removeItem('invoice-prefill')
-          const parsed = JSON.parse(raw) as InvoiceFormValues
-          prefillData = parsed
-        }
-      } catch {
-        // Ignore malformed sessionStorage data
-      }
 
       shownVersion.current = loadKey
       startResetTransition(() => {
-        if (prefillData) {
-          form.reset(prefillData)
-          form.clearErrors()
-        } else {
-          const defaults = buildInvoiceFormDefaults(null)
-          // Default the first line item to the first active catalog product
-          const firstProduct = productCatalog[0]
-          if (firstProduct) {
-            defaults.lineItems = [createLineItemFromCatalog(firstProduct)]
-          }
-          form.reset(defaults)
-          form.clearErrors()
+        const defaults = buildInvoiceFormDefaults(null)
+        // Default the first line item to the first active catalog product
+        const firstProduct = productCatalog[0]
+        if (firstProduct) {
+          defaults.lineItems = [createLineItemFromCatalog(firstProduct)]
         }
+        form.reset(defaults)
+        form.clearErrors()
       })
       return
     }

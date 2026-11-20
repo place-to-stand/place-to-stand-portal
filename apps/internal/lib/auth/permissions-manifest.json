@@ -1296,13 +1296,6 @@
   },
   {
     "type": "route",
-    "name": "POST /api/invoices/[id]/checkout",
-    "file": "apps/internal/app/api/invoices/[id]/checkout/route.ts",
-    "kind": "capability",
-    "capability": "billing.manage"
-  },
-  {
-    "type": "route",
     "name": "GET /api/invoices/[id]",
     "file": "apps/internal/app/api/invoices/[id]/route.ts",
     "kind": "capability",

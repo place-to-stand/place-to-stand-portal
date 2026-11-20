@@ -3,7 +3,7 @@ import type { EditorState } from '@tiptap/pm/state'
 export type ListIndentDirection = 'indent' | 'outdent'
 
 const LIST_ITEM_TYPES = ['listItem', 'taskItem'] as const
-export type ListItemType = (typeof LIST_ITEM_TYPES)[number]
+type ListItemType = (typeof LIST_ITEM_TYPES)[number]
 
 /**
  * The list item type the cursor is in, the innermost one when lists nest

@@ -155,28 +155,38 @@ test('hour blocks, invoices and time logs: archive and restore', async ({
       list === '/invoices'
         ? selectable.filter({ hasNotText: 'Paid' })
         : selectable
-    const before = await rows.count()
-    const picked = [
-      (await rows.nth(0).locator('td').nth(1).innerText()).trim(),
-      (await rows.nth(1).locator('td').nth(1).innerText()).trim(),
-    ]
+    const texts = async () =>
+      (await rows.allInnerTexts()).map(text => text.replace(/\s+/g, ' '))
+    const listed = await texts()
+    await open(page, `${list}/archive`)
+    const archivedBefore = await texts()
+
+    await open(page, list)
     await rows.nth(0).locator('td[data-slot=table-select-cell]').click()
     await rows.nth(1).locator('td[data-slot=table-select-cell]').click()
     await confirmArchive(page)
     await expectToast(page, `2 ${plural} archived`)
 
-    // Both lists sort newest first, so the two just archived lead the
-    // archive, above anything archived before.
+    // Restore exactly the two rows that just joined the archive (its order
+    // is by date, not by when a row was archived).
     await open(page, `${list}/archive`)
-    await expect(rows.nth(0)).toContainText(picked[0])
-    await expect(rows.nth(1)).toContainText(picked[1])
-    await rows.nth(0).locator('td[data-slot=table-select-cell]').click()
-    await rows.nth(1).locator('td[data-slot=table-select-cell]').click()
+    const leftover = [...archivedBefore]
+    const fresh: number[] = []
+    for (const [index, text] of (await texts()).entries()) {
+      const seen = leftover.indexOf(text)
+      if (seen === -1) fresh.push(index)
+      else leftover.splice(seen, 1)
+    }
+    expect(fresh).toHaveLength(2)
+    for (const index of fresh) {
+      await rows.nth(index).locator('td[data-slot=table-select-cell]').click()
+    }
     await bar(page).getByRole('button', { name: 'Restore' }).click()
     await expectToast(page, `2 ${plural} restored`)
 
+    // The list is back as it was.
     await open(page, list)
-    await expect(rows).toHaveCount(before)
+    expect((await texts()).sort()).toEqual([...listed].sort())
   }
 })
 

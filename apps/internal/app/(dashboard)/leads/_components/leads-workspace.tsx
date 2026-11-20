@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState, useTransition } from 'react'
+import { useCallback, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import { PageShell } from '@/components/layout/page-shell'
@@ -65,6 +65,8 @@ export function LeadsWorkspace({
     null
   )
   const [, startRefresh] = useTransition()
+  // Set by a save or archive just before its sheet closes (see below).
+  const savedBeforeClose = useRef(false)
   // The sheet opens any lead on the board, filtered out or not.
   const leadLookup = useMemo(
     () => buildLeadLookup(initialColumns),
@@ -147,6 +149,10 @@ export function LeadsWorkspace({
       setInitialStatus(null)
       setCompanyErrorLeadId(null)
       clear()
+      if (savedBeforeClose.current) {
+        savedBeforeClose.current = false
+        return
+      }
       startRefresh(() => {
         router.refresh()
       })
@@ -170,11 +176,12 @@ export function LeadsWorkspace({
     [openSheet]
   )
 
+  // A save or archive revalidates /leads, so its response already carries
+  // the new board. Refreshing again as the sheet closes would race it and,
+  // for a lead opened from a link, make Next load the whole page again.
   const handleSheetSuccess = useCallback(() => {
-    startRefresh(() => {
-      router.refresh()
-    })
-  }, [router, startRefresh])
+    savedBeforeClose.current = true
+  }, [])
 
   const isSheetOpen = canManage && (isCreating || Boolean(activeLead))
   // Keep the last-opened lead rendered while the close animation plays so

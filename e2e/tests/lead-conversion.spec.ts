@@ -17,12 +17,18 @@ async function setStatus(page: Page, leadUrl: string, label: string) {
   await expect(sheet).toBeVisible()
   await sheet.getByRole('combobox', { name: 'Status' }).click()
   await page.getByRole('option', { name: label }).click()
+  // Opened from a link, the board must not load again on save.
+  await page.evaluate(() => {
+    ;(window as unknown as { samePage?: boolean }).samePage = true
+  })
   await sheet.getByRole('button', { name: 'Save and close' }).click()
   await expect(page.getByText('Lead saved').first()).toBeVisible()
-  // Saving a lead currently reloads the whole board (a full page load, not a
-  // refresh). Wait for it, or the next visit is cut off by it.
-  await page.waitForEvent('load', { timeout: 5_000 }).catch(() => {})
   await page.waitForLoadState('networkidle')
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { samePage?: boolean }).samePage
+    )
+  ).toBe(true)
 }
 
 test('lead: a converted Won lead moved back keeps its conversion', async ({
