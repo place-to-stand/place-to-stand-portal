@@ -37,6 +37,11 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: process.env.CI_SKIP_BUILD_TYPECHECK === '1',
   },
   reactStrictMode: true,
+  // What's new reads CHANGELOG.md at runtime (lib/help/changelog.ts); this
+  // ships the file with every server route, since the dashboard layout reads it.
+  outputFileTracingIncludes: {
+    '/**': ['./CHANGELOG.md'],
+  },
   experimental: {
     // Dev only: prunes unreachable work from .next/dev's persistent cache.
     turbopackGc: true,
