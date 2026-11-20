@@ -130,7 +130,7 @@ export async function updateLeadUpdate(
     // An edit tells only the people it newly mentions.
     await notifyMentions(
       user,
-      { kind: 'lead', id: leadId },
+      { kind: 'lead', id: leadId, text: `update:${id}` },
       body,
       existing.body
     )

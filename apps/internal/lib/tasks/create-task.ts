@@ -128,7 +128,14 @@ export async function createTaskForActor({
   // Committed. What follows are side effects of the save, not part of it:
   // each logs its own failure and the save still stands.
   await notifyTaskAssigned(actor, { id: taskId, title }, assigneeIds)
-  await notifyMentions(actor, { kind: 'task', id: taskId, title }, description)
+  // Someone assigned here already has a notice for the task.
+  await notifyMentions(
+    actor,
+    { kind: 'task', id: taskId, title, text: 'description' },
+    description,
+    null,
+    assigneeIds
+  )
 
   const event = taskCreatedEvent({
     title,

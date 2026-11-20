@@ -110,7 +110,7 @@ export async function createLeadUpdateForActor(
 
     const mentioned = await notifyMentions(
       actor,
-      { kind: 'lead', id: leadId },
+      { kind: 'lead', id: leadId, text: `update:${inserted.id}` },
       body
     )
     const text = htmlToPlainText(body ?? '').trim()

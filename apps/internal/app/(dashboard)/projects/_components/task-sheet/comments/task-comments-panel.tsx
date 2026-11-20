@@ -3,6 +3,7 @@
 import { Loader2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { taskCommentMentionOptionsUrl } from '@/lib/tiptap/mention-urls'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 
 import { EntityList } from '@/components/sheets/entity-list'
@@ -38,7 +39,7 @@ export function TaskCommentsPanel(props: TaskCommentsPanelProps) {
   const { composer } = state
   // The task's assignee options: the people who can open it.
   const mentionOptionsUrl = props.taskId
-    ? `/api/tasks/${props.taskId}/assignee-options`
+    ? taskCommentMentionOptionsUrl(props.taskId)
     : undefined
 
   return (

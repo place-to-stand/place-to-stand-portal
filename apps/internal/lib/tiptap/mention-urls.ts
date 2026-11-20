@@ -13,3 +13,7 @@ export function taskMentionOptionsUrl(home: {
 
 /** A lead's notes and updates: every admin and Sales person, on any lead. */
 export const LEAD_MENTION_OPTIONS_URL = '/api/mention-options?lead'
+
+/** A task's comments: the people its assignee picker offers. */
+export const taskCommentMentionOptionsUrl = (taskId: string) =>
+  `/api/tasks/${taskId}/assignee-options`

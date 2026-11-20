@@ -324,7 +324,7 @@ export async function createTaskComment(
     const target = { id: input.taskId, title: task.title }
     const mentioned = await notifyMentions(
       user,
-      { kind: 'task', ...target },
+      { kind: 'task', ...target, text: `comment:${comment.id}` },
       body
     )
     const text = htmlToPlainText(body).trim()
@@ -388,7 +388,12 @@ export async function updateTaskComment(
   if (task) {
     await notifyMentions(
       user,
-      { kind: 'task', id: comment.taskId, title: task.title },
+      {
+        kind: 'task',
+        id: comment.taskId,
+        title: task.title,
+        text: `comment:${input.commentId}`,
+      },
       body,
       comment.body
     )

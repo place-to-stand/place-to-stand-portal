@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { addedMentionIds, extractMentionIds } from './mentions.ts'
+import {
+  addedMentionIds,
+  excerptAround,
+  extractMentionIds,
+  mentionLabel,
+} from './mentions.ts'
 import { sanitizeRichTextHtmlCore } from './sanitize-core.ts'
 
 const A = '11111111-1111-4111-8111-111111111111'
@@ -65,4 +70,23 @@ test('the server cleaner strips a mention with a bad id to plain text', () => {
     ),
     '<p><span>@x</span></p>'
   )
+})
+
+test('mentionLabel reads the name of one person’s mention', () => {
+  const id = '11111111-1111-4111-8111-111111111111'
+  const html = `<p>Hi <span data-type="mention" data-id="${id.toUpperCase()}" data-label="Dana Reyes">@Dana Reyes</span></p>`
+  assert.equal(mentionLabel(html, id), 'Dana Reyes')
+  assert.equal(mentionLabel(html, '22222222-2222-4222-8222-222222222222'), null)
+})
+
+test('excerptAround keeps short text whole and centres on the mention', () => {
+  assert.equal(excerptAround('  short   text ', '@Dana'), 'short text')
+  const long = `${'word '.repeat(60)}ping @Dana about the invoice ${'tail '.repeat(40)}`
+  const excerpt = excerptAround(long, '@Dana')
+  assert.ok(excerpt.includes('@Dana about the invoice'))
+  assert.ok(excerpt.startsWith('…') && excerpt.endsWith('…'))
+  assert.equal(Array.from(excerpt).length, 140)
+  const head = excerptAround(long, null)
+  assert.ok(!head.startsWith('…') && head.endsWith('…'))
+  assert.equal(Array.from(head).length, 140)
 })

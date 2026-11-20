@@ -272,7 +272,13 @@ async function createLead(
 
   const notes = normalized.notes
   defer(async () => {
-    await notifyMentions(actor, { kind: 'lead', id: leadId }, notes)
+    await notifyMentions(
+      actor,
+      { kind: 'lead', id: leadId, text: 'notes' },
+      notes,
+      null,
+      assigneeId ? [assigneeId] : []
+    )
   })
 
   return { success: true, leadId: inserted.id }
@@ -456,9 +462,11 @@ async function updateLead(
   defer(async () => {
     await notifyMentions(
       actor,
-      { kind: 'lead', id: leadId },
+      { kind: 'lead', id: leadId, text: 'notes' },
       notes,
-      previousNotes
+      previousNotes,
+      // A new assignee already has a notice for the lead.
+      assigneeId && assigneeId !== existing.assigneeId ? [assigneeId] : []
     )
   })
 

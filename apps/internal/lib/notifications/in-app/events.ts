@@ -16,7 +16,12 @@ import {
 import { LEAD_STATUS_LABELS, type LeadStatusValue } from '@/lib/leads/constants'
 import { findBlockedAssignees } from '@/lib/projects/access'
 import { htmlToPlainText } from '@/lib/activity/text-diff'
-import { addedMentionIds } from '@/lib/rich-text/mentions'
+import {
+  addedMentionIds,
+  excerptAround,
+  mentionLabel,
+} from '@/lib/rich-text/mentions'
+import { sanitizeRichTextHtml } from '@/lib/rich-text/sanitize-server'
 import { leadHref, myTaskHref } from '@/lib/sheets/hrefs'
 
 import { createNotifications } from './queries'
@@ -259,17 +264,20 @@ export function notifyLeadAssigned(
   })
 }
 
-/** Up to 140 characters of the text, cut on a whole character. */
-function mentionExcerpt(html: string) {
-  const chars = Array.from(htmlToPlainText(html).replace(/\s+/g, ' ').trim())
-  return chars.length > 140
-    ? `${chars.slice(0, 139).join('')}…`
-    : chars.join('')
+/** About 140 characters of the text around this person's mention. */
+function mentionExcerpt(html: string, userId: string) {
+  const label = mentionLabel(html, userId)
+  return excerptAround(htmlToPlainText(html), label ? `@${label}` : null)
 }
 
+/**
+ * What the mention is in: a task or lead, and `text`, which of its texts
+ * (`description`, `notes`, `comment:<id>`, `update:<id>`). A person is told
+ * once per text, so removing and re-adding a mention doesn't ping again.
+ */
 export type MentionTarget =
-  | { kind: 'task'; id: string; title: string }
-  | { kind: 'lead'; id: string }
+  | { kind: 'task'; id: string; title: string; text: string }
+  | { kind: 'lead'; id: string; text: string }
 
 /**
  * Tells each person newly @mentioned in `html` (and not in `previousHtml`),
@@ -280,10 +288,15 @@ export async function notifyMentions(
   actor: AppUser,
   target: MentionTarget,
   html: string | null | undefined,
-  previousHtml: string | null | undefined = null
+  previousHtml: string | null | undefined = null,
+  skip: readonly string[] = []
 ): Promise<string[]> {
-  const added = addedMentionIds(html, previousHtml).filter(
-    id => id !== actor.id
+  // Read what the page shows: a mention hidden in a comment or a stripped
+  // tag never reaches anyone.
+  const clean = html ? sanitizeRichTextHtml(html) : ''
+  const before = previousHtml ? sanitizeRichTextHtml(previousHtml) : null
+  const added = addedMentionIds(clean, before).filter(
+    id => id !== actor.id && !skip.includes(id)
   )
   if (!added.length) return []
   let told: string[] = []
@@ -301,32 +314,36 @@ export async function notifyMentions(
           person => person.id
         )
       )
-      told = staff.filter(userId => !blocked.has(userId))
+      const recipients = staff.filter(userId => !blocked.has(userId))
       await createNotifications(
-        told.map(userId => ({
+        recipients.map(userId => ({
           userId,
           type: 'task_mention',
           title: `${actorName(actor)} mentioned you in ${target.title}`,
-          body: mentionExcerpt(html ?? '') || null,
+          body: mentionExcerpt(clean, userId) || null,
           href: myTaskHref(target.id),
           actorId: actor.id,
+          dedupeKey: `mention:task:${target.id}:${target.text}`,
         }))
       )
+      // Only once the notices exist, so a failed insert skips no one.
+      told = recipients
       return
     }
     const name = await leadName(target.id)
     if (!name) return
-    told = staff
     await createNotifications(
-      told.map(userId => ({
+      staff.map(userId => ({
         userId,
         type: 'lead_mention',
         title: `${actorName(actor)} mentioned you on ${name}`,
-        body: mentionExcerpt(html ?? '') || null,
+        body: mentionExcerpt(clean, userId) || null,
         href: leadHref(target.id),
         actorId: actor.id,
+        dedupeKey: `mention:lead:${target.id}:${target.text}`,
       }))
     )
+    told = staff
   })
   return told
 }

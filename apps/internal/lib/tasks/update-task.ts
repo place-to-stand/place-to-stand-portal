@@ -288,9 +288,11 @@ export async function updateTaskForActor(
 
   await notifyMentions(
     actor,
-    { kind: 'task', id: taskId, title },
+    { kind: 'task', id: taskId, title, text: 'description' },
     description,
-    existingTask.description
+    existingTask.description,
+    // Someone just assigned already has a notice for the task.
+    assigneeIds.filter(id => !existingAssigneeIds.includes(id))
   )
 
   const event = buildTaskUpdateEvent(
