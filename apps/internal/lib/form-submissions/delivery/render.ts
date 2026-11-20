@@ -21,13 +21,13 @@ import {
 } from '@/lib/form-submissions/types'
 import { leadHref, submissionHref } from '@/lib/sheets/hrefs'
 
-export type SubmissionEmails = {
+type SubmissionEmails = {
   team: RenderedEmail
   /** Null when there is nothing to confirm, e.g. an audit with no result. */
   confirmation: RenderedEmail | null
 }
 
-export type SubmissionEmailContext = {
+type SubmissionEmailContext = {
   /** Internal portal origin, no trailing slash. */
   portalOrigin: string
   /** Reply-To on the visitor's copy. */

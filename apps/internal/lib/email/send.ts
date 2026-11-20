@@ -2,7 +2,7 @@ import 'server-only'
 
 import { getResendClient } from '@/lib/email/resend'
 
-export type OutboundEmail = {
+type OutboundEmail = {
   from: string
   to: string | string[]
   cc?: string[]

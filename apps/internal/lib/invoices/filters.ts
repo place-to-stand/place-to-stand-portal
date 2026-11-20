@@ -51,7 +51,7 @@ export function isInvoiceSortValue(value: string): boolean {
 
 type RawSearchParams = Record<string, string | string[] | undefined>
 
-export type InvoicesSearchParams = {
+type InvoicesSearchParams = {
   page: number
   status: InvoiceStatusValue | undefined
   search: string | undefined

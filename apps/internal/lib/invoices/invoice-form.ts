@@ -234,7 +234,7 @@ type InvoiceLineItemSavePayload = {
   createsHourBlock: boolean
 }
 
-export type InvoiceSavePayload = {
+type InvoiceSavePayload = {
   id?: string
   companyId: string
   notes: string | null

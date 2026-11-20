@@ -6,7 +6,7 @@ import { getEmailSender } from '@/lib/business/identity'
 import { sendEmail } from '@/lib/email/send'
 
 /** Which portal the link opens: an admin can reset a client's password here. */
-export type AuthEmailPortal = PortalName
+type AuthEmailPortal = PortalName
 
 export async function sendPasswordResetEmail(
   to: string,

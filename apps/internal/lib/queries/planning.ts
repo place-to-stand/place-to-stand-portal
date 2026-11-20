@@ -134,7 +134,7 @@ export async function updateThreadVersion(
 export const STALE_GENERATION_MINUTES = 20
 
 /** SQL: the session was last touched longer ago than a write can run. */
-export const sessionGenerationStaleSql = sql<boolean>`${planningSessions.updatedAt} < now() - make_interval(mins => ${STALE_GENERATION_MINUTES})`
+const sessionGenerationStaleSql = sql<boolean>`${planningSessions.updatedAt} < now() - make_interval(mins => ${STALE_GENERATION_MINUTES})`
 
 /**
  * Marks the thread as writing version `version`, unless another write is

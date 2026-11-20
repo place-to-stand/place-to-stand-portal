@@ -15,13 +15,13 @@ import {
   users,
 } from '@/lib/db/schema'
 
-export type BillingHistoryParty = {
+type BillingHistoryParty = {
   kind: 'user' | 'contact'
   id: string
   name: string | null
 }
 
-export type CompanyBillingHistory = {
+type CompanyBillingHistory = {
   /** Stretches of billing, oldest first; `endsOn` null = still billed. */
   periods: { startsOn: string; endsOn: string | null }[]
   /** Billing type by the month it takes effect, oldest first. */

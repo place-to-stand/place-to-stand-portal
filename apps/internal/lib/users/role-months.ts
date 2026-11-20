@@ -1,6 +1,6 @@
 import { addMonths, monthLabel } from '@/lib/billing/months'
 
-export { addMonths, monthLabel } from '@/lib/billing/months'
+export { monthLabel } from '@/lib/billing/months'
 
 /**
  * Which month a role change takes effect from. Role history starts in
@@ -8,7 +8,7 @@ export { addMonths, monthLabel } from '@/lib/billing/months'
  * month, except one that would rewrite a closed monthly close (the server
  * enforces this; the picker offers only the recent months). Client-safe.
  */
-export const ROLE_TERMS_START = '2025-10-01'
+const ROLE_TERMS_START = '2025-10-01'
 
 const MONTH_START = /^\d{4}-(0[1-9]|1[0-2])-01$/
 
@@ -20,7 +20,7 @@ export type RoleMonthOption = {
   disabledReason: string | null
 }
 
-export function isMonthStart(value: string): boolean {
+function isMonthStart(value: string): boolean {
   return MONTH_START.test(value)
 }
 

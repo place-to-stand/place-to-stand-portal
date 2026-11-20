@@ -22,7 +22,7 @@ import type { SubmissionSortField } from '@/lib/form-submissions/filters'
 import type { ParsedSort } from '@/lib/pagination/sort'
 import type { FormSubmission } from '@pts/db/types'
 
-export type FormSubmissionsPage = {
+type FormSubmissionsPage = {
   items: FormSubmissionRecord[]
   /** Rows matching the active filters (drives paging + `Showing N of M`). */
   totalCount: number

@@ -74,12 +74,12 @@ export const isRoleFilter = (
   value: string
 ): value is (typeof ROLE_FILTER_VALUES)[number] =>
   (ROLE_FILTER_VALUES as readonly string[]).includes(value)
-export const isSignInFilter = (value: string): value is SignInFilter =>
+const isSignInFilter = (value: string): value is SignInFilter =>
   (SIGN_IN_FILTER_VALUES as readonly string[]).includes(value)
 
 type RawSearchParams = Record<string, string | string[] | undefined>
 
-export type ContactsSearchParams = {
+type ContactsSearchParams = {
   /** 1-based page for the offset-paginated contacts tables. */
   page: number
   search: string | undefined

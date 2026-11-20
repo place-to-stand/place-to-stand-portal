@@ -165,7 +165,7 @@ type LineItemSelectionRow = {
 // List invoices
 // ---------------------------------------------------------------------------
 
-export type ListInvoicesInput = {
+type ListInvoicesInput = {
   status?: 'active' | 'archived'
   offset?: number | null
   limit?: number | null
@@ -178,7 +178,7 @@ export type ListInvoicesInput = {
   sort?: ParsedSort<InvoiceSortField>
 }
 
-export type ListInvoicesResult = {
+type ListInvoicesResult = {
   items: InvoiceWithClient[]
   clients: InvoiceClient[]
   productCatalog: ProductCatalogItemRow[]
@@ -398,7 +398,7 @@ async function fetchHourBlocksByInvoice(
 // Invoice sheet reference data
 // ---------------------------------------------------------------------------
 
-export type InvoiceReferenceData = {
+type InvoiceReferenceData = {
   clients: InvoiceClient[]
   productCatalog: ProductCatalogItemRow[]
   taxRates: TaxRateRow[]

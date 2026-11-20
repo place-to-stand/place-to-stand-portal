@@ -9,7 +9,7 @@ import { getDefaultConnectionId, getRepo } from '@/lib/github/client'
 import type { ActiveAppInstallation } from '@/lib/github/app-installations'
 
 /** A repo the sheet or the REST route wants to link, as the picker sent it. */
-export type RepoLinkRequest = {
+type RepoLinkRequest = {
   repoFullName: string
   /** The staff member's own GitHub OAuth connection (default when neither is set). */
   connectionId?: string
@@ -17,7 +17,7 @@ export type RepoLinkRequest = {
   githubAppInstallationId?: string
 }
 
-export type RepoLinkResolution =
+type RepoLinkResolution =
   | { ok: true; repo: RepoLinkInput }
   | { ok: false; error: string; status: number; code?: 'NOT_CONNECTED' }
 

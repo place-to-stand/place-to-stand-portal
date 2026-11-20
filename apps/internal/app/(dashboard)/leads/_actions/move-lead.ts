@@ -30,7 +30,7 @@ const moveLeadSchema = z.object({
   rank: z.string().min(1, 'Rank is required'),
 })
 
-export type MoveLeadInput = z.infer<typeof moveLeadSchema>
+type MoveLeadInput = z.infer<typeof moveLeadSchema>
 
 type MoveOutcome =
   | { refused: string }

@@ -10,10 +10,7 @@ import {
   type StopPaymentsOutcome,
 } from './stop-open-payments-core'
 
-export {
-  stopPaymentsRefusal,
-  type StopPaymentsOutcome,
-} from './stop-open-payments-core'
+export { stopPaymentsRefusal } from './stop-open-payments-core'
 
 type PaymentRefs = {
   paymentIntentId: string | null

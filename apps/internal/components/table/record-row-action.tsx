@@ -77,7 +77,7 @@ const KINDS = {
   },
 } satisfies Record<string, KindConfig>
 
-export type RecordRowActionKind = keyof typeof KINDS
+type RecordRowActionKind = keyof typeof KINDS
 
 type RecordRowActionProps = {
   kind: RecordRowActionKind

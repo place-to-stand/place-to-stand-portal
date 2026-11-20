@@ -16,7 +16,7 @@ export const SETTINGS_TABS = [
   },
 ] satisfies readonly TabsNavTab[]
 
-export type SettingsTab = (typeof SETTINGS_TABS)[number]['value']
+type SettingsTab = (typeof SETTINGS_TABS)[number]['value']
 
 /** "Admin / Settings / Billing": the nav entry, then the tab. */
 export function settingsCrumbs(tab: SettingsTab) {

@@ -83,7 +83,7 @@ type PayrollQueryRow = {
 
 type OriginatorKind = 'user' | 'contact'
 
-export type OriginationQueryRow = {
+type OriginationQueryRow = {
   originatorKind: OriginatorKind
   originatorId: string
   originatorName: string
@@ -97,7 +97,7 @@ export type OriginationQueryRow = {
   hours: string | null
 }
 
-export type CloserQueryRow = {
+type CloserQueryRow = {
   closerKind: 'user' | 'contact'
   closerId: string
   closerName: string
@@ -626,7 +626,7 @@ export async function fetchPrepaidBilling(
   return rows as PrepaidBillingQueryRow[]
 }
 
-export type SalesTaxQueryRow = {
+type SalesTaxQueryRow = {
   invoiceId: string
   invoiceNumber: string | null
   companyId: string

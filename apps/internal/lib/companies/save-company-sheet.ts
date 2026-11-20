@@ -99,7 +99,7 @@ type PortalPlan = { grant: string[]; revoke: string[] }
 const SLUG_RETRY_LIMIT = 3
 
 /** Another save landed on the company after this sheet loaded it. */
-export const STALE_COMPANY_MESSAGE =
+const STALE_COMPANY_MESSAGE =
   'Someone else saved this company. Reload to see their changes.'
 
 /**

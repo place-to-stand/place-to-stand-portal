@@ -20,7 +20,7 @@ import { SIGN_IN_COMPANIES_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import type { CompanyContactSummary } from '@/lib/companies/types'
 
 /** Someone picked on the People list, joining the company on Save. */
-export type StagedPerson = {
+type StagedPerson = {
   id: string
   name: string
   email: string | null

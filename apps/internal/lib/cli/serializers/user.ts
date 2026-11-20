@@ -10,7 +10,7 @@ import { isoTimestamp } from './timestamp'
  *
  * `AppUser` is a Supabase-generated row type and is snake_case at source.
  */
-export type CliUser = {
+type CliUser = {
   id: string
   email: string
   fullName: string | null
@@ -26,7 +26,7 @@ export function serializeUser(user: AppUser): CliUser {
   }
 }
 
-export type CliUserRow = CliUser & {
+type CliUserRow = CliUser & {
   avatarUrl: string | null
   createdAt: string
 }

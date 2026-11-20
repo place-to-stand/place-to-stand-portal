@@ -31,7 +31,7 @@ export type Shortcut = {
 }
 
 /** The order groups appear in the shortcuts dialog. */
-export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
+const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
   'Anywhere',
   'Sheets and page forms',
   'Project board',
@@ -150,7 +150,7 @@ export const SHORTCUTS = {
   },
 } as const satisfies Record<string, Shortcut>
 
-export type ShortcutId = keyof typeof SHORTCUTS
+type ShortcutId = keyof typeof SHORTCUTS
 
 /** The registry as groups, in dialog order, each in registry order. */
 export function shortcutsByGroup(): Array<{

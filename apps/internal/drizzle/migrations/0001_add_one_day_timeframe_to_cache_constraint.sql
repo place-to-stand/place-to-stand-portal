@@ -1,2 +1,0 @@
-ALTER TABLE "activity_overview_cache" DROP CONSTRAINT "activity_overview_cache_timeframe_days_check";--> statement-breakpoint
-ALTER TABLE "activity_overview_cache" ADD CONSTRAINT "activity_overview_cache_timeframe_days_check" CHECK (timeframe_days = ANY (ARRAY[1, 7, 14, 28]));

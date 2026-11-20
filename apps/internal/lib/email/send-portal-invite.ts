@@ -13,7 +13,7 @@ import { sendEmail } from '@/lib/email/send'
 /** Matches `otp_expiry` in `supabase/config.toml` (3600s). */
 const LINK_EXPIRY_MINUTES = 60
 
-export type SendPortalInviteArgs = {
+type SendPortalInviteArgs = {
   to: string
   fullName?: string | null
   actionLink: string
@@ -40,7 +40,7 @@ export async function sendPortalInviteEmail({
   )
 }
 
-export type SendAdminInviteArgs = {
+type SendAdminInviteArgs = {
   to: string
   fullName?: string | null
   temporaryPassword: string

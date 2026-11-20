@@ -128,7 +128,7 @@ export const auditPayloadSchema = z.object({
   deliver: z.boolean().optional().default(false),
 })
 
-export type AuditPayload = z.infer<typeof auditPayloadSchema>
+type AuditPayload = z.infer<typeof auditPayloadSchema>
 
 export function toAuditSubmissionRow(
   payload: AuditPayload,

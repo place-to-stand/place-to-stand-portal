@@ -2,7 +2,7 @@ import type { ActivityLogWithActor } from '@/lib/activity/types'
 
 import { isoTimestamp } from './timestamp'
 
-export type CliActivity = {
+type CliActivity = {
   id: string
   occurredAt: string
   verb: string

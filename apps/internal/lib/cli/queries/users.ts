@@ -16,7 +16,7 @@ import {
 } from '@/lib/queries/users/fields'
 import { roleCan } from '@/lib/auth/capabilities'
 
-export type CliUserFilters = {
+type CliUserFilters = {
   search?: string
   role?: SelectUser['role']
   limit: number

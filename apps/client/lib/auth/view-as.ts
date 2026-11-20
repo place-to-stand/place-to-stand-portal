@@ -48,7 +48,7 @@ export type PortalContactOption = {
   isPromoted: boolean
 }
 
-export type PortalScope = {
+type PortalScope = {
   /** Clients whose data this request may touch. Empty means show nothing. */
   companyIds: string[]
   /** The same clients, with names, for display in the header. */

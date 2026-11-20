@@ -70,7 +70,7 @@ export type NormalizedLead = {
   notes: string | null
 }
 
-export type ExistingLead = {
+type ExistingLead = {
   contactName: string
   status: LeadStatusValue
   sourceType: LeadSourceTypeValue | null
@@ -83,7 +83,7 @@ export type ExistingLead = {
   notes: unknown
 }
 
-export type LeadFieldDiff = {
+type LeadFieldDiff = {
   changedFields: string[]
   before: Record<string, unknown>
   after: Record<string, unknown>

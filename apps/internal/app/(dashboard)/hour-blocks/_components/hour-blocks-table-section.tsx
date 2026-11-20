@@ -41,7 +41,7 @@ import { SheetLink, cellLinkClass } from '@/components/ui/sheet-link'
 
 type HourBlocksTableMode = 'active' | 'archive'
 
-export type HourBlocksTableSectionProps = {
+type HourBlocksTableSectionProps = {
   hourBlocks: HourBlockWithClient[]
   selection: RowSelection
   mode: HourBlocksTableMode

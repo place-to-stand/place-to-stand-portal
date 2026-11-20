@@ -61,3 +61,7 @@ Screenshot*.png
 
 # lint-config tests write temporary configs here while they run
 packages/lint-config/tests/.tmp-*
+
+# Claude Code session logs
+.claude/pts-session-log.json
+.claude/session-costs.jsonl

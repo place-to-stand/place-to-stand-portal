@@ -61,7 +61,7 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
  * `undefined` are treated alike — `attachments` is optional and arrives both
  * ways depending on which query built the row.
  */
-export const isStructurallyEqual = (a: unknown, b: unknown): boolean => {
+const isStructurallyEqual = (a: unknown, b: unknown): boolean => {
   if (Object.is(a, b)) {
     return true
   }

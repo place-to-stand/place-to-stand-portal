@@ -73,7 +73,7 @@ export const buildHourBlockFormDefaults = (
   notes: hourBlock?.notes ?? '',
 })
 
-export type HourBlockSavePayload = {
+type HourBlockSavePayload = {
   id?: string
   companyId: string
   hoursPurchased: number

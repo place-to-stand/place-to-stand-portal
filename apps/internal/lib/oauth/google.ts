@@ -29,7 +29,7 @@ export const GOOGLE_SCOPES = [
 // Scopes required for Meet functionality (transcripts, recordings)
 // Scopes required for Sheets functionality
 
-export interface GoogleTokenResponse {
+interface GoogleTokenResponse {
   access_token: string
   refresh_token?: string
   expires_in: number
@@ -37,7 +37,7 @@ export interface GoogleTokenResponse {
   scope: string
 }
 
-export interface GoogleUserInfo {
+interface GoogleUserInfo {
   id: string
   email: string
   name?: string

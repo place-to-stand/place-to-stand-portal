@@ -16,7 +16,7 @@ import {
 } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
-export type ProjectStatusCellProps = {
+type ProjectStatusCellProps = {
   projectId: string
   status: ProjectStatusValue | string
   onStatusChange: (

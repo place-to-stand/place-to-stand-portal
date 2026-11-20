@@ -35,7 +35,7 @@ const COMPANY_SORT_FIELDS = [
   'closer',
 ] as const
 export type CompanySortField = (typeof COMPANY_SORT_FIELDS)[number]
-export const DEFAULT_COMPANY_SORT = {
+const DEFAULT_COMPANY_SORT = {
   field: 'name',
   direction: 'asc',
 } as const satisfies ParsedSort<CompanySortField>

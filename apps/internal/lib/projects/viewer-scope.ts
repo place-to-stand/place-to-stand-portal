@@ -50,9 +50,7 @@ function pickClientForMember<C extends ClientCompanyView>(client: C): C {
  * billing, client notes and billing details, portal members, GitHub and
  * integration links. The task board still renders from what is left.
  */
-export function redactProjectForMember<P extends ProjectWithRelations>(
-  project: P
-): P {
+function redactProjectForMember<P extends ProjectWithRelations>(project: P): P {
   return {
     ...project,
     client: project.client ? pickClientForMember(project.client) : null,

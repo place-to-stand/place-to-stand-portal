@@ -14,7 +14,7 @@ export type DashboardWidgetData = {
   sales?: SalesHomeData
 }
 
-export const COLUMN_DROPPABLE_PREFIX = 'dashboard-column-'
+const COLUMN_DROPPABLE_PREFIX = 'dashboard-column-'
 
 export function columnDroppableId(columnIndex: number) {
   return `${COLUMN_DROPPABLE_PREFIX}${columnIndex}`

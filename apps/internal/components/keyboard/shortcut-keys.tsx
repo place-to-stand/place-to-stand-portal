@@ -13,7 +13,7 @@ const noopSubscribe = () => () => {}
  * ⌘ on a Mac, Ctrl elsewhere. The server renders the Mac labels (the whole
  * team is on Macs), and other platforms switch after hydration.
  */
-export function useIsMac(): boolean {
+function useIsMac(): boolean {
   return useSyncExternalStore(noopSubscribe, detectMac, () => true)
 }
 

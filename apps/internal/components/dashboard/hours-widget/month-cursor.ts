@@ -1,4 +1,4 @@
-export type CursorLike = {
+type CursorLike = {
   year: number
   month: number
 }

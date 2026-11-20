@@ -78,7 +78,7 @@ export async function resolveLeadCompany(
   }
 }
 
-export type LeadContact = {
+type LeadContact = {
   id: string
   name: string
   email: string | null

@@ -16,7 +16,7 @@ export type AttributionChannel =
   | 'campaign'
   | 'direct'
 
-export type AttributionInput = {
+type AttributionInput = {
   utmSource: string | null
   utmMedium: string | null
   utmCampaign: string | null
@@ -25,7 +25,7 @@ export type AttributionInput = {
   referrer: string | null
 }
 
-export type AttributionSummary = {
+type AttributionSummary = {
   channel: AttributionChannel
   /** Human-readable, e.g. `Google Ads · brand-search · "shopify agency"`. */
   label: string

@@ -1,6 +1,6 @@
 import 'server-only'
 
-export type ContentDispositionType = 'inline' | 'attachment'
+type ContentDispositionType = 'inline' | 'attachment'
 
 const DEFAULT_FILENAME = 'download'
 const MAX_FALLBACK_LENGTH = 150

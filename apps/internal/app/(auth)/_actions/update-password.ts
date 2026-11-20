@@ -11,9 +11,9 @@ import { newPasswordPairSchema } from '@/lib/auth/password'
 
 const schema = newPasswordPairSchema
 
-export type CompletePasswordResetInput = z.infer<typeof schema>
+type CompletePasswordResetInput = z.infer<typeof schema>
 
-export type CompletePasswordResetResult = {
+type CompletePasswordResetResult = {
   error?: string
 }
 

@@ -12,13 +12,13 @@ import {
 import { cn } from '@/lib/utils'
 import { UserAvatar } from '@/components/ui/user-avatar'
 
-export type ProjectOwnerSummary = {
+type ProjectOwnerSummary = {
   id: string
   full_name: string | null
   avatar_url: string | null
 }
 
-export type ProjectOwnerCellProps = {
+type ProjectOwnerCellProps = {
   projectId: string
   owner: ProjectOwnerSummary | null
   admins: AdminUserForOwner[]

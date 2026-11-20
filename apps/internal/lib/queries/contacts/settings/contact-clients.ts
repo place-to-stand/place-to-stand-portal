@@ -28,7 +28,7 @@ export type ClientOption = {
   isClient?: boolean
 }
 
-export type ContactSheetInputRow = ContactProfile & {
+type ContactSheetInputRow = ContactProfile & {
   id: string
   email: string | null
   name: string
@@ -38,7 +38,7 @@ export type ContactSheetInputRow = ContactProfile & {
 }
 
 /** Sheet row plus the archive flag the deep-link resolver needs. */
-export type ContactDeepLinkRow = ContactSheetInputRow & {
+type ContactDeepLinkRow = ContactSheetInputRow & {
   deletedAt: string | null
 }
 

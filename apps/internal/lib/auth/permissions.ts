@@ -11,7 +11,7 @@ import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 type UUID = string
 
 /** Whether the user's role holds a capability (`lib/auth/capabilities.ts`). */
-export function can(
+function can(
   user: AppUser | null | undefined,
   capability: Capability
 ): boolean {

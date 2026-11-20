@@ -397,7 +397,7 @@ function toSnapshotEnvelope(
   return { schemaVersion: SNAPSHOT_SCHEMA_VERSION, report: rest, profitShare }
 }
 
-export type CloseActionOutcome = { error?: string }
+type CloseActionOutcome = { error?: string }
 
 type ProfitShareForClose =
   | { ok: true; profitShare: ProfitShareData | null }
@@ -718,7 +718,7 @@ export type CloseDrift = {
   lateRecords: CloseDriftLateRecord[]
 }
 
-export type MonthlyCloseView = {
+type MonthlyCloseView = {
   report: MonthlyCloseReport
   close: {
     status: 'open' | 'closed'
@@ -975,7 +975,7 @@ export type AgentProfitShareState =
   | { status: 'ready'; data: ProfitShareData }
   | { status: 'unavailable'; message: string }
 
-export type MonthlyCloseForAgent = {
+type MonthlyCloseForAgent = {
   period: { year: number; month: number; label: string }
   /** `snapshot`: the frozen close. `live`: derived from the database now. */
   source: 'snapshot' | 'live'

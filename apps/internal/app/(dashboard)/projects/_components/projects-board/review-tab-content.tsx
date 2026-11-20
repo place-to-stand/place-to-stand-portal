@@ -14,7 +14,7 @@ import { ReviewArchivedSection } from './review-tab/review-archived-section'
 import { ReviewDoneSection } from './review-tab/review-done-section'
 import type { ReviewActionKind } from './review-tab/review-tab.types'
 
-export type ReviewTabContentProps = {
+type ReviewTabContentProps = {
   isActive: boolean
   canManageTasks: boolean
   feedback: string | null

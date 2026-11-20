@@ -199,9 +199,4 @@ export async function listProjectsForSettings(
   }
 }
 
-export type {
-  ListProjectsForSettingsInput,
-  ProjectsSettingsListItem,
-  ProjectsSettingsResult,
-  SelectProject,
-} from './listing-helpers'
+export type { ProjectsSettingsListItem } from './listing-helpers'

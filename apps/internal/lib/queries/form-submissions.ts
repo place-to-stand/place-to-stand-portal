@@ -156,7 +156,7 @@ function buildFilters({
  * unique `submissionId`, so they never conflict and every rule above is a
  * no-op for them.
  */
-export type UpsertFormSubmissionResult = {
+type UpsertFormSubmissionResult = {
   id: string
   kind: 'audit' | 'contact' | 'subscribe'
   status: string

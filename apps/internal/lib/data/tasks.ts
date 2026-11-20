@@ -54,7 +54,7 @@ export type AssignedTaskSummary = {
   lead: { id: string; name: string } | null
 }
 
-export type AssignedTaskSummaryResult = {
+type AssignedTaskSummaryResult = {
   items: AssignedTaskSummary[]
   totalCount: number
   /**
@@ -415,7 +415,7 @@ async function countAssignedDoneBefore(
   return Number(result?.count ?? 0)
 }
 
-export type AssignedDoneSliceResult = {
+type AssignedDoneSliceResult = {
   items: AssignedTaskSummary[]
   /** DONE tasks still older than this slice, for the next "load previous". */
   olderDoneCount: number

@@ -25,17 +25,17 @@ type CliForeignKey = {
   referencesColumns: string[]
 }
 
-export type CliTableSummary = {
+type CliTableSummary = {
   name: string
   columnCount: number
 }
 
-export type CliTableDetail = CliTableSummary & {
+type CliTableDetail = CliTableSummary & {
   columns: CliColumn[]
   foreignKeys: CliForeignKey[]
 }
 
-export type CliEnum = {
+type CliEnum = {
   name: string
   values: string[]
 }

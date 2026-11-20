@@ -36,7 +36,7 @@ type TaskSummaryAssignee = {
   deletedAt: string | null
 }
 
-export type TaskSummaryRow = {
+type TaskSummaryRow = {
   id: string
   title: string
   status: string | null

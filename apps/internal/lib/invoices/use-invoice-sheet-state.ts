@@ -75,7 +75,7 @@ export type TaxRateData = {
   label: string
 }
 
-export type UseInvoiceSheetStateArgs = {
+type UseInvoiceSheetStateArgs = {
   open: boolean
   onOpenChange: (open: boolean) => void
   onComplete: () => void
@@ -87,7 +87,7 @@ export type UseInvoiceSheetStateArgs = {
   taxRates: TaxRateData[]
 }
 
-export type UseInvoiceSheetStateReturn = {
+type UseInvoiceSheetStateReturn = {
   form: UseFormReturn<InvoiceFormValues>
   fieldArray: UseFieldArrayReturn<InvoiceFormValues, 'lineItems', 'id'>
   isEditing: boolean

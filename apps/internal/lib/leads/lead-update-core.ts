@@ -31,7 +31,7 @@ export const createLeadUpdateSchema = z.object({
 
 export type CreateLeadUpdateInput = z.infer<typeof createLeadUpdateSchema>
 
-export type CreateLeadUpdateResult = {
+type CreateLeadUpdateResult = {
   success: boolean
   error?: string
   leadId?: string

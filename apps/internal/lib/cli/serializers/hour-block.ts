@@ -2,7 +2,7 @@ import type { HourBlockWithClient } from '@/lib/hour-blocks/hour-block-form'
 
 import { isoTimestamp } from './timestamp'
 
-export type CliHourBlock = {
+type CliHourBlock = {
   id: string
   /** Since 0111 the client is its company: same value as companyId. */
   clientId: string

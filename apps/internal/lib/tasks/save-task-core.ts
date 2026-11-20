@@ -10,8 +10,6 @@ import { createTaskForActor } from './create-task'
 import { updateTaskForActor } from './update-task'
 import type { SaveTaskResult } from './types'
 
-export type { SaveTaskResult } from './types'
-
 /**
  * The one create-and-update path for tasks, with the acting admin injected
  * rather than resolved from a session.

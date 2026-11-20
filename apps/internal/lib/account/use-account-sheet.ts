@@ -6,15 +6,11 @@ import { useSearchParams } from 'next/navigation'
 import { writeShallowUrl } from '@/lib/sheets/shallow-url'
 
 /** The Account sheet's sections, in order; each is a value of `?account=`. */
-export const ACCOUNT_SECTIONS = [
-  'profile',
-  'integrations',
-  'preferences',
-] as const
+const ACCOUNT_SECTIONS = ['profile', 'integrations', 'preferences'] as const
 
-export type AccountSection = (typeof ACCOUNT_SECTIONS)[number]
+type AccountSection = (typeof ACCOUNT_SECTIONS)[number]
 
-export const ACCOUNT_PARAM = 'account'
+const ACCOUNT_PARAM = 'account'
 
 const isSection = (value: string | null): value is AccountSection =>
   (ACCOUNT_SECTIONS as readonly string[]).includes(value ?? '')
@@ -24,7 +20,7 @@ const isSection = (value: string | null): value is AccountSection =>
  * every other param kept. For a plain `<a>` outside React state (a toast,
  * an OAuth return), `/my/home?account=integrations` works the same.
  */
-export function accountSheetHref(section: AccountSection = 'profile') {
+function accountSheetHref(section: AccountSection = 'profile') {
   const url = new URL(window.location.href)
   url.searchParams.set(ACCOUNT_PARAM, section)
   return `${url.pathname}${url.search}${url.hash}`

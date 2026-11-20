@@ -20,7 +20,7 @@ const JOB_DESCRIPTIONS: Record<string, { name: string; does: string }> = {
   },
 }
 
-export type ScheduledJob = {
+type ScheduledJob = {
   path: string
   schedule: string
   name: string

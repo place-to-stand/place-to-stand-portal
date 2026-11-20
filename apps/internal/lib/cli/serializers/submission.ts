@@ -7,7 +7,7 @@ import { isoTimestamp } from './timestamp'
  * A website form submission as agents see it. Leaves out browser and PostHog
  * ids: `source` is the same one-line attribution the Submissions table shows.
  */
-export type CliSubmission = {
+type CliSubmission = {
   id: string
   kind: FormSubmissionRecord['kind']
   status: FormSubmissionRecord['status']
@@ -28,7 +28,7 @@ export type CliSubmission = {
   archivedAt: string | null
 }
 
-export type CliSubmissionDetail = CliSubmission & {
+type CliSubmissionDetail = CliSubmission & {
   /** Audit only: each question and the visitor's answer. */
   responses: { prompt: string; answer: string[] }[]
   /** Audit only: the result the visitor was shown. */

@@ -53,12 +53,12 @@ type TimeLogTaskSelection = {
     deletedAt: string | null
   } | null
 }
-export type ProjectTimeLogList = {
+type ProjectTimeLogList = {
   logs: TimeLogEntry[]
   totalCount: number
 }
 
-export type TaskTimeLogList = {
+type TaskTimeLogList = {
   entries: TimeLogEntry[]
   totalHours: number
 }
@@ -197,7 +197,7 @@ export async function listProjectTimeLogs(
   }
 }
 
-export type TimeLogFilters = {
+type TimeLogFilters = {
   projectId?: string
   userId?: string
   /** Inclusive `logged_on` bounds, `YYYY-MM-DD`. */
@@ -207,7 +207,7 @@ export type TimeLogFilters = {
   offset?: number
 }
 
-export type TimeLogPage = {
+type TimeLogPage = {
   logs: TimeLogEntry[]
   /** Rows and summed hours across every page that matches the filters. */
   totalCount: number

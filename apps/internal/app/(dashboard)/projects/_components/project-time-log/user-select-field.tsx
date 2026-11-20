@@ -6,7 +6,7 @@ import {
   type SearchableComboboxItem,
 } from '@/components/ui/searchable-combobox'
 
-export type UserSelectFieldProps = {
+type UserSelectFieldProps = {
   selectedUserId: string
   onSelectUser: (value: string) => void
   items: SearchableComboboxItem[]

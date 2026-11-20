@@ -51,7 +51,7 @@ export const contactPayloadSchema = z.object({
   deliver: z.boolean().optional().default(false),
 })
 
-export type ContactPayload = z.infer<typeof contactPayloadSchema>
+type ContactPayload = z.infer<typeof contactPayloadSchema>
 
 export function toContactSubmissionRow(
   payload: ContactPayload,

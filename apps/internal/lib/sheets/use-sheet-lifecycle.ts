@@ -12,7 +12,7 @@ import { versionMs } from '@/lib/sheets/save-conflict/types'
 
 type UnsavedChangesCopy = Parameters<typeof useUnsavedChangesWarning>[0]
 
-export type UseSheetLifecycleArgs = {
+type UseSheetLifecycleArgs = {
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Unsaved work the close confirmation should warn about. */

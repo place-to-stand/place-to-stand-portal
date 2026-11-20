@@ -19,7 +19,7 @@ import type {
 import type { ProjectRelationsFetchResult } from './fetch-project-relations'
 import { normalizeRawTask } from './normalize-task'
 
-export type AssembleProjectsArgs = {
+type AssembleProjectsArgs = {
   projects: DbProject[]
   projectClientLookup: Map<string, string | null>
   relations: ProjectRelationsFetchResult

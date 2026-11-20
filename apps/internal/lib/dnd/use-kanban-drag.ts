@@ -43,7 +43,7 @@ export type KanbanMove<C extends string> = {
   group?: readonly string[]
 }
 
-export type KanbanDrop<C extends string> = KanbanMove<C> & {
+type KanbanDrop<C extends string> = KanbanMove<C> & {
   event: DragEndEvent
 }
 

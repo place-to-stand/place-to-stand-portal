@@ -71,7 +71,7 @@ export type InvoiceEmailDraft = {
   message: string
 }
 
-export type InvoiceEmailInput = {
+type InvoiceEmailInput = {
   to: string[]
   cc: string[]
   subject: string

@@ -27,7 +27,7 @@ import { getInitials } from '@/lib/users/initials'
 import { cn } from '@/lib/utils'
 import { RowActionButton } from '@pts/ui/row-action-button'
 
-export type TaskCommentComposerProps = {
+type TaskCommentComposerProps = {
   value: string
   onChange: (value: string) => void
   onSubmit: () => void
@@ -117,7 +117,7 @@ export function TaskCommentComposer(props: TaskCommentComposerProps) {
   )
 }
 
-export type TaskCommentItemProps = {
+type TaskCommentItemProps = {
   comment: TaskCommentWithAuthor
   isAuthor: boolean
   isEditing: boolean
@@ -248,7 +248,7 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
   )
 }
 
-export type TaskCommentsErrorStateProps = {
+type TaskCommentsErrorStateProps = {
   onRetry: () => void
 }
 

@@ -66,7 +66,7 @@ async function assertLinkedTasksEligible(
  * any future CLI route), so the activity row is written here rather than by
  * each caller. Only the source is caller-specific.
  */
-export type TimeLogMutationOptions = {
+type TimeLogMutationOptions = {
   source?: ActivitySourceValue
 }
 
@@ -109,7 +109,7 @@ const sameIdSet = (left: string[], right: string[]): boolean => {
   return [...left].sort().every((id, index) => id === sortedRight[index])
 }
 
-export type CreateTimeLogInput = {
+type CreateTimeLogInput = {
   projectId: string
   userId: string
   hours: number
@@ -118,7 +118,7 @@ export type CreateTimeLogInput = {
   taskIds: string[]
 }
 
-export type UpdateTimeLogInput = {
+type UpdateTimeLogInput = {
   projectId: string
   timeLogId: string
   userId: string

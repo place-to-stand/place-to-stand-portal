@@ -28,7 +28,7 @@ export const WORKER_STATUS_KEY = 'worker-status'
 // Hook
 // ---------------------------------------------------------------------------
 
-export type WorkerStatusData = {
+type WorkerStatusData = {
   statusData: WorkerStatusResult | undefined
   isStatusLoading: boolean
   latestStatus: WorkerCommentStatus | null

@@ -14,7 +14,7 @@ import { isUserAvatarPath } from '@/lib/storage/avatar'
  * Callers that hold a session must sign it out and send them to `/account-not-set-up`,
  * otherwise the session survives and every subsequent request re-runs the redirect.
  */
-export type EnsureProfileResult = 'ok' | 'not_provisioned'
+type EnsureProfileResult = 'ok' | 'not_provisioned'
 
 export async function ensureUserProfile(
   user: User

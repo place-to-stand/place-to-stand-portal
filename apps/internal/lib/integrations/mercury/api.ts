@@ -21,7 +21,7 @@ export class MercuryApiError extends Error {
   }
 }
 
-export type MercuryAccount = {
+type MercuryAccount = {
   id: string
   name: string
   kind: string

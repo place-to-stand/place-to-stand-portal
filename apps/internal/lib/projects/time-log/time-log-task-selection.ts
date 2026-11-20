@@ -6,7 +6,7 @@ import type { ProjectTimeLogDialogParams } from './types'
 
 type ProjectTask = ProjectTimeLogDialogParams['tasks'][number]
 
-export type UseTimeLogTaskSelectionResult = {
+type UseTimeLogTaskSelectionResult = {
   selectedTaskIds: string[]
   availableTasks: ProjectTimeLogDialogParams['tasks']
   selectedTasks: ProjectTimeLogDialogParams['tasks']

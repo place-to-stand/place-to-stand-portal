@@ -22,7 +22,7 @@ import {
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import { cn } from '@/lib/utils'
 
-export type FilterOption = {
+type FilterOption = {
   value: string
   label: string
   /**
@@ -72,13 +72,13 @@ type MultiProps = {
   className?: string
 }
 
-export type FilterSelectProps = SingleProps | MultiProps
+type FilterSelectProps = SingleProps | MultiProps
 
 /**
  * A multi filter with more options than this gets a search field (tags);
  * a short list (statuses) stays a plain checklist.
  */
-export const MULTI_FILTER_SEARCH_AFTER = 7
+const MULTI_FILTER_SEARCH_AFTER = 7
 
 /**
  * The one filter control (PRD 004 §03). Both modes share the field trigger

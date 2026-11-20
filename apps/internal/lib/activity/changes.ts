@@ -52,7 +52,7 @@ export type ActivityFact = {
   kind?: 'money' | 'hours' | 'date' | 'text' | 'mono'
 }
 
-export type ActivityChanges = {
+type ActivityChanges = {
   fields: FieldChange[]
   memberships: MembershipChange[]
   facts: ActivityFact[]
@@ -351,7 +351,7 @@ function looksLikeHtml(value: unknown): boolean {
   return typeof value === 'string' && /<\/?[a-z][\s\S]*>/i.test(value)
 }
 
-export function humanizeKey(key: string): string {
+function humanizeKey(key: string): string {
   const spaced = key
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/[_-]+/g, ' ')

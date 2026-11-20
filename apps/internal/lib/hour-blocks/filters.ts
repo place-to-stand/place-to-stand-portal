@@ -54,7 +54,7 @@ export function isHourBlockInvoiceFilter(
 
 type RawSearchParams = Record<string, string | string[] | undefined>
 
-export type HourBlocksSearchParams = {
+type HourBlocksSearchParams = {
   page: number
   search: string | undefined
   sort: ParsedSort<HourBlockSortField>

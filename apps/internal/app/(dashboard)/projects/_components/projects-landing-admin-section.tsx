@@ -19,7 +19,7 @@ import { ProjectsLandingFilters } from './projects-landing-filters'
 import { PROJECTS_TABS } from '../_lib/tabs'
 import { PagePanel } from '@/components/layout/page-panel'
 
-export type ProjectsLandingAdminSectionProps = {
+type ProjectsLandingAdminSectionProps = {
   projects: LandingProject[]
   landingClients: Array<{ id: string; name: string; slug: string | null }>
   clients: ClientPickerRow[]

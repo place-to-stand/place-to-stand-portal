@@ -5,7 +5,7 @@ import { NO_SELECTION_MESSAGE } from './projects-board-tabs.constants'
 import type { ProjectsBoardActiveProject } from './board-tab-content'
 import { PagePanel } from '@/components/layout/page-panel'
 
-export type ActivityTabContentProps = {
+type ActivityTabContentProps = {
   isActive: boolean
   activeProject: ProjectsBoardActiveProject
   activityTargetClientId: string | null

@@ -32,7 +32,7 @@ export type SubmissionRepeat = {
   leadUrl: string | null
 }
 
-export function ordinal(value: number): string {
+function ordinal(value: number): string {
   const tens = value % 100
   if (tens >= 11 && tens <= 13) return `${value}th`
   const suffix = ['th', 'st', 'nd', 'rd'][value % 10] ?? 'th'

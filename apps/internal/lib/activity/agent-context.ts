@@ -3,7 +3,7 @@ import 'server-only'
 import { AsyncLocalStorage } from 'node:async_hooks'
 
 /** The OAuth client acting for a human — the "via Claude Code" half of attribution. */
-export type ActivityAgent = {
+type ActivityAgent = {
   clientId: string
   name: string
 }

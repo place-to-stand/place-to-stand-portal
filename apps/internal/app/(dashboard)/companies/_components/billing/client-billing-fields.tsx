@@ -40,7 +40,7 @@ import { EffectiveMonthSelect } from '@/components/billing/effective-month-selec
 import { ClientClosersEditor } from './client-closers-editor'
 import { ClientOriginationPicker } from './client-origination-picker'
 
-export type ClientBillingFieldsProps = {
+type ClientBillingFieldsProps = {
   form: UseFormReturn<ClientSheetFormValues>
   isPending: boolean
   isEditing: boolean

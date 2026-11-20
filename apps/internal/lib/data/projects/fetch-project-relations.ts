@@ -32,7 +32,7 @@ import {
   type ProjectIntegrationLinkSummary,
 } from '@/lib/types/integrations'
 
-export type ProjectRelationsFetchArgs = {
+type ProjectRelationsFetchArgs = {
   projectIds: string[]
   companyIds: string[]
   ownerIds: string[]

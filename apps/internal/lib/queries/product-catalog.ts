@@ -20,7 +20,7 @@ export type ProductCatalogItemRow = {
   sort_order: number
 }
 
-export type ProductCatalogItemInput = {
+type ProductCatalogItemInput = {
   name: string
   description: string | null
   unitPrice: string

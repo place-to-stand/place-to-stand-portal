@@ -9,7 +9,7 @@ import type { TaskWithRelations } from '@/lib/types'
 
 import { formatTaskStatusLabel } from './task-status-utils'
 
-export type SelectedTaskListProps = {
+type SelectedTaskListProps = {
   /** Linked tasks, unlinked ones in place as Pending removal. */
   rows: PendingRemovalRow<TaskWithRelations>[]
   isActionDisabled: boolean

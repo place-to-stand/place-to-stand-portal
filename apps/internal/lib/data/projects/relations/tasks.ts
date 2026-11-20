@@ -190,7 +190,7 @@ export async function loadTaskRows(
   }
 }
 
-export async function loadTaskAssigneeRows(
+async function loadTaskAssigneeRows(
   taskIds: string[]
 ): Promise<TaskAssigneeRow[]> {
   if (!taskIds.length) {

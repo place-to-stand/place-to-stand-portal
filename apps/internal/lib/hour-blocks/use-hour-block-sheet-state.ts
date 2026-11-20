@@ -39,11 +39,6 @@ import type {
   UseHourBlockSheetStateReturn,
 } from './use-hour-block-sheet-state-types'
 
-export type {
-  UseHourBlockSheetStateArgs,
-  UseHourBlockSheetStateReturn,
-} from './use-hour-block-sheet-state-types'
-
 export function useHourBlockSheetState({
   open,
   onOpenChange,

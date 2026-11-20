@@ -5,7 +5,7 @@ import type { TaskWithRelations } from '@/lib/types'
 
 import { formatTaskStatusLabel } from './task-status-utils'
 
-export type TaskSelectorProps = {
+type TaskSelectorProps = {
   availableTasks: TaskWithRelations[]
   onAddTask: (taskId: string) => void
   isOpen: boolean

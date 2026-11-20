@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 
 import { TOOLBAR_TAB_CLASS, TOOLBAR_TABS_LIST_CLASS } from './tabs-nav-classes'
 
-export type ToolbarTabsMenuTab = {
+type ToolbarTabsMenuTab = {
   value: string
   label: string
   href: string

@@ -39,7 +39,7 @@ function readBearerToken(request: Request): string | null {
   return token.length ? token : null
 }
 
-export type AccessTokenClaims = {
+type AccessTokenClaims = {
   client_id?: string
   scope?: string
   exp?: number
@@ -115,7 +115,7 @@ export async function resolveUserFromToken(
 }
 
 /** The CLI admits the roles holding `integrations.cli` (admins today). */
-export async function resolveAdminFromToken(
+async function resolveAdminFromToken(
   token: string,
   surface: BearerSurface
 ): Promise<AppUser> {

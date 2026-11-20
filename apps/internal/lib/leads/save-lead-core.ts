@@ -60,7 +60,7 @@ import {
 } from './save-lead-party'
 
 /** Someone else saved the lead after the sheet loaded it. */
-export const LEAD_SAVED_ELSEWHERE =
+const LEAD_SAVED_ELSEWHERE =
   'Someone else saved this lead. Reload to see their changes.'
 
 export type SaveLeadResult = {

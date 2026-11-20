@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState } from 'react'
 
 /** Loads that end sooner than this never show a spinner. */
-export const SHOW_AFTER_MS = 300
+const SHOW_AFTER_MS = 300
 /** Once shown, the spinner stays at least this long, so it never blinks. */
-export const MIN_VISIBLE_MS = 500
+const MIN_VISIBLE_MS = 500
 /** Its fade in and out. */
 export const FADE_MS = 200
 
 /** `in` while it shows or fades in, `out` while it fades out. */
-export type PresencePhase = 'hidden' | 'in' | 'out'
+type PresencePhase = 'hidden' | 'in' | 'out'
 
 /**
  * When a loading indicator should be on screen for a load that is `active`:

@@ -22,7 +22,7 @@ export const TIME_LOG_SORT_FIELDS = [
 ] as const
 export type TimeLogSortField = (typeof TIME_LOG_SORT_FIELDS)[number]
 /** Newest first. */
-export const DEFAULT_TIME_LOG_SORT = {
+const DEFAULT_TIME_LOG_SORT = {
   field: 'date',
   direction: 'desc',
 } as const satisfies ParsedSort<TimeLogSortField>

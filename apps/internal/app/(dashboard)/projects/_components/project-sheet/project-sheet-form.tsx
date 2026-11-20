@@ -56,7 +56,7 @@ import {
 import type { ProjectSheetLinkChanges } from '@/lib/projects/sheet/use-project-sheet-state'
 import { SheetNoticeSlot } from '@/components/sheets/sheet-notice-slot'
 
-export type ProjectSheetFormProps = {
+type ProjectSheetFormProps = {
   form: UseFormReturn<ProjectSheetFormValues>
   fieldState: ProjectSheetFieldState
   isEditing: boolean

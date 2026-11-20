@@ -43,7 +43,7 @@ export type CardEdgeMoves = {
 }
 
 /** The menu's Send to top / bottom: the moves, and the card's name. */
-export type EdgeMoveMenuConfig = CardEdgeMoves & {
+type EdgeMoveMenuConfig = CardEdgeMoves & {
   /**
    * Named in the toast. The column stays where it is (no scrolling after
    * the card), so the toast says where the card went.

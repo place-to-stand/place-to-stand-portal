@@ -2,7 +2,7 @@ import type { ProjectWithRelations } from '@/lib/types'
 
 import { isoTimestamp } from './timestamp'
 
-export type CliProject = {
+type CliProject = {
   id: string
   name: string
   slug: string | null

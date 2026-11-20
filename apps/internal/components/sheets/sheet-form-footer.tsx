@@ -136,7 +136,7 @@ export function FormFooterBar({
 /** How long Save reads "Saved" after a keep-open save. */
 const SAVED_FOR_MS = 2000
 
-export type SheetFormFooterProps = {
+type SheetFormFooterProps = {
   /** The id of the <form> the submit button targets. */
   formId: string
   /**

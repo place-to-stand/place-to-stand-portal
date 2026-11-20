@@ -41,7 +41,7 @@ import {
   type HourBlockSortField,
 } from '@/lib/hour-blocks/filters'
 
-export type HourBlockClientSummary = {
+type HourBlockClientSummary = {
   id: string
   name: string
 }
@@ -98,7 +98,7 @@ const clientSelection = {
   deletedAt: clientEndedAtSql,
 } as const
 
-export type ListHourBlocksForSettingsInput = {
+type ListHourBlocksForSettingsInput = {
   status?: 'active' | 'archived'
   search?: string | null
   /** Only this client's blocks. */
@@ -115,7 +115,7 @@ export type ListHourBlocksForSettingsInput = {
   sort?: ParsedSort<HourBlockSortField>
 }
 
-export type HourBlocksSettingsResult = {
+type HourBlocksSettingsResult = {
   items: HourBlockWithClient[]
   clients: HourBlockClient[]
   /** Rows matching the active filters/search (drives `Showing N of M`). */

@@ -339,8 +339,4 @@ export const useTaskAttachments = ({
   }
 }
 
-export type {
-  AttachmentItem,
-  UseTaskAttachmentsArgs,
-  UseTaskAttachmentsReturn,
-} from './types'
+export type { AttachmentItem, UseTaskAttachmentsReturn } from './types'

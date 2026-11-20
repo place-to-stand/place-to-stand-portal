@@ -3,7 +3,7 @@ import { serverEnv } from '@/lib/env.server'
 // GitHub OAuth scopes for repo access
 export const GITHUB_SCOPES = ['user:email', 'read:user', 'repo', 'read:org']
 
-export interface GitHubTokenResponse {
+interface GitHubTokenResponse {
   access_token: string
   token_type: string
   scope: string
@@ -12,7 +12,7 @@ export interface GitHubTokenResponse {
   refresh_token_expires_in?: number
 }
 
-export interface GitHubUserInfo {
+interface GitHubUserInfo {
   id: number
   login: string
   email: string | null

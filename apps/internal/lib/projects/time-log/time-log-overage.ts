@@ -17,12 +17,12 @@ type OverageConfirmationRequest = {
   action: () => void
 }
 
-export type UseTimeLogOverageOptions = {
+type UseTimeLogOverageOptions = {
   clientRemainingHours: number | null
   enforceOverageCheck?: boolean
 }
 
-export type UseTimeLogOverageResult = {
+type UseTimeLogOverageResult = {
   requestConfirmation: (request: OverageConfirmationRequest) => boolean
   reset: () => void
   overageDialog: {

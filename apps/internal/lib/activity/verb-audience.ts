@@ -12,7 +12,7 @@ import { ActivityVerbs, type ActivityVerb } from './types'
  * without `clients.manage` only the `any` verbs: an allowlist, so a new
  * billing event can't leak by default.
  */
-export const ACTIVITY_VERB_AUDIENCE = {
+const ACTIVITY_VERB_AUDIENCE = {
   TASK_CREATED: 'any',
   TASK_UPDATED: 'any',
   TASK_STATUS_CHANGED: 'any',

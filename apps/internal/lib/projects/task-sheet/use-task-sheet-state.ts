@@ -47,7 +47,7 @@ import {
 
 export type { AttachmentItem } from './hooks/use-task-attachments'
 
-export type UseTaskSheetStateArgs = {
+type UseTaskSheetStateArgs = {
   open: boolean
   onOpenChange: (open: boolean) => void
   task?: TaskWithRelations

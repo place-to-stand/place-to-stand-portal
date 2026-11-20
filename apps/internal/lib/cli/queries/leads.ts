@@ -60,7 +60,7 @@ export type CliLeadRow = Pick<
   companyWebsite: string | null
 }
 
-export type CliLeadFilters = {
+type CliLeadFilters = {
   status?: LeadStatusValue
   assigneeId?: string
   search?: string

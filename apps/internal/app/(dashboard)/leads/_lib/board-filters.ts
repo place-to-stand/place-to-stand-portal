@@ -14,7 +14,7 @@ export function isLeadSourceType(
   )
 }
 
-export type LeadBoardFilter = {
+type LeadBoardFilter = {
   /** A user id, or null for everyone's leads. */
   assigneeId: string | null
   search?: string
@@ -30,7 +30,7 @@ export function leadSearchFields(lead: {
   return [lead.contactName, lead.companyName, lead.contactEmail]
 }
 
-export function matchesLeadBoardFilter(
+function matchesLeadBoardFilter(
   lead: LeadRecord,
   { assigneeId, search, source }: LeadBoardFilter
 ) {

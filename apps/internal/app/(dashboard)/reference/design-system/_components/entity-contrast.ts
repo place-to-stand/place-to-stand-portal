@@ -44,7 +44,7 @@ function contrastRatio(fg: Oklch, bg: Oklch) {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
 }
 
-export type EntityColour = {
+type EntityColour = {
   token: string
   light: string
   dark: string

@@ -24,7 +24,7 @@ import {
 } from '@/lib/projects/access'
 import { taskFields, type SelectTask } from '@/lib/queries/tasks/common'
 
-export type CliTaskFilters = {
+type CliTaskFilters = {
   projectId?: string
   leadId?: string
   status?: SelectTask['status']
@@ -191,7 +191,7 @@ export async function listTasksForCli(
     .limit(limit)
 }
 
-export type TaskEditSnapshot = {
+type TaskEditSnapshot = {
   task: SelectTask
   assigneeIds: string[]
 }

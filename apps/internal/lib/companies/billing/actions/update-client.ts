@@ -39,7 +39,7 @@ import {
 
 import { getLinkableCompany } from '@/lib/companies/find-or-create'
 
-export type UpdateClientPayload = {
+type UpdateClientPayload = {
   id: string
   name: string
   providedSlug: string | null

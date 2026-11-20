@@ -47,9 +47,9 @@ function assertToolAccess(name: McpToolName, user: AppUser) {
 }
 
 /** Agreed with Kris 2026-10-19 (PRD 009 §7). */
-export const MCP_TOOL_CALLED_EVENT = 'mcp.tool_call'
+const MCP_TOOL_CALLED_EVENT = 'mcp.tool_call'
 
-export type ToolDefinition<Shape extends z.ZodRawShape> = {
+type ToolDefinition<Shape extends z.ZodRawShape> = {
   name: McpToolName
   title: string
   description: string

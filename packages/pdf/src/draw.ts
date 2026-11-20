@@ -27,7 +27,7 @@ export function tracking(doc: jsPDF, em: number): number {
   return em * doc.getFontSize() * MM_PER_PT
 }
 
-export function textWidth(doc: jsPDF, text: string, charSpace = 0): number {
+function textWidth(doc: jsPDF, text: string, charSpace = 0): number {
   return doc.getTextWidth(text) + charSpace * text.length
 }
 

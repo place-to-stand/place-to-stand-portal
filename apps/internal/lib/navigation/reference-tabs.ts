@@ -9,7 +9,7 @@ type ReferenceTabDefinition = TabsNavTab & { capability: Capability }
  * tab here, never a new sidebar item. Each tab is shown only to roles with
  * its capability; the page itself checks the same one.
  */
-export const REFERENCE_TABS = [
+const REFERENCE_TABS = [
   // First, so /reference opens on whether things are healthy.
   {
     label: 'System health',
@@ -56,7 +56,7 @@ export const REFERENCE_TABS = [
   },
 ] as const satisfies readonly ReferenceTabDefinition[]
 
-export type ReferenceTab = (typeof REFERENCE_TABS)[number]['value']
+type ReferenceTab = (typeof REFERENCE_TABS)[number]['value']
 
 export function referenceTabsFor(role: Role): TabsNavTab[] {
   return REFERENCE_TABS.filter(tab => roleCan(role, tab.capability)).map(

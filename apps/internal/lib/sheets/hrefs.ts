@@ -75,7 +75,7 @@ export const buildQuerySuffix = (
   return query ? `?${query}` : ''
 }
 
-export type MyTasksView = 'board' | 'calendar'
+type MyTasksView = 'board' | 'calendar'
 
 export const myTaskHref = (taskId: string, view: MyTasksView = 'board') =>
   `/my/tasks/${view}?task=${taskId}`

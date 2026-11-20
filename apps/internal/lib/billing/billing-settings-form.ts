@@ -18,7 +18,7 @@ const rowId = z.union([
 /** Postgres `integer`. */
 const INT_MAX = 2147483647
 
-export const billingProductRowSchema = z.object({
+const billingProductRowSchema = z.object({
   id: rowId,
   name: z.string().trim().min(1, 'Name is required').max(100),
   description: z.string().trim().max(500).nullable(),
@@ -33,7 +33,7 @@ export const billingProductRowSchema = z.object({
   sort_order: z.number().int().min(0).max(INT_MAX),
 })
 
-export const billingTaxRateRowSchema = z.object({
+const billingTaxRateRowSchema = z.object({
   id: rowId,
   state: z
     .string()

@@ -27,7 +27,7 @@ export { fetchProjectCalendarTasks } from './fetch-project-calendar-tasks'
 // TYPES
 // ============================================================
 
-export type ProjectDetail = {
+type ProjectDetail = {
   id: string
   name: string
   slug: string | null
@@ -42,7 +42,7 @@ export type ProjectDetail = {
   deletedAt: string | null
 }
 
-export type FetchProjectsWithRelationsOptions = {
+type FetchProjectsWithRelationsOptions = {
   forUserId?: string
   /**
    * Status predicate. Undefined = no status filtering; an empty array means
@@ -227,7 +227,7 @@ export async function fetchProjectsWithRelationsByIds(
 // LANDING COUNTS
 // ============================================================
 
-export type LandingProjectCounts = {
+type LandingProjectCounts = {
   /** All projects visible to this user, pre-filter. */
   total: number
   clientCount: number

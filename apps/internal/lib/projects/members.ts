@@ -10,7 +10,7 @@ import { db, type DbTx } from '@/lib/db'
 import { projectMembers, projects, users } from '@/lib/db/schema'
 
 /** A staff user who can be added to a project (non-admin staff). */
-export type ProjectMemberCandidate = {
+type ProjectMemberCandidate = {
   id: string
   fullName: string | null
   email: string

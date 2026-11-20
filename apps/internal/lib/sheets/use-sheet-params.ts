@@ -26,7 +26,7 @@ import { useSheetStackEntry } from './stack-entry'
 
 export type { SheetStackItem } from './stack'
 
-export type SheetOpenOptions = {
+type SheetOpenOptions = {
   /**
    * Skip the server. Defaults to true when the page can't need it: a sheet
    * the page doesn't render itself (the SheetHost loads its own data) or a

@@ -111,7 +111,7 @@ export function useNotificationFeed() {
   }
 }
 
-export type NotificationFeedState = ReturnType<typeof useNotificationFeed>
+type NotificationFeedState = ReturnType<typeof useNotificationFeed>
 
 /** The All / Unread / Archived toggle, beside the "Notifications" title. */
 export function NotificationFilterToggle({

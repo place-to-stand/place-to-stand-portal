@@ -19,7 +19,7 @@ import {
   type SubmissionEmailOutcomes,
 } from './deliver'
 
-export type RecordedSubmission = {
+type RecordedSubmission = {
   /** Null when the upsert was a no-op and no row exists for the session. */
   id: string | null
   emails: SubmissionEmailOutcomes

@@ -12,7 +12,7 @@
 /** Tooltip for a control disabled only because a request is in flight. */
 export const PENDING_REASON = 'Please wait for the current request to finish.'
 
-export type SubmitLabelArgs = {
+type SubmitLabelArgs = {
   /**
    * A save is genuinely in flight. Only ever pass the save/delete transition
    * here — a form reset or an open-time fetch is not a save, and a button

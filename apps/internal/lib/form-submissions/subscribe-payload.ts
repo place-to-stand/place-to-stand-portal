@@ -35,7 +35,7 @@ export const subscribePayloadSchema = z.object({
   client: clientSchema,
 })
 
-export type SubscribePayload = z.infer<typeof subscribePayloadSchema>
+type SubscribePayload = z.infer<typeof subscribePayloadSchema>
 
 export function toSubscribeSubmissionRow(
   payload: SubscribePayload,

@@ -75,7 +75,7 @@ export type ClientWithMetrics = {
   hoursRemaining: number
 }
 
-export type ClientDetail = {
+type ClientDetail = {
   id: string
   name: string
   /** The company this client is. */
@@ -291,7 +291,7 @@ export const fetchClientHoursSummaries = cache(
   }
 )
 
-export const fetchClientById = cache(
+const fetchClientById = cache(
   async (user: AppUser, companyId: string): Promise<ClientDetail> => {
     assertAdmin(user)
 

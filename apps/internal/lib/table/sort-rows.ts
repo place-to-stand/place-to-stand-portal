@@ -10,7 +10,7 @@
  */
 export type SortKey = string | number | boolean | null | undefined
 
-export type SortDirection = 'asc' | 'desc'
+type SortDirection = 'asc' | 'desc'
 
 /** Null, undefined, a blank string and NaN are all "no value". */
 function normalize(value: SortKey): string | number | boolean | null {
@@ -20,7 +20,7 @@ function normalize(value: SortKey): string | number | boolean | null {
   return value
 }
 
-export function compareSortKeys(left: SortKey, right: SortKey): number {
+function compareSortKeys(left: SortKey, right: SortKey): number {
   const a = normalize(left)
   const b = normalize(right)
   if (a === null || b === null) {

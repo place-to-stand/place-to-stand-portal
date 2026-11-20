@@ -8,8 +8,6 @@ import type { SaveLeadInput } from '@/lib/leads/save-lead-fields'
 import { revalidateLeadsPath } from '@/lib/leads/revalidate'
 import type { LeadActionResult } from './types'
 
-export type { SaveLeadInput } from '@/lib/leads/save-lead-fields'
-
 /**
  * Browser entry point. The actual write lives in `saveLeadForActor` so the
  * CLI API can share it without this module's session coupling.

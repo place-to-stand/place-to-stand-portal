@@ -57,7 +57,7 @@ import { SheetLink } from '@/components/ui/sheet-link'
 
 type InvoicesTableMode = 'active' | 'archive'
 
-export type InvoicesTableSectionProps = {
+type InvoicesTableSectionProps = {
   invoices: InvoiceWithClient[]
   selection: RowSelection
   mode: InvoicesTableMode

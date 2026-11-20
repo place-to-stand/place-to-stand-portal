@@ -140,7 +140,7 @@ export async function fetchMyMonthTimeLogs(
   return { items: page.items, totalCount: page.totalCount }
 }
 
-export type TimeLogPageFilters = {
+type TimeLogPageFilters = {
   userId?: string
   clientCompanyId?: string
   projectId?: string

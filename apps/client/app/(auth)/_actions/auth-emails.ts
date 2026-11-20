@@ -22,7 +22,7 @@ const emailSchema = z.email()
  * gets to learn, so an unknown address, an invalid one and a delivery failure
  * are reported identically. The real reason is logged, never returned.
  */
-export type AuthEmailResult = { ok: true }
+type AuthEmailResult = { ok: true }
 
 const GENERIC_RESULT: AuthEmailResult = { ok: true }
 

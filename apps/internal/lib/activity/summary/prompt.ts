@@ -133,7 +133,7 @@ export function enforceHighlightCharacterLimit(
   return trimmed.slice(0, limit - 1).trimEnd() + '…'
 }
 
-export function timeframeDaysLabel(timeframe: ValidTimeframe): string {
+function timeframeDaysLabel(timeframe: ValidTimeframe): string {
   switch (timeframe) {
     case 1:
       return 'last 1 day'

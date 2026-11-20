@@ -12,7 +12,7 @@ export const TASK_DUE_TONE_CLASSES = {
 
 type TaskDueTone = keyof typeof TASK_DUE_TONE_CLASSES
 
-export type TaskDueMeta = {
+type TaskDueMeta = {
   label: string
   tone: TaskDueTone
 }

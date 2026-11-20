@@ -4,7 +4,7 @@ export const CLIENT_BILLING_TYPE_VALUES = ['prepaid', 'net_30'] as const
 
 export type ClientBillingTypeValue = (typeof CLIENT_BILLING_TYPE_VALUES)[number]
 
-export type BillingTypeOption = {
+type BillingTypeOption = {
   value: ClientBillingTypeValue
   label: string
   description?: string

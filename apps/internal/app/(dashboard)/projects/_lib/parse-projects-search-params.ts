@@ -39,7 +39,7 @@ export function isProjectStatusValue(
   return (PROJECT_STATUS_ENUM_VALUES as readonly string[]).includes(value)
 }
 
-export type ParsedProjectsLandingSearchParams = {
+type ParsedProjectsLandingSearchParams = {
   /** Selected statuses; empty array = explicitly cleared (`?status=none`). */
   statuses: ProjectStatusValue[]
   search: string | null

@@ -57,7 +57,7 @@ export type {
   ProjectWithClient,
 } from './project-sheet-form'
 
-export type UseProjectSheetStateArgs = {
+type UseProjectSheetStateArgs = {
   open: boolean
   onOpenChange: (open: boolean) => void
   onComplete: () => void
@@ -94,7 +94,7 @@ export type ProjectSheetLinkChanges = {
   removedIntegrationLinkIds: string[]
 }
 
-export type UseProjectSheetStateReturn = {
+type UseProjectSheetStateReturn = {
   form: UseFormReturn<ProjectSheetFormValues>
   /** Field edits or repo links not yet saved. */
   hasUnsavedChanges: boolean

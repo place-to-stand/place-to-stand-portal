@@ -27,7 +27,7 @@ import { fetchUsersByIds } from '@/lib/queries/reports/profit-share-partners'
  * Closed months keep the profit share frozen in their snapshot whatever the
  * zone is now.
  */
-export function monthEndCutoff(year: number, month: number): Date {
+function monthEndCutoff(year: number, month: number): Date {
   return companyMonthEndCutoff(year, month)
 }
 
@@ -102,7 +102,7 @@ export async function profitShareApplies(
 }
 
 /** The profit-share partners as users, in the order they were picked. */
-export const fetchProfitSharePartners = cache(
+const fetchProfitSharePartners = cache(
   async (): Promise<Array<Omit<ProfitSharePartner, 'amount'>>> => {
     const policy = await getProfitSharePolicy()
     if (!policy) return []

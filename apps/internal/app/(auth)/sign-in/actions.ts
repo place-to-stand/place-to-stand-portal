@@ -131,7 +131,7 @@ export async function signInWithPassword(
 /*  Magic link                                                        */
 /* ------------------------------------------------------------------ */
 
-export type MagicLinkState = {
+type MagicLinkState = {
   error?: string
   success?: boolean
 }

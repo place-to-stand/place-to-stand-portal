@@ -10,7 +10,7 @@ import {
   TASK_ATTACHMENT_BUCKET,
 } from './task-attachment-constants'
 
-export type TaskAttachmentBucketClient = SupabaseClient
+type TaskAttachmentBucketClient = SupabaseClient
 
 const PENDING_PREFIX = 'attachments/pending'
 const TASK_PREFIX = 'attachments/tasks'

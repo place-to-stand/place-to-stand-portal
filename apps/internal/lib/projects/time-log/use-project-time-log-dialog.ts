@@ -27,7 +27,7 @@ import type {
 import { requestTimeLogArchiveChange } from './time-log-archive-request'
 import { TIME_LOGS_QUERY_KEY } from './types'
 
-export type UseProjectTimeLogDialogOptions = ProjectTimeLogDialogParams & {
+type UseProjectTimeLogDialogOptions = ProjectTimeLogDialogParams & {
   open: boolean
   onOpenChange: (open: boolean) => void
   mode: 'create' | 'edit'
@@ -44,7 +44,7 @@ export type UseProjectTimeLogDialogOptions = ProjectTimeLogDialogParams & {
   onMutationSuccess?: () => void
 }
 
-export type ProjectTimeLogDialogState = {
+type ProjectTimeLogDialogState = {
   projectLabel: string
   isEditMode: boolean
   isMutating: boolean

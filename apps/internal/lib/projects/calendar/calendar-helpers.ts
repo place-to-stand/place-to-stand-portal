@@ -12,7 +12,7 @@ import { formatCalendarDate } from '@pts/ui/dates'
 
 import { toCalendarDate } from '@/lib/dates/calendar-date'
 
-export type CalendarRange = {
+type CalendarRange = {
   start: Date
   end: Date
 }

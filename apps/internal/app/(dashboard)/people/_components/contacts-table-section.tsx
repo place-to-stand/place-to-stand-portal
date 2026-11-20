@@ -51,7 +51,7 @@ import {
 } from '@/components/table/bulk-select'
 import { SheetLink } from '@/components/ui/sheet-link'
 
-export type ContactsTableSectionProps = {
+type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
   selection: RowSelection
   mode: 'active' | 'archive'

@@ -48,7 +48,7 @@ async function touchContacts(executor: Executor, contactIds: string[]) {
 }
 
 /** Current memberships only. */
-export const isCurrentMembership = isNull(memberships.endedAt)
+const isCurrentMembership = isNull(memberships.endedAt)
 
 // Correlated subqueries for selects keyed on a contact or company column.
 // Raw SQL on purpose: they reference the outer row's column, written out
@@ -227,7 +227,7 @@ export async function listContactMemberships(
   return byContact
 }
 
-export type CompanyMember = {
+type CompanyMember = {
   contactId: string
   name: string
   email: string | null
@@ -473,7 +473,7 @@ export async function setPortalAccess(
  * CLIENT, not switched off or archived. The one rule for turning portal
  * access on (both sheets show the same, see `canHavePortalAccess`).
  */
-export async function hasLiveClientSignIn(
+async function hasLiveClientSignIn(
   executor: Executor,
   contactId: string
 ): Promise<boolean> {
@@ -491,17 +491,4 @@ export async function hasLiveClientSignIn(
     )
     .limit(1)
   return Boolean(row)
-}
-
-/** The contact has a portal login (`contacts.user_id`). */
-export async function hasPortalLogin(
-  executor: Executor,
-  contactId: string
-): Promise<boolean> {
-  const [row] = await executor
-    .select({ userId: contacts.userId })
-    .from(contacts)
-    .where(eq(contacts.id, contactId))
-    .limit(1)
-  return Boolean(row?.userId)
 }

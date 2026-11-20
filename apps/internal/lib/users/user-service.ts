@@ -14,46 +14,8 @@ import {
 } from '@/lib/email/send-portal-invite'
 import { serverEnv } from '@/lib/env.server'
 
-export type AvatarFinalizationResult = {
-  normalizedPath: string | null
-}
-
 export function generateTemporaryPassword() {
   return randomBytes(18).toString('base64url').slice(0, 18)
-}
-
-export async function finalizeUserAvatar(options: {
-  client: ReturnType<typeof getSupabaseServiceClient>
-  avatarPath?: string | null
-  userId: string
-}): Promise<AvatarFinalizationResult> {
-  const { client, avatarPath, userId } = options
-
-  if (!avatarPath) {
-    return { normalizedPath: null }
-  }
-
-  try {
-    await ensureAvatarBucket(client)
-    const normalizedPath = await moveAvatarToUserFolder({
-      client,
-      path: avatarPath,
-      userId,
-    })
-    return { normalizedPath }
-  } catch (error) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.error('Failed to finalize avatar for user', error)
-    }
-
-    try {
-      await deleteAvatarObject({ client, path: avatarPath })
-    } catch (cleanupError) {
-      console.error('Failed to clean up pending avatar', cleanupError)
-    }
-
-    return { normalizedPath: null }
-  }
 }
 
 /**

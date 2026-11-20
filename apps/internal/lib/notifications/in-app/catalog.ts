@@ -1,6 +1,6 @@
 import type { NotificationType } from './types'
 
-export type InAppNotificationEntry = {
+type InAppNotificationEntry = {
   type: NotificationType
   /** Short name, as a heading. */
   name: string
@@ -14,7 +14,7 @@ export type InAppNotificationEntry = {
   notWhen: string
 }
 
-export type InAppNotificationGroup = {
+type InAppNotificationGroup = {
   title: string
   entries: InAppNotificationEntry[]
 }

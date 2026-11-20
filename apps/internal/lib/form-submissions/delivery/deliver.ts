@@ -197,7 +197,7 @@ function normalized(value: string | null): string | null {
 }
 
 /** True when `after` holds a detail that `before` lacked or said differently. */
-export function hasAddedDetails(
+function hasAddedDetails(
   before: ContactDetails,
   after: ContactDetails
 ): boolean {

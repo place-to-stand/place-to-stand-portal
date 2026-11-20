@@ -5,7 +5,7 @@ import type {
 
 import { isoTimestamp } from './timestamp'
 
-export type CliInvoice = {
+type CliInvoice = {
   id: string
   invoiceNumber: string | null
   status: string
@@ -44,7 +44,7 @@ export function serializeInvoice(invoice: InvoiceWithClient): CliInvoice {
   }
 }
 
-export type CliInvoiceLineItem = {
+type CliInvoiceLineItem = {
   id: string
   description: string
   quantity: string
@@ -55,7 +55,7 @@ export type CliInvoiceLineItem = {
   createsHourBlock: boolean
 }
 
-export type CliInvoiceDetail = CliInvoice & {
+type CliInvoiceDetail = CliInvoice & {
   billingType: string | null
   taxRate: string | null
   notes: string | null

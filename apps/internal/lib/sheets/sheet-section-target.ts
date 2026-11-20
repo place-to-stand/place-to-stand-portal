@@ -4,7 +4,7 @@
  * param: sheets have no tabs, and the link stays clean. Set it right before
  * opening the sheet; the sheet reads it while open and clears it on close.
  */
-export type CompanySheetSection = 'people' | 'billing' | 'projects'
+type CompanySheetSection = 'people' | 'billing' | 'projects'
 
 const targets = new Map<string, CompanySheetSection>()
 

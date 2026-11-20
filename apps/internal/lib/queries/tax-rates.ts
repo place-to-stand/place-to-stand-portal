@@ -22,7 +22,7 @@ export type TaxRateRow = {
   updated_at: string
 }
 
-export type TaxRateInput = {
+type TaxRateInput = {
   state: string
   rate: string
   label: string
@@ -99,22 +99,6 @@ export async function updateTaxRate(
       rate: input.rate,
       label: input.label,
       isActive: input.isActive,
-      updatedAt: sql`timezone('utc'::text, now())`,
-    })
-    .where(eq(taxRates.id, id))
-    .returning(taxRateSelection)
-
-  return mapTaxRateRow(rows[0]!)
-}
-
-export async function toggleTaxRateActive(
-  id: string,
-  isActive: boolean
-): Promise<TaxRateRow> {
-  const rows = await db
-    .update(taxRates)
-    .set({
-      isActive,
       updatedAt: sql`timezone('utc'::text, now())`,
     })
     .where(eq(taxRates.id, id))

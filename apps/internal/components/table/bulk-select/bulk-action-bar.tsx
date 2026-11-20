@@ -66,7 +66,7 @@ export type RunBulkAction = (
 ) => void
 
 /** What the bar reads of a selection: a list's ticks or a board's cards. */
-export type BulkBarSelection = Pick<
+type BulkBarSelection = Pick<
   RowSelection,
   | 'ids'
   | 'allMatching'

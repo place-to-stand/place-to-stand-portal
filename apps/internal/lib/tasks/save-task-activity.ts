@@ -1,7 +1,7 @@
 import { taskStatusChangedEvent, taskUpdatedEvent } from '@/lib/activity/events'
 import type { ActivityEvent } from '@/lib/activity/types'
 
-export type TaskSnapshot = {
+type TaskSnapshot = {
   title: string
   description: string | null
   status: string

@@ -29,7 +29,7 @@ export function parseQuery<T extends z.ZodType>(
   return schema.parse(Object.fromEntries(new URL(request.url).searchParams))
 }
 
-export type CliHandlerArgs<TParams> = {
+type CliHandlerArgs<TParams> = {
   user: AppUser
   request: NextRequest
   params: TParams

@@ -47,7 +47,7 @@ export class InvalidIntegrationTokenError extends Error {
   }
 }
 
-export type IntegrationConnectionSummary = {
+type IntegrationConnectionSummary = {
   id: string
   providerAccountId: string
   email: string | null
