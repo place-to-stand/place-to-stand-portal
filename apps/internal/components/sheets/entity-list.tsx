@@ -13,7 +13,7 @@ import { SheetRecordList } from './sheet-record-row'
 import { SheetSection } from './sheet-section'
 import { useScrollIntoViewOnOpen } from './use-scroll-into-view-on-open'
 
-export type EntityListAdd = {
+type EntityListAdd = {
   /** The +'s accessible name: "Add person", "Log time". */
   label: string
   /**

@@ -62,11 +62,7 @@ async function logSettingsEvent(
   })
 }
 
-// ---------------------------------------------------------------------------
-// Save the whole page
-// ---------------------------------------------------------------------------
-
-export type SaveBillingSettingsResult =
+type SaveBillingSettingsResult =
   | {
       ok: true
       /**

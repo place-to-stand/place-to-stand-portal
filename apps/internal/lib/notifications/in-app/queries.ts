@@ -36,7 +36,7 @@ import type {
 
 const FEED_LIMIT = 50
 
-export type NewNotification = {
+type NewNotification = {
   userId: string
   type: NotificationType
   title: string
@@ -155,7 +155,7 @@ async function syncDueTaskNotificationsThrottled(user: AppUser) {
  * A page boundary: the last row's sort time and id. Paging by position would
  * skip or repeat rows as new notifications arrive; this never does.
  */
-export function encodeFeedCursor(sortAt: string, id: string) {
+function encodeFeedCursor(sortAt: string, id: string) {
   return `${sortAt}_${id}`
 }
 
@@ -294,7 +294,7 @@ export async function restoreNotifications(userId: string, ids: string[]) {
 }
 
 /** How long an archived notification is kept before the weekly prune. */
-export const ARCHIVED_NOTIFICATION_DAYS = 90
+const ARCHIVED_NOTIFICATION_DAYS = 90
 const PRUNE_BATCH = 1000
 
 /**

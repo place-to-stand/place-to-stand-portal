@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { listConnectedApps } from '@/lib/mcp/grants'
 import { authorizeRoute } from '@/lib/auth/guard'
 
-/** Apps the signed-in person has connected through the MCP (PRD 009 §6). */
+/** Apps the signed-in person has connected through the MCP. */
 export async function GET() {
   const { denied } = await authorizeRoute('integrations.personal')
   if (denied) return denied

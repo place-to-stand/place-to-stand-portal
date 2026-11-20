@@ -13,7 +13,7 @@ export function isLeadStatus(
 }
 
 /**
- * The archive's in-memory `?status=` / `?q=` filter (PRD 004 §03). Shared by
+ * The archive's in-memory `?status=` / `?q=` filter. Shared by
  * the page (for the header's "Showing X of Y" count) and the table.
  */
 export function filterArchivedLeads(

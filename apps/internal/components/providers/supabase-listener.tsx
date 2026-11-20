@@ -13,24 +13,22 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client'
  * a tab coming back from the background with a session that was revoked
  * while it slept.
  *
- * It used to also force a `refreshSession()` on every mount and mirror every
- * auth event to `POST /auth/callback`, which cost a token rotation plus two
- * `GET /user` calls per full page load — all redundant with cookie storage.
+ * Don't force `refreshSession()` on mount or mirror auth events to the
+ * server: cookie storage already covers both, and each would cost a token
+ * rotation plus `GET /user` calls on every full page load.
  */
 export function SupabaseListener() {
   const supabase = getSupabaseBrowserClient()
 
-  // Refresh session when page becomes visible
-  // This handles computer sleep/wake scenarios
+  // Check the session when the page becomes visible again (after sleep).
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        // Verify and refresh session when page becomes visible
         void supabase.auth
           .getSession()
           .then(({ data: { session } }) => {
             if (session) {
-              // Session exists and is valid, Supabase will auto-refresh if needed
+              // Still signed in: the client refreshes the token itself.
               return
             }
             // If no session, redirect to login
@@ -40,7 +38,7 @@ export function SupabaseListener() {
               !window.location.pathname.startsWith('/share/')
             ) {
               // Full reload on session loss drops all client state and
-              // re-runs middleware — router.push would keep stale trees.
+              // re-runs the proxy — router.push would keep stale trees.
               // oxlint-disable-next-line next-js/no-location-assign-relative-destination -- a full reload on session loss drops stale client state
               window.location.href = '/sign-in'
             }

@@ -1,7 +1,7 @@
 import type { ProjectStatusValue } from '@/lib/constants'
 
 /** The project columns the sheet edits, as stored. */
-export type ProjectFieldValues = {
+type ProjectFieldValues = {
   name: string
   status: ProjectStatusValue
   type: string

@@ -12,7 +12,7 @@ import { ActivityVerbs, type ActivityVerb } from './types'
  * without `clients.manage` only the `any` verbs: an allowlist, so a new
  * billing event can't leak by default.
  */
-export const ACTIVITY_VERB_AUDIENCE = {
+const ACTIVITY_VERB_AUDIENCE = {
   TASK_CREATED: 'any',
   TASK_UPDATED: 'any',
   TASK_STATUS_CHANGED: 'any',
@@ -117,8 +117,8 @@ export const ACTIVITY_VERB_AUDIENCE = {
 } as const satisfies Record<ActivityVerb, 'billing' | 'any'>
 
 /**
- * Retired verbs whose old rows still sit on task and lead feeds (the removed
- * suggestions feature). None is about billing, so they stay readable.
+ * Verbs nothing writes, whose old rows still sit on task and lead feeds
+ * (task and lead suggestions). None is about billing, so they stay readable.
  */
 const RETIRED_NON_BILLING_VERBS = [
   'TASK_SUGGESTION_REJECTED',

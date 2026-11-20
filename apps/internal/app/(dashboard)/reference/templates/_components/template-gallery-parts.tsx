@@ -15,7 +15,7 @@ const AUDIENCE_OPTIONS = TEMPLATE_AUDIENCES.map(value => ({
   badgeClassName: AUDIENCE_STYLES[value].badgeClassName,
 }))
 
-export type TemplateFilterState = {
+type TemplateFilterState = {
   query: string | undefined
   audiences: TemplateAudience[]
 }

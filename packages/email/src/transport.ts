@@ -2,9 +2,8 @@
  * Delivery for transactional mail.
  *
  * Uses Resend's HTTP API rather than its SDK so this package stays
- * dependency-free and both apps can send without adding one. The internal app
- * keeps its own SDK-based sender for the invite path; consolidating the two is
- * a follow-up, not a prerequisite.
+ * dependency-free. The client app sends through this; the internal app has its
+ * own SDK-based sender (`apps/internal/lib/email/send.ts`).
  */
 
 export type OutboundEmail = {
@@ -21,9 +20,8 @@ export type TransportConfig =
   | { mode: 'resend'; apiKey: string }
   /**
    * Local: Supabase runs Mailpit, so mail is visible without a verified sender
-   * domain. Without this, every local send fails with a Resend 403 — and since
-   * a failed invite rolls the whole account creation back, the flow becomes
-   * untestable end to end.
+   * domain. Without this, every local send fails with a Resend 403 and the
+   * auth flows cannot be tested end to end.
    */
   | { mode: 'mailpit'; url?: string }
 

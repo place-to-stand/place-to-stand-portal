@@ -87,9 +87,9 @@ type MailConfig = {
  * Deployed mail comes from the same sender the invite already uses, so every
  * message from us builds one domain's reputation rather than splitting it.
  *
- * Sender was not what got Supabase's password reset flagged as phishing — that
- * mail came from the same address this does. It was the stock template: a bare
- * link, near-zero prose, and generic copy. Hence the templates in `@pts/email`.
+ * The sender alone does not keep mail out of phishing filters: Supabase's stock
+ * template (a bare link, near-zero prose, generic copy) gets flagged from this
+ * same address. Hence the templates in `@pts/email`.
  *
  * Local mail goes to Mailpit, which delivers nothing and validates no sender, so
  * requiring real Resend credentials to reach it only makes the flow untestable.

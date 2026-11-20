@@ -16,7 +16,7 @@ import {
   TaskCommentsErrorState,
 } from './task-comments-components'
 
-export type TaskCommentsPanelProps = {
+type TaskCommentsPanelProps = {
   taskId: string | null
   projectId: string | null
   currentUserId: string

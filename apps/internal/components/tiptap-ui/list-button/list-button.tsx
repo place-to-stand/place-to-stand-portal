@@ -2,18 +2,14 @@
 
 import { forwardRef, useCallback } from 'react'
 
-// --- Lib ---
 import { parseShortcutKeys } from '@/lib/tiptap-utils'
 
-// --- Hooks ---
 import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
-// --- UI Primitives ---
 import type { ButtonProps } from '@/components/tiptap-ui-primitive/button'
 import { Button } from '@/components/tiptap-ui-primitive/button'
 import { Badge } from '@/components/tiptap-ui-primitive/badge'
 
-// --- Tiptap UI ---
 import type {
   ListType,
   UseListConfig,

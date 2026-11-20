@@ -9,7 +9,7 @@ import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
 import { submissionHref } from '@/lib/sheets/hrefs'
 import { UUID_PATTERN } from '@pts/db/uuid'
 
-export type SubmissionDeepLink = {
+type SubmissionDeepLink = {
   /** The shared row, resolved regardless of which list page/filter it sits on. */
   submission: FormSubmissionRecord | null
   /** True when the link's id is malformed or the row no longer exists. */

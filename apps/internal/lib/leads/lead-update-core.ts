@@ -34,7 +34,7 @@ export const createLeadUpdateSchema = z.object({
 
 export type CreateLeadUpdateInput = z.infer<typeof createLeadUpdateSchema>
 
-export type CreateLeadUpdateResult = {
+type CreateLeadUpdateResult = {
   success: boolean
   error?: string
   leadId?: string
@@ -43,7 +43,7 @@ export type CreateLeadUpdateResult = {
 }
 
 /**
- * Log an interaction on a lead with the acting admin injected. Outside the
+ * Log an interaction on a lead with the acting user injected. Outside the
  * `'use server'` module so the CLI API can share it — see `saveLeadForActor`.
  * Callers own cache revalidation.
  */

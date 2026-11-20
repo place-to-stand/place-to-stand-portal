@@ -1,1 +1,0 @@
-ALTER TYPE "public"."worker_status" ADD VALUE 'cancelled';

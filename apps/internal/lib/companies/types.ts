@@ -8,7 +8,7 @@ export type CompanyListItem = {
   website: string | null
   /** Its tags, A to Z. */
   tags: string[]
-  /** The company's (first live) client, when it has signed. */
+  /** The company's id while it is a client (billed now), else null. */
   companyId: string | null
   clientName: string | null
   /** Was a client (billing stopped), not one now. */
@@ -49,7 +49,7 @@ export type CompanyListItem = {
   /** Its URL segment, for project board links. */
   slug: string | null
   primaryContactName: string | null
-  /** Why this user can't archive or restore it (the staff company, for Sales). */
+  /** Why this user can't archive or restore it (the staff company for Sales, or billing still open). */
   archiveRefusal: string | null
   updatedAt: string
   deletedAt: string | null
@@ -101,9 +101,9 @@ export type CompanyDetail = {
   primaryContactName: string | null
   /** Its tags, A to Z. */
   tags: string[]
-  /** Clients that are this company (usually one). */
+  /** The company itself while it is billed now; empty otherwise. */
   clients: { id: string; name: string; slug: string | null }[]
-  /** Its stopped client when it has no live one (billing can restart). */
+  /** Its own id when it was billed before and isn't now (billing can restart). */
   formerClientId: string | null
   /**
    * The last month billed when a stop is scheduled (billed through the end

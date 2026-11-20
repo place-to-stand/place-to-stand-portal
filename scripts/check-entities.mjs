@@ -12,7 +12,7 @@
  * ΔE_OK 0.06 of any entity colour in either theme, so a green check never
  * reads as a client badge (and a red error never reads as a person).
  * Imports of entity icons outside the registry are blocked by lint
- * (packages/lint-config/next.mjs reads the same icon list).
+ * (packages/lint-config/app-imports.mjs reads the same icon list).
  */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'

@@ -10,11 +10,11 @@ const TERMINAL_STATUSES = new Set(['CLOSED_WON', 'CLOSED_LOST', 'UNQUALIFIED'])
  * Check if a status is terminal (lead lifecycle has ended).
  * Terminal statuses set resolvedAt; a Won lead may also be converted.
  */
-export function isTerminalLeadStatus(status: string): boolean {
+function isTerminalLeadStatus(status: string): boolean {
   return TERMINAL_STATUSES.has(status)
 }
 
-export type LeadStageMoveFields = {
+type LeadStageMoveFields = {
   currentStageEnteredAt?: string
   resolvedAt?: string | null
 }

@@ -23,8 +23,8 @@ export function isInvoiceStatus(
   )
 }
 
-// PRD 004 §03: per-view sort allowlist (D6/R5). Offset pagination — each
-// field maps to an ORDER BY swap in `listInvoices`.
+// Sort allowlist for the invoices pages. Offset pagination: each field maps
+// to an ORDER BY swap in `listInvoices`.
 const INVOICE_SORT_FIELDS = [
   'issued',
   'number',
@@ -51,7 +51,7 @@ export function isInvoiceSortValue(value: string): boolean {
 
 type RawSearchParams = Record<string, string | string[] | undefined>
 
-export type InvoicesSearchParams = {
+type InvoicesSearchParams = {
   page: number
   status: InvoiceStatusValue | undefined
   search: string | undefined
@@ -60,7 +60,7 @@ export type InvoicesSearchParams = {
 
 /**
  * Shared searchParams parsing for the invoices pages. Invalid status values
- * fail the type guard and are treated as unset (R4).
+ * fail the type guard and are treated as unset.
  */
 export function parseInvoicesSearchParams(
   params: RawSearchParams

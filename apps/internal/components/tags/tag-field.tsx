@@ -44,7 +44,7 @@ type TagFieldProps = {
  * Tags on a record, Shopify-style: open the field and type. Existing tags
  * of this kind are offered (any case matches, so "salon" picks "Salon");
  * Enter or a comma adds what you typed as a new tag. Picks show as badges
- * under the field, each with a × to take it off. Only sets the form value:
+ * inside the field, each with a × to take it off. Only sets the form value:
  * the sheet saves the list with everything else.
  */
 export function TagField({

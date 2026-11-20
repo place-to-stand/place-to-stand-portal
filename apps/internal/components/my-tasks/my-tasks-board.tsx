@@ -478,7 +478,7 @@ function normalizeStatus(status: string | null | undefined): MyTaskStatus {
     case 'DONE':
       return status
     case 'IN_REVIEW':
-      // IN_REVIEW status was removed; treat any legacy value as IN_PROGRESS
+      // IN_REVIEW is not a task status; a stored one reads as IN_PROGRESS.
       return 'IN_PROGRESS'
     default:
       return 'ON_DECK'

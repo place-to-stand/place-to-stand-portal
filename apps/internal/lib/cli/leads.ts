@@ -28,12 +28,12 @@ import {
   type CliLeadUpdate,
 } from './serializers/lead-update'
 
-export type CreateLeadInput = z.output<typeof cliCreateLeadSchema>
-export type UpdateLeadInput = z.output<typeof cliUpdateLeadSchema>
-export type CreateLeadUpdateInput = z.output<typeof cliCreateLeadUpdateSchema>
+type CreateLeadInput = z.output<typeof cliCreateLeadSchema>
+type UpdateLeadInput = z.output<typeof cliUpdateLeadSchema>
+type CreateLeadUpdateInput = z.output<typeof cliCreateLeadUpdateSchema>
 
 /** A staff user's UUID or email, or null to unassign. Never a CLIENT user. */
-export async function resolveLeadAssignee(
+async function resolveLeadAssignee(
   user: AppUser,
   reference: string | null | undefined
 ): Promise<string | null> {

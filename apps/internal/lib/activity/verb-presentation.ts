@@ -30,7 +30,7 @@ import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
  * secondary cue — the summary sentence carries the meaning — so a verb that
  * misses this table still renders fine with the neutral fallback.
  */
-export type ActivityTone =
+type ActivityTone =
   | 'create'
   | 'update'
   | 'status'
@@ -43,7 +43,7 @@ export type ActivityTone =
   | 'integration'
   | 'neutral'
 
-export type VerbPresentation = {
+type VerbPresentation = {
   icon: LucideIcon
   tone: ActivityTone
 }

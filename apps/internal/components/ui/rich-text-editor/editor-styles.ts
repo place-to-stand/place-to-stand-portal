@@ -36,13 +36,10 @@ export const ensureEditorStyles = () => {
     }
 
     /*
-      Type scale and rhythm live here as two variables rather than being
-      repeated across the rules below, which is how the old 1rem/1.6 pair
-      ended up restated five times with !important.
-
-      0.875rem matches the app's body text -- the editor was rendering a
-      point larger than everything around it -- and the tighter leading and
-      block margins fit more of a description on screen without crowding.
+      Type scale and rhythm live here as two variables so the rules below
+      don't each restate them. 0.875rem matches the app's body text, and the
+      tight leading and block margins fit more of a description on screen
+      without crowding.
     */
     .rich-text-editor .ProseMirror {
       --rte-font-size: 0.875rem;
@@ -103,8 +100,8 @@ export const ensureEditorStyles = () => {
       font-weight: normal;
     }
 
-    /* Headings kept proportional to the new body size, with tighter collars
-       so a heading no longer pushes a paragraph-and-a-half of space. */
+    /* Headings keep tight margins so a heading doesn't push a
+       paragraph-and-a-half of space. */
     .rich-text-editor .ProseMirror :is(h1, h2, h3, h4, h5, h6) {
       margin: 0.75rem 0 0.25rem;
       line-height: 1.25;
@@ -145,11 +142,10 @@ export const ensureEditorStyles = () => {
 
   editorStylesElement.textContent = styles
 
-  // Add required TipTap CSS variables if they don't exist
+  // TipTap's CSS variables, pointed at the theme's colours with fallbacks.
   if (typeof document !== 'undefined') {
     const root = document.documentElement
 
-    // Set TipTap CSS variables with fallbacks
     root.style.setProperty('--white', '#ffffff')
     root.style.setProperty('--black', '#000000')
     root.style.setProperty(

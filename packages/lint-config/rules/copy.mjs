@@ -16,9 +16,8 @@
  * Options: `portal` ('internal' or 'client': which word list applies),
  * `exceptions` (the files where one check is off) and `root`, the directory
  * the exception globs are relative to (the app's, so lint can run from
- * the repo root). A deliberate use (the
- * website's contact form, a CSS width) takes an oxlint-disable comment that
- * says why.
+ * the repo root). A deliberate use (the website's contact form, a CSS width)
+ * takes an oxlint-disable comment that says why.
  */
 import { WORDS, isCode, looksLikeProse, retiredWord } from './copy-words.mjs'
 import {
@@ -29,8 +28,6 @@ import {
   jsxName,
   staticStrings,
 } from './utils.mjs'
-
-// ── figures ─────────────────────────────────────────────────────────────
 
 const LOCAL_FORMATTER =
   /^(?:formatHours|formatCurrency|formatMoney|formatUsd|formatDollars|formatPercent|formatRate|formatTaxRate)$/
@@ -63,8 +60,6 @@ function gluedAfter(expression, text, previousText) {
   if (isToFixed(expression) && /^\s%/.test(text)) return 'a percent sign'
   return null
 }
-
-// ── the rule ────────────────────────────────────────────────────────────
 
 const isToast = callee =>
   (callee.type === 'Identifier' && callee.name === 'toast') ||

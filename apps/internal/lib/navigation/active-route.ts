@@ -1,8 +1,6 @@
 /**
- * Single source of truth for active-route matching (PRD 004 §02).
- * Previously duplicated verbatim in components/layout/sidebar.tsx and
- * components/layout/app-shell.tsx — any change here affects both the
- * sidebar highlight and header derivations.
+ * Active-route matching for nav items: the sidebar highlights an item when
+ * the path is its href, one of its `matchHrefs`, or below either.
  */
 
 type Matchable = {

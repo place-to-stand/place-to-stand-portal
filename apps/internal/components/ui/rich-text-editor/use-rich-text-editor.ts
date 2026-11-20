@@ -17,7 +17,6 @@ import { HorizontalRule } from '@/components/tiptap-node/horizontal-rule-node/ho
 import { MarkdownPaste } from '@/lib/tiptap/markdown-paste'
 import { buildMentionExtension } from './mention/mention-extension'
 
-// Import node styles
 import '@/components/tiptap-node/blockquote-node/blockquote-node.css'
 import '@/components/tiptap-node/code-block-node/code-block-node.css'
 import '@/components/tiptap-node/horizontal-rule-node/horizontal-rule-node.css'
@@ -172,10 +171,9 @@ const buildExtensions = (
     Placeholder.configure({
       placeholder: placeholder ?? 'Write a description…',
     }),
-    // ImageUploadNode is intentionally not registered: there is no real
-    // upload backend yet (the old handler was a stub that inserted a
-    // placeholder image and silently lost the file). The Image extension
-    // above stays so previously stored images still render.
+    // ImageUploadNode is not registered: there is no upload backend, so it
+    // would insert a placeholder and lose the file. The Image extension
+    // above stays so stored images still render.
   ]
 }
 

@@ -94,7 +94,7 @@ const RECEIVED_TITLE_STYLE = {
 
 // Width classes for the columns that take a share of the table. The
 // archive's extra Archived column (w-32) leaves no room for Company at xl:
-// with the active grid, Contact — the column without a width — shrank to
+// with the active grid, Contact (the column without a width) would shrink to
 // ~80px at 1280 and 1440 with the sidebar open. So the archive holds Company
 // and the Source detail back until 2xl, gives Outcome a smaller share, and
 // narrows Company and Source once they return, which keeps Contact at about
@@ -208,8 +208,8 @@ export function SubmissionsTable({
   const columnCount = mode === 'archive' ? 9 : 8
   const columnClasses = COLUMN_CLASSES[mode]
 
-  // Sort changes route through useListParams so they reset offset paging
-  // (PRD 004 §03); row-selection and page pushes keep the local helper.
+  // Sort changes route through useListParams so they reset offset paging;
+  // row-selection and page pushes keep the local helper.
   const { update: updateListParams, getParam } = useListParams({
     basePath,
     resetKeys: ['page'],
@@ -229,7 +229,7 @@ export function SubmissionsTable({
     </SortableTableHead>
   )
 
-  // Run raw params through the type guards (R4): ?kind=bogus is ignored by
+  // Run raw params through the type guards: ?kind=bogus is ignored by
   // the server, so it must not count as an active filter — an unfiltered
   // empty list would otherwise show the wrong message. The unacknowledged
   // quick filter only exists on the active tab.
@@ -351,7 +351,7 @@ export function SubmissionsTable({
         () =>
           acknowledgeSubmission({
             id: submission.id,
-            // Version token: the row as rendered (F3 stale-view guard).
+            // Version token: the row as rendered (the stale-view guard).
             expectedLastActivityAt: submission.lastActivityAt,
           }),
         'Unable to acknowledge submission',

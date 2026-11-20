@@ -112,7 +112,7 @@ export async function notifyUnbookedPayment(
 }
 
 /**
- * Warn the Sales space that marketing form emails are stuck (PRD 008). Same
+ * Warn the Sales space that marketing form emails are stuck. Same
  * contract as `notifyInvoicePaid`: no-op without the webhook, never throws —
  * the retry sweep that calls this must finish regardless.
  */

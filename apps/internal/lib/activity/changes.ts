@@ -4,7 +4,7 @@ import { formatHours } from '@pts/ui/numbers'
 /**
  * Normalised view of what an activity log actually changed.
  *
- * Writers record diffs in three shapes today:
+ * Writers record diffs in three shapes:
  *   1. `metadata.details = { before: {...}, after: {...} }` (most updates)
  *   2. `metadata.details = { dueOn: { from, to } }` (board due-date changes)
  *   3. `metadata.status = { from, to }` (TASK_STATUS_CHANGED)
@@ -52,7 +52,7 @@ export type ActivityFact = {
   kind?: 'money' | 'hours' | 'date' | 'text' | 'mono'
 }
 
-export type ActivityChanges = {
+type ActivityChanges = {
   fields: FieldChange[]
   memberships: MembershipChange[]
   facts: ActivityFact[]
@@ -89,7 +89,7 @@ const FIELD_SPECS: Record<string, FieldSpec> = {
   originationContactId: { label: 'Originating person', kind: 'contact' },
   projectId: { label: 'Project', kind: 'project' },
   companyId: { label: 'Client', kind: 'client' },
-  // Rows logged before the clientId → companyId rename.
+  // Older rows name the client `clientId`.
   clientId: { label: 'Client', kind: 'client' },
   clientName: { label: 'Client', kind: 'text' },
   invoiceNumber: { label: 'Invoice', kind: 'text' },
@@ -332,9 +332,6 @@ function collectFacts(
   return facts
 }
 
-// ---------------------------------------------------------------------------
-// helpers
-
 export function toRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null
@@ -351,7 +348,7 @@ function looksLikeHtml(value: unknown): boolean {
   return typeof value === 'string' && /<\/?[a-z][\s\S]*>/i.test(value)
 }
 
-export function humanizeKey(key: string): string {
+function humanizeKey(key: string): string {
   const spaced = key
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/[_-]+/g, ' ')

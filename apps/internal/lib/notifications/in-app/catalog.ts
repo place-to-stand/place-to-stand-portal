@@ -1,6 +1,6 @@
 import type { NotificationType } from './types'
 
-export type InAppNotificationEntry = {
+type InAppNotificationEntry = {
   type: NotificationType
   /** Short name, as a heading. */
   name: string
@@ -14,7 +14,7 @@ export type InAppNotificationEntry = {
   notWhen: string
 }
 
-export type InAppNotificationGroup = {
+type InAppNotificationGroup = {
   title: string
   entries: InAppNotificationEntry[]
 }
@@ -26,8 +26,8 @@ const NEVER_YOURS =
  * Every in-app notification (the bell and Home's My notifications), for
  * Reference → Notifications. Keep it in step with the producers in
  * `events.ts` and the due-date sync in `queries.ts`: a new kind adds an
- * entry here in the same change. `task_due_today` is retired (old rows still
- * show in the feed) and so is not listed.
+ * entry here in the same change. `task_due_today` is not listed: nothing
+ * produces it, though old rows still show in the feed.
  */
 export const IN_APP_NOTIFICATIONS: InAppNotificationGroup[] = [
   {
@@ -37,7 +37,7 @@ export const IN_APP_NOTIFICATIONS: InAppNotificationGroup[] = [
         type: 'task_assigned',
         name: 'Assigned to you',
         sample: {
-          title: 'Kris Crawford assigned you a task',
+          title: 'Alex Rivera assigned you a task',
           body: 'Send Param the server config notes',
         },
         recipients: 'Each person newly added as an assignee.',
@@ -48,7 +48,7 @@ export const IN_APP_NOTIFICATIONS: InAppNotificationGroup[] = [
         type: 'task_comment',
         name: 'New comment',
         sample: {
-          title: 'Kris Crawford commented on Homepage mobile pass',
+          title: 'Alex Rivera commented on Homepage mobile pass',
           body: 'Pushed the fix for the nav overlap, can you check on your phone?',
         },
         recipients: "The task's assignees and the person who created it.",
@@ -69,7 +69,7 @@ export const IN_APP_NOTIFICATIONS: InAppNotificationGroup[] = [
       {
         type: 'task_status',
         name: 'Blocked or done',
-        sample: { title: 'Kris Crawford marked Homepage mobile pass done' },
+        sample: { title: 'Alex Rivera marked Homepage mobile pass done' },
         recipients: "The task's assignees and the person who created it.",
         when: 'Someone else moves the task to Blocked or Done, from the board or the task sheet.',
         notWhen: `${NEVER_YOURS} Other status changes (On deck, In progress) send nothing.`,
@@ -95,7 +95,7 @@ export const IN_APP_NOTIFICATIONS: InAppNotificationGroup[] = [
         type: 'lead_assigned',
         name: 'Assigned to you',
         sample: {
-          title: 'Dave Pokk assigned you a lead',
+          title: 'Sam Lee assigned you a lead',
           body: 'Ada Lovelace · Acme Co',
         },
         recipients: 'The new owner of the lead.',
@@ -106,7 +106,7 @@ export const IN_APP_NOTIFICATIONS: InAppNotificationGroup[] = [
         type: 'lead_update',
         name: 'New update',
         sample: {
-          title: 'Dave Pokk logged a phone call on Ada Lovelace',
+          title: 'Sam Lee logged a phone call on Ada Lovelace',
           body: 'Wants a quote for the wholesale portal by Friday.',
         },
         recipients: "The lead's owner.",
@@ -128,7 +128,7 @@ export const IN_APP_NOTIFICATIONS: InAppNotificationGroup[] = [
       {
         type: 'lead_stage',
         name: 'Moved to another stage',
-        sample: { title: 'Dave Pokk moved Ada Lovelace to Proposal sent' },
+        sample: { title: 'Sam Lee moved Ada Lovelace to Proposal sent' },
         recipients: "The lead's owner.",
         when: 'Someone else moves the lead to another stage, on the board or in the lead sheet.',
         notWhen: `${NEVER_YOURS} Reordering a lead within its stage sends nothing.`,

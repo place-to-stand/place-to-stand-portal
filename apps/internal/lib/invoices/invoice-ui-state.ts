@@ -25,18 +25,14 @@ const NON_EDITABLE_REASON = 'This invoice cannot be edited.'
 
 const NON_EDITABLE_STATUSES = new Set(['PAID', 'VOID'])
 
-// ---------------------------------------------------------------------------
 // Invoice editability
-// ---------------------------------------------------------------------------
 
 export function isInvoiceEditable(status: string | null): boolean {
   if (!status) return true // new invoice
   return !NON_EDITABLE_STATUSES.has(status)
 }
 
-// ---------------------------------------------------------------------------
 // Field states
-// ---------------------------------------------------------------------------
 
 export const deriveClientFieldState = (
   isPending: boolean,
@@ -73,9 +69,7 @@ export const deriveStandardFieldState = (
   }
 }
 
-// ---------------------------------------------------------------------------
 // Button states
-// ---------------------------------------------------------------------------
 
 /**
  * `isSaving` is the save itself; `isBusy` also covers the open-time fetch of

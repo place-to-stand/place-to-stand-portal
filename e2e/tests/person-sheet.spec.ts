@@ -23,7 +23,7 @@ function recordServerActions(page: Page) {
 
 test('changing a role asks which month it starts', async ({ page }) => {
   // The sales test account has a sign-in (and isn't the admin running this).
-  const salesEmail = process.env.E2E_SALES_EMAIL ?? 'dave@local.test'
+  const salesEmail = process.env.E2E_SALES_EMAIL ?? 'miles@example.com'
   await page.goto(`/people?q=${encodeURIComponent(salesEmail)}`)
   await expectHealthy(page)
   await page.locator('tbody tr').first().locator(FIRST_CELL).first().click()
@@ -103,7 +103,7 @@ test('stopping being Admin starts next month, and warns about this month', async
   page,
 }) => {
   // Another admin: you can't change your own sign-in.
-  const adminEmail = process.env.E2E_ADMIN_EMAIL ?? 'jason@local.test'
+  const adminEmail = process.env.E2E_ADMIN_EMAIL ?? 'ada@example.com'
   await page.goto('/people/users?role=ADMIN')
   await expectHealthy(page)
   // A live Admin sign-in (a switched-off one is No access).
@@ -196,7 +196,9 @@ test.describe('writes', () => {
         sheet.getByRole('combobox', { name: 'Role', exact: true })
       ).toContainText('Client')
       await expect(
-        sheet.getByText('Place To Stand', { exact: true })
+        sheet.getByText(process.env.E2E_STAFF_COMPANY ?? 'Northwind Studio', {
+          exact: true,
+        })
       ).toHaveCount(0)
 
       // Put it back: archive the person.
@@ -320,7 +322,7 @@ test.describe('writes', () => {
     await second.getByRole('button', { name: /^Save and close/ }).click()
     // Nothing is written: the dialog asks, and the sheet stays open.
     const refused = other.getByRole('alertdialog')
-    await expect(refused).toContainText('Your changes weren’t saved')
+    await expect(refused).toContainText('aren’t saved yet')
     await refused.getByRole('button', { name: 'Keep editing' }).click()
     await expect(second).toBeVisible()
     await other.close()

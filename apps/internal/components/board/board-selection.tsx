@@ -292,7 +292,7 @@ export function useBoardSelectionContext() {
  * One card's part of its board's selection; null off a board (the lead
  * sheet's task cards) or for a viewer who can't act on the cards.
  */
-export function useBoardCardSelection(id: string) {
+function useBoardCardSelection(id: string) {
   const selection = useContext(BoardSelectionContext)
   if (!selection?.enabled) return null
   return {
@@ -305,10 +305,6 @@ export function useBoardCardSelection(id: string) {
     },
   }
 }
-
-export type BoardCardSelection = NonNullable<
-  ReturnType<typeof useBoardCardSelection>
->
 
 /**
  * What a board card spreads on its root to join the selection: a click with

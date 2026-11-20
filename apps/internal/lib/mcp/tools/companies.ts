@@ -106,7 +106,7 @@ function nextTags(
 /**
  * Companies and people (the portal's directory). Every write goes through
  * the same save as its sheet, in one transaction with the sheet's checks.
- * Billing, terms, commission and portal access stay in the portal (D9).
+ * Billing, terms, commission and portal access stay in the portal.
  */
 export function registerCompanyTools(server: McpServer) {
   defineTool(server, {

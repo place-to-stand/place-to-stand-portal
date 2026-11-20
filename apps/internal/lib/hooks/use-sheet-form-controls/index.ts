@@ -42,9 +42,5 @@ export function useSheetFormControls<T extends FieldValues>(
   }
 }
 
-export type {
-  SheetHistorySources,
-  UseSheetFormControlsOptions,
-  UseSheetFormControlsReturn,
-} from './types'
+export type { SheetHistorySources } from './types'
 export { useSheetHistoryState } from './sources'

@@ -19,8 +19,8 @@ import { submissionHref } from '@/lib/sheets/hrefs'
  * The intake routes record the row first and never fail on a Resend error, so
  * an outage leaves rows with delivery requested and a stamp still null. This
  * sweep is what makes "record first" safe rather than lossy. Rows that never
- * asked for delivery (everything before the PRD 008 cutover) are never
- * selected, so it cannot retro-email history. The window lives in
+ * asked for delivery (`delivery_requested_at` null) are never selected, so it
+ * cannot retro-email history. The window lives in
  * lib/form-submissions/delivery/constants.ts, shared with the sheet.
  *
  * Sequential on purpose: the batch is tiny, and it keeps a recovering Resend

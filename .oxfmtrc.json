@@ -17,7 +17,6 @@
     "**/drizzle/**",
     "**/.next/**",
     "**/dist/**",
-    ".claude/pts-session-log.json",
     "**/lint-suppressions.json"
   ]
 }

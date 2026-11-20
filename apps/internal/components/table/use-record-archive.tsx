@@ -23,7 +23,7 @@ type UseRecordArchiveArgs = {
 /**
  * Archive from a card or row that has no archive flow of its own (board
  * cards): the shared confirm dialog, the server action, the toasts and a
- * refresh, in one place. Lists keep their own flows, which predate this.
+ * refresh, in one place. Lists keep their own archive flows.
  */
 export function useRecordArchive({
   entity,

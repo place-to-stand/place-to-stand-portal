@@ -4,24 +4,23 @@ import * as React from 'react'
 import { useRender } from '@base-ui/react/use-render'
 
 /**
- * Drop-in replacement for Radix's `Slot`, built on Base UI's `useRender`.
+ * `Slot` for `asChild`, built on Base UI's `useRender`.
  *
- * Every consumer here follows the same shape — `const Comp = asChild ? Slot :
- * 'button'` — so keeping Slot's component form (rather than rewriting each
- * caller to Base UI's `render` prop) leaves all 90-odd `asChild` call sites
- * untouched. It also keeps `asChild` as the app's one composition idiom
- * instead of splitting it across two spellings.
+ * Every consumer follows the same shape — `const Comp = asChild ? Slot :
+ * 'button'` — and keeping Slot's component form (rather than Base UI's
+ * `render` prop) keeps `asChild` as the app's one composition idiom instead
+ * of splitting it across two spellings.
  *
  * `useRender` rather than `mergeProps`: mergeProps documents that it does not
  * merge `ref`, and Slot's whole job includes forwarding a ref through to the
  * child. useRender composes both props and refs.
  *
- * Behavioral notes, matching Radix:
+ * Behavior:
  * - Event handlers compose, className/style merge, other child props win.
- * - A non-element child renders nothing, and logs in development. Radix threw
- *   here; rendering nothing in production is the safer failure for a live app,
- *   but silence would let a malformed child erase a button with no trace, so
- *   the dev build names the problem instead.
+ * - A non-element child renders nothing, and logs in development. Rendering
+ *   nothing in production is the safer failure for a live app, but silence
+ *   would let a malformed child erase a button with no trace, so the dev
+ *   build names the problem instead.
  */
 
 // @pts/ui carries no node types; NODE_ENV is inlined by the bundler. The file
@@ -45,7 +44,7 @@ type LazyNode = {
  * payload can deliver that child as a lazy node wrapping a pending chunk
  * rather than an element. `isValidElement` rejects it, so without unwrapping,
  * SSR renders nothing while the browser (chunk already resolved) renders the
- * link — a hydration mismatch. Radix's Slot unwraps the same way.
+ * link — a hydration mismatch.
  */
 function isLazyNode(node: React.ReactNode): node is React.ReactNode & LazyNode {
   return (

@@ -24,7 +24,7 @@ import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 import { StaffOrPersonPicker } from './staff-or-person-picker'
 
-export type ClientClosersEditorProps = {
+type ClientClosersEditorProps = {
   closers: CloserDraft[]
   /** Keys of the closers as saved: only those show as Pending removal. */
   savedCloserKeys: ReadonlySet<string>

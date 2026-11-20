@@ -1,6 +1,6 @@
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 
-export type ProjectSheetDialogsProps = {
+type ProjectSheetDialogsProps = {
   isDeleteDialogOpen: boolean
   /** The project's name, for the archive confirmation. */
   projectName?: string | null

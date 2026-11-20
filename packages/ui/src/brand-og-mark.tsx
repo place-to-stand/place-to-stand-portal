@@ -5,8 +5,8 @@
  *
  * Production never renders this — the portals' icon routes serve the
  * embedded PNG bytes directly so tabs match the marketing site exactly.
- * (An earlier revision redrew the mark with satori text, but satori loads
- * no bold font by default, so the wordmark rendered thin and blurry.)
+ * Don't redraw the mark with satori text: satori loads no bold font by
+ * default, so the wordmark renders thin and blurry.
  *
  * Plain JSX with inline styles: satori supports no CSS classes, and keeping
  * `next/og` out of this file means the package needs no Next dependency.

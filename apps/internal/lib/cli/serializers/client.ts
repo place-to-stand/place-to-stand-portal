@@ -3,21 +3,21 @@ import type { ClientWithMetrics } from '@/lib/data/clients'
 import { isoTimestamp } from './timestamp'
 
 /** Who brought a client in, or a closer: a staff sign-in or a person. */
-export type CliCommissionParty = {
+type CliCommissionParty = {
   kind: 'user' | 'contact'
   id: string
   name: string | null
 }
 
-export type CliClient = {
+type CliClient = {
   id: string
-  /** The company this client is (the same id as `id` since 0111). */
+  /** The company this client is (the same id as `id`). */
   companyId: string | null
   name: string
   slug: string | null
   billingType: ClientWithMetrics['billingType']
   state: string | null
-  /** The company's website, falling back to the client's legacy copy. */
+  /** The company's website. */
   website: string | null
   projectCount: number
   activeProjectCount: number

@@ -34,22 +34,10 @@ type InvoiceSheetRightColumnProps = {
   onAction: (action: InvoiceStatusAction) => void
 }
 
-// ---------------------------------------------------------------------------
-// Date helpers
-// ---------------------------------------------------------------------------
-
 const formatDate = (dateStr: string | null): string | null =>
   formatCalendarDate(dateStr)
 
-// ---------------------------------------------------------------------------
-// Status-aware action buttons
-// ---------------------------------------------------------------------------
-
 const ACTION_CLASS = 'w-full justify-start'
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 
 export function InvoiceSheetRightColumn({
   invoice,

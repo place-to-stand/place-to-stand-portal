@@ -28,7 +28,7 @@ export type ActivityContext = {
   >
 }
 
-export const TARGET_LABELS: Record<string, string> = {
+const TARGET_LABELS: Record<string, string> = {
   TASK: 'task work',
   PROJECT: 'project updates',
   CLIENT: 'client changes',
@@ -46,9 +46,9 @@ export const TARGET_LABELS: Record<string, string> = {
   PLAN: 'planning',
 }
 
-export const DEFAULT_PROJECT_LABEL = 'General'
-export const DEFAULT_CLIENT_LABEL = 'General'
-export const COMPANY_GENERAL_CLIENT_LABEL = 'Company-wide'
+const DEFAULT_PROJECT_LABEL = 'General'
+const DEFAULT_CLIENT_LABEL = 'General'
+const COMPANY_GENERAL_CLIENT_LABEL = 'Company-wide'
 
 export function formatActivityLog(
   log: ActivityLogWithActor,
@@ -87,9 +87,7 @@ export function formatActivityLog(
  * amounts), but it can also be a large nested blob. Serialize it compactly
  * and cap the length so one event cannot dominate the prompt.
  */
-export function compactMetadata(
-  metadata: Json | null | undefined
-): string | null {
+function compactMetadata(metadata: Json | null | undefined): string | null {
   if (!metadata || typeof metadata !== 'object') {
     return null
   }
@@ -108,8 +106,8 @@ export function compactMetadata(
 
 /**
  * Resolves project/client display names for the AI prompt. No per-user
- * filtering: this route is admin-only (assertAdmin above), so the caller may
- * see every referenced project and client.
+ * filtering: its one caller, the dashboard summary route, is admin-only
+ * (`assertAdmin`), so the caller may see every referenced project and client.
  */
 export async function buildActivityContext(
   logs: ActivityLogWithActor[]
@@ -175,13 +173,13 @@ export async function buildActivityContext(
   }
 }
 
-export function dedupeIds(values: Array<string | null>): string[] {
+function dedupeIds(values: Array<string | null>): string[] {
   return Array.from(
     new Set(values.filter((value): value is string => Boolean(value)))
   )
 }
 
-export function resolveProjectClientLabels(
+function resolveProjectClientLabels(
   log: ActivityLogWithActor,
   context: ActivityContext
 ): { project: string; client: string } {
@@ -229,7 +227,7 @@ export function resolveProjectClientLabels(
   return { project: projectName, client: clientName }
 }
 
-export function selectFirstNonEmpty(
+function selectFirstNonEmpty(
   values: Array<string | null | undefined>,
   fallback: string
 ): string {
@@ -245,7 +243,7 @@ export function selectFirstNonEmpty(
   return fallback
 }
 
-export function readMetadataString(
+function readMetadataString(
   source: Json | null | undefined,
   path: string[]
 ): string | null {

@@ -16,12 +16,10 @@ export type PasswordChangedEmailArgs = {
 /**
  * Sent after a password change has already taken effect.
  *
- * Replaces Supabase's stock `password_changed` notification, which was the last
- * piece of auth mail still going out unbranded and still pointing recipients at
- * a "support" desk we don't run. It carries no link on purpose: the one thing a
- * recipient should do if this wasn't them is write to a human, and a button in
- * a message about a security event is exactly the shape of the phishing this
- * flow already had trouble being mistaken for.
+ * Stands in for Supabase's stock `password_changed` notification. It carries no
+ * link on purpose: the one thing a recipient should do if this wasn't them is
+ * write to a human, and a button in a message about a security event is the
+ * shape of phishing.
  */
 export function passwordChangedEmail({
   destination,

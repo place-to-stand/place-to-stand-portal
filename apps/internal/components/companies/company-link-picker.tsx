@@ -14,7 +14,7 @@ import { getJson } from '@/lib/http/get-json'
 
 export const COMPANY_OPTIONS_QUERY_KEY = ['companyOptions'] as const
 
-export function useCompanyOptions() {
+function useCompanyOptions() {
   return useQuery<CompanyOption[]>({
     queryKey: COMPANY_OPTIONS_QUERY_KEY,
     queryFn: () => getJson<CompanyOption[]>('/api/companies/options'),

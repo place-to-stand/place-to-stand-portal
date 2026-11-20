@@ -1,9 +1,9 @@
 /**
- * Hours, money and percentages, formatted the same way everywhere: pages, exports, emails,
- * PDFs, notifications. This file is the only place either is built
- * (`pts/copy` fails the lint on a hand-rolled copy).
+ * Hours, money and percentages, formatted the same way everywhere: pages,
+ * exports, emails, PDFs, notifications. This file is the only place they are
+ * built (`pts/copy` fails the lint on a hand-rolled copy).
  *
- * Both formatters pin the `en-US` locale so the server and every browser
+ * The formatters pin the `en-US` locale so the server and every browser
  * render identical strings (no hydration mismatches). It has no imports, so
  * non-React packages (`@pts/pdf`) can depend on it too.
  *

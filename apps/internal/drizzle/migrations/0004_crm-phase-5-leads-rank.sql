@@ -1,1 +1,0 @@
-ALTER TABLE "leads" ADD COLUMN "rank" text DEFAULT 'zzzzzzzz' NOT NULL;

@@ -19,7 +19,7 @@ import { ProjectsLandingFilters } from './projects-landing-filters'
 import { PROJECTS_TABS } from '../_lib/tabs'
 import { PagePanel } from '@/components/layout/page-panel'
 
-export type ProjectsLandingAdminSectionProps = {
+type ProjectsLandingAdminSectionProps = {
   projects: LandingProject[]
   landingClients: Array<{ id: string; name: string; slug: string | null }>
   clients: ClientPickerRow[]
@@ -65,8 +65,8 @@ export function ProjectsLandingAdminSection({
       tabs={memberView ? PROJECTS_TABS.slice(0, 1) : PROJECTS_TABS}
       activeTab='projects'
       count={
-        // R2/03.E5: the implicit default status view must not read as
-        // filtered — show a plain visible-count until a filter is active.
+        // The implicit default status view must not read as filtered: show
+        // a plain visible count until a filter is active.
         filtersActive
           ? {
               label: 'projects',

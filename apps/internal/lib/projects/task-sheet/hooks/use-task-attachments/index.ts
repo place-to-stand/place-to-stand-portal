@@ -44,8 +44,8 @@ const toPersistedDraft = (attachment: AttachmentRow): AttachmentDraft => ({
  * carries them, otherwise from a per-task fetch (board rows only carry
  * `attachmentCount`). The only state is the unsaved delta: new uploads and
  * removals. A reset clears the delta and never writes a list, so a reset
- * queued in a transition cannot land after the fetch and blank the sheet —
- * which is what made attachments intermittently vanish on open.
+ * queued in a transition cannot land after the fetch and blank the sheet's
+ * attachments on open.
  */
 export const useTaskAttachments = ({
   task,
@@ -339,8 +339,4 @@ export const useTaskAttachments = ({
   }
 }
 
-export type {
-  AttachmentItem,
-  UseTaskAttachmentsArgs,
-  UseTaskAttachmentsReturn,
-} from './types'
+export type { AttachmentItem, UseTaskAttachmentsReturn } from './types'

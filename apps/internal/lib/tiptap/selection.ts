@@ -2,9 +2,9 @@ import { AllSelection, NodeSelection, TextSelection } from '@tiptap/pm/state'
 import type { Editor } from '@tiptap/react'
 
 /**
- * Checks if a value is a valid number (not null, undefined, or NaN)
- * @param value - The value to check
- * @returns boolean indicating if the value is a valid number
+ * Checks if a value is a usable document position (a number, zero or more)
+ * @param pos - The value to check
+ * @returns boolean indicating if the value is a valid position
  */
 export function isValidPosition(pos: number | null | undefined): pos is number {
   return typeof pos === 'number' && pos >= 0
@@ -27,13 +27,11 @@ export function isNodeTypeSelected(
   const { selection } = editor.state
   if (selection.empty) return false
 
-  // Direct node selection check
   if (selection instanceof NodeSelection) {
     const selectedNode = selection.node
     return selectedNode ? nodeTypeNames.includes(selectedNode.type.name) : false
   }
 
-  // Depth-based ancestor node check
   if (checkAncestorNodes) {
     const { $from } = selection
     for (let depth = $from.depth; depth > 0; depth--) {

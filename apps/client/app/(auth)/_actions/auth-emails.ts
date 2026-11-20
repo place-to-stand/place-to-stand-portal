@@ -22,7 +22,7 @@ const emailSchema = z.email()
  * gets to learn, so an unknown address, an invalid one and a delivery failure
  * are reported identically. The real reason is logged, never returned.
  */
-export type AuthEmailResult = { ok: true }
+type AuthEmailResult = { ok: true }
 
 const GENERIC_RESULT: AuthEmailResult = { ok: true }
 
@@ -133,9 +133,9 @@ async function dispatch(
  * Supabase's link completes the implicit flow and returns the session in the URL
  * fragment, which browsers never send to the server — a route handler sees no
  * credentials and bounces to /sign-in. Verifying the token hash server-side is
- * the only form that can set a cookie. It also takes these links off Supabase's
- * redirect allowlist entirely, which is what made password reset fall back to
- * the sign-in screen: `/force-reset-password` was never an allowed target.
+ * the only form that can set a cookie. It also keeps these links off Supabase's
+ * redirect allowlist, where `/force-reset-password` is not an allowed target
+ * and a reset link would fall back to the sign-in screen.
  *
  * `/auth/confirm` already routes `recovery` to the reset form, so no
  * `redirect_to` is needed for that type.

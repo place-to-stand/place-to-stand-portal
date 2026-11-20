@@ -35,15 +35,15 @@ import { serializeComment, type CliComment } from './serializers/comment'
 import { serializeTask, type CliTask } from './serializers/task'
 import { UUID_PATTERN } from '@pts/db/uuid'
 
-export type CreateTaskInput = z.output<typeof cliCreateTaskSchema>
-export type UpdateTaskInput = z.output<typeof cliUpdateTaskSchema>
+type CreateTaskInput = z.output<typeof cliCreateTaskSchema>
+type UpdateTaskInput = z.output<typeof cliUpdateTaskSchema>
 
 /**
  * A write that landed. `warnings` lists follow-up steps that failed after
  * the save (page refresh, read-back): the task exists, so callers must not
  * retry the write.
  */
-export type TaskWriteOutcome = {
+type TaskWriteOutcome = {
   task: CliTask | { id: string }
   warnings?: string[]
 }
@@ -84,7 +84,7 @@ export async function resolveProjectId(
   return project.id
 }
 
-export type TaskListRequest = {
+type TaskListRequest = {
   /** Project slug or UUID. */
   project?: string
   lead?: string

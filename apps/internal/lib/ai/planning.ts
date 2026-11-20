@@ -9,10 +9,6 @@ import {
   type GitHubAuth,
 } from '@/lib/github/client'
 
-// ---------------------------------------------------------------------------
-// System prompt builder
-// ---------------------------------------------------------------------------
-
 export function buildPlanningSystemPrompt(
   taskTitle: string,
   taskDescription: string | null,
@@ -70,10 +66,6 @@ Structure your plan with:
 Keep the plan concise but comprehensive. Focus on the "what" and "why", not boilerplate. Use markdown formatting.`
 }
 
-// ---------------------------------------------------------------------------
-// Tool definitions for Claude tool use
-// ---------------------------------------------------------------------------
-
 const readFileSchema = z.object({
   path: z
     .string()
@@ -122,7 +114,7 @@ export function createPlanningTools(
           if (result.type === 'dir') {
             return `"${path}" is a directory. Entries:\n${result.entries.map(e => `  ${e.type === 'dir' ? '\u{1F4C1}' : '\u{1F4C4}'} ${e.name}`).join('\n')}`
           }
-          // Truncate very large files
+          // Files over 50,000 characters are cut, with a note of the full size.
           const content =
             result.content.length > 50000
               ? result.content.slice(0, 50000) +

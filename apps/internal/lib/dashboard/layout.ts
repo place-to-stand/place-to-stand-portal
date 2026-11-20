@@ -27,7 +27,7 @@ export const DASHBOARD_WIDGET_IDS = [
 
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number]
 
-export const WIDGET_CAPABILITIES: Record<DashboardWidgetId, Capability> = {
+const WIDGET_CAPABILITIES: Record<DashboardWidgetId, Capability> = {
   notifications: 'widget.notifications',
   'my-tasks': 'widget.my_tasks',
   pipeline: 'widget.pipeline',
@@ -70,7 +70,7 @@ const DEFAULT_PLACEMENT: Record<
   },
 }
 
-export function widgetsForRole(role: Role): Set<DashboardWidgetId> {
+function widgetsForRole(role: Role): Set<DashboardWidgetId> {
   return new Set(
     DASHBOARD_WIDGET_IDS.filter(id => roleCan(role, WIDGET_CAPABILITIES[id]))
   )

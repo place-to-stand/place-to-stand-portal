@@ -1,11 +1,10 @@
 import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
 
-// PRD 004 §03: per-view sort allowlist (D6/R5). Submissions are OFFSET
+// Sort allowlist for the submissions pages. Submissions are offset
 // paginated, so each field here needs only a matching ORDER BY expression in
-// the query — no cursor descriptors. `received` maps to last_activity_at,
-// the column the Received column renders and today's hardcoded order.
-// `source` is worked out in code (describeAttribution), so the query sorts
-// it in memory.
+// the query, no cursor descriptors. `received` maps to last_activity_at,
+// the column the Received column renders. `source` is worked out in code
+// (describeAttribution), so the query sorts it in memory.
 const SUBMISSION_SORT_FIELDS = [
   'received',
   'form',
@@ -41,7 +40,7 @@ export function parseSubmissionsSort(
 }
 
 /**
- * `?contact=` (PRD 008 §7). One param, two states, same convention as
+ * `?contact=`. One param, two states, same convention as
  * `?unacknowledged=`: '1' = rows that identify someone, '0' = anonymous rows.
  */
 export function parseContactFilter(

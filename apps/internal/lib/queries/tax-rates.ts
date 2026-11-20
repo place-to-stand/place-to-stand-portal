@@ -6,11 +6,8 @@ import { db, type DbTx } from '@/lib/db'
 
 /** The default client, or the transaction Settings → Billing saves in. */
 type Executor = typeof db | DbTx
-import { taxRates } from '@/lib/db/schema'
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+import { taxRates } from '@/lib/db/schema'
 
 export type TaxRateRow = {
   id: string
@@ -22,16 +19,12 @@ export type TaxRateRow = {
   updated_at: string
 }
 
-export type TaxRateInput = {
+type TaxRateInput = {
   state: string
   rate: string
   label: string
   isActive: boolean
 }
-
-// ---------------------------------------------------------------------------
-// Selection
-// ---------------------------------------------------------------------------
 
 const taxRateSelection = {
   id: taxRates.id,
@@ -42,10 +35,6 @@ const taxRateSelection = {
   createdAt: taxRates.createdAt,
   updatedAt: taxRates.updatedAt,
 } as const
-
-// ---------------------------------------------------------------------------
-// Queries
-// ---------------------------------------------------------------------------
 
 export async function listTaxRates(): Promise<TaxRateRow[]> {
   const rows = await db
@@ -106,26 +95,6 @@ export async function updateTaxRate(
 
   return mapTaxRateRow(rows[0]!)
 }
-
-export async function toggleTaxRateActive(
-  id: string,
-  isActive: boolean
-): Promise<TaxRateRow> {
-  const rows = await db
-    .update(taxRates)
-    .set({
-      isActive,
-      updatedAt: sql`timezone('utc'::text, now())`,
-    })
-    .where(eq(taxRates.id, id))
-    .returning(taxRateSelection)
-
-  return mapTaxRateRow(rows[0]!)
-}
-
-// ---------------------------------------------------------------------------
-// Mapper
-// ---------------------------------------------------------------------------
 
 function mapTaxRateRow(row: {
   id: string

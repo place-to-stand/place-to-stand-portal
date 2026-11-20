@@ -5,7 +5,6 @@ import { authorizeRoute } from '@/lib/auth/guard'
 import { HttpError } from '@/lib/errors/http'
 import { searchCommandPalette } from '@/lib/queries/command-palette'
 
-// Validate before querying.
 const querySchema = z.object({
   q: z.string().trim().min(2).max(100),
 })

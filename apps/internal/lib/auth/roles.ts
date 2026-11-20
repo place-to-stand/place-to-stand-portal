@@ -70,8 +70,8 @@ export function filterNavGroupsForRole<
 
 /**
  * Whether a role may run an activity feed query with these filters. Admins
- * read everything. SALES may read only lead and contact activity, and only
- * when the query names those target types (no project or client scoping,
+ * read everything. SALES may read only lead, contact and company activity,
+ * and only when the query names those target types (no project or client scoping,
  * which would reach admin-only records).
  */
 export function canReadActivity(

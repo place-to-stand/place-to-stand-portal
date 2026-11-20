@@ -7,7 +7,7 @@ import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 
 export const TASK_TIME_LOGS_KEY = 'task-time-logs'
 
-export type TaskTimeLogsData = {
+type TaskTimeLogsData = {
   entries: TimeLogEntry[]
   totalHours: number
   isLoading: boolean

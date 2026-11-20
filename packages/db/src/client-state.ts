@@ -4,13 +4,14 @@ import { companies } from './schema'
 
 /**
  * Client state, in one place. Every read goes through a SQL function that
- * takes the company id (0113), never an inline subquery: drizzle may write
- * the outer column unqualified, which inside a subquery would bind to the
+ * takes the company id, never an inline subquery: drizzle may write the
+ * outer column unqualified, which inside a subquery would bind to the
  * subquery's own `id`.
+ *
  * A client is a company you bill: billing lives in
  * `client_billing_periods` (one row per stretch of billing, by month), read
- * through two SQL functions defined in migration 0113 that the portal view
- * also uses:
+ * through SQL functions (the portal view uses `company_is_client` too),
+ * among them:
  *
  * - `company_billing_open(id)`: billing hasn't ended (it runs this month, or
  *   a restart is scheduled), archived or not.

@@ -9,7 +9,7 @@ import { UUID_PATTERN } from '@pts/db/uuid'
 
 /**
  * Migration 0111 folded clients into companies. The CLI and MCP keep
- * accepting a client's old id, for good (decided Oct 30): old activity rows
+ * accepting a client's old id, for good: old activity rows
  * and saved links still carry them. This returns the company it became (from
  * archive_sales_tools.client_id_map, which is kept permanently), or the input
  * unchanged.

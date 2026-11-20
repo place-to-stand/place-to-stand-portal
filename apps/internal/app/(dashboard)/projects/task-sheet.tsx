@@ -63,10 +63,8 @@ import { SheetActivitySection } from '@/components/sheets/sheet-activity-section
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
 
-// Survives page remounts (module scope): navigating to a task URL changes a
-// dynamic route param, which remounts the whole page — including this sheet.
-// When the outgoing page had the sheet open (the create→edit transition, or
-// switching tasks with the sheet up), the incoming instance skips its mount
+// Survives page remounts (module scope): when a route change remounts the
+// page while this sheet is open, the incoming instance skips its mount
 // animation so the swap doesn't read as the sheet closing and reopening.
 let sheetOpenBeforePageSwap = false
 
@@ -199,7 +197,6 @@ export function TaskSheet(props: TaskSheetProps) {
   const attachmentsDisabled = isPending || !props.canManage
   const dropDisabled = attachmentsDisabled || isUploadingAttachments
 
-  // ---- Form controls (undo/redo, keyboard shortcuts) ----
   const isEditing = Boolean(props.task)
   const { duplicate } = useSheetParams()
   const historyKey = props.task?.id ?? 'task:new'
@@ -232,7 +229,6 @@ export function TaskSheet(props: TaskSheetProps) {
     [isEditing, isPending]
   )
 
-  // ---- Drag & drop ----
   const hasDraggedFiles = useCallback(
     (event: DragEvent<HTMLDivElement>) =>
       Array.from(event.dataTransfer?.types ?? []).includes('Files'),
@@ -331,7 +327,6 @@ export function TaskSheet(props: TaskSheetProps) {
     return props.projects.find(project => project.id === props.task?.project_id)
   }, [props.projects, props.task])
 
-  // ---- Time section + time-log dialog (edit mode only) ----
   const queryClient = useQueryClient()
   const [isTimeLogDialogOpen, setIsTimeLogDialogOpen] = useState(false)
   const [timeLogDialogMode, setTimeLogDialogMode] = useState<'create' | 'edit'>(
@@ -388,7 +383,7 @@ export function TaskSheet(props: TaskSheetProps) {
 
   const taskPanelProjectId = props.task?.project_id ?? null
   const taskPanelClientId = taskProject?.client?.id ?? null
-  // The form's lead or project as saved: a lead task has no project.
+  // The form's current lead: a lead task has no project.
   const watchedLeadId = form.watch('leadId') ?? null
   // Project members (non-admins) don't see time logs or planning.
   const canDeploy = Boolean(
@@ -667,7 +662,7 @@ export function TaskSheet(props: TaskSheetProps) {
           </div>
         </SheetContent>
       </Sheet>
-      {/* Params are built lazily inside this branch (W4): the lead overlay's
+      {/* Params are built lazily inside this branch: the lead overlay's
           init payload doesn't guarantee the full ProjectWithRelations shape,
           and it never renders the section (create-only). */}
       {isAdmin && props.task && taskProject ? (

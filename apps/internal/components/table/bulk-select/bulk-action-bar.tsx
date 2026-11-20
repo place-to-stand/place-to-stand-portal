@@ -25,7 +25,7 @@ import type { RowSelection } from './use-row-selection'
 import { describeBulkResult, type BulkVerb } from './bulk-result-toast'
 import { CHUNK_FAILED, runInChunks } from '@/lib/bulk/run-in-chunks'
 
-/** URL params that open sheets or page the list, not filters. */
+/** URL params that page the list rather than filter it. */
 const NON_FILTER_PARAMS = new Set(['page'])
 
 /**
@@ -66,7 +66,7 @@ export type RunBulkAction = (
 ) => void
 
 /** What the bar reads of a selection: a list's ticks or a board's cards. */
-export type BulkBarSelection = Pick<
+type BulkBarSelection = Pick<
   RowSelection,
   | 'ids'
   | 'allMatching'

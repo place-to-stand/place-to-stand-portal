@@ -59,9 +59,8 @@ const COLUMN_CLASS = 'w-8 pl-2 pr-0'
 
 /**
  * Boxes stay out of sight until they are useful: a row's box shows while
- * the row is hovered or focused, and once
- * any row is ticked every box shows. Phones have no hover, so the column
- * is hidden there.
+ * the row is hovered or focused, and once any row is ticked every box shows.
+ * Phones have no hover, so the column is hidden there.
  */
 const HIDDEN_BOX =
   'opacity-0 transition-opacity focus-visible:opacity-100 [tr:focus-within_&]:opacity-100 [tr:hover_&]:opacity-100'

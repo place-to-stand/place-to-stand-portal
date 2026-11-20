@@ -12,7 +12,7 @@ import { versionMs } from '@/lib/sheets/save-conflict/types'
 
 type UnsavedChangesCopy = Parameters<typeof useUnsavedChangesWarning>[0]
 
-export type UseSheetLifecycleArgs = {
+type UseSheetLifecycleArgs = {
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Unsaved work the close confirmation should warn about. */
@@ -79,10 +79,10 @@ export type SheetLifecycle = {
  * The open/close half of an entity sheet: transitions with honest meanings,
  * the re-baseline on open, and the guarded close.
  *
- * This exists because the same bug was written six times independently —
- * a form reset wrapped in the save transition, so every sheet announced
- * "Saving..." while closing an untouched form. Separating the transitions is
- * the fix; putting them behind one hook is what stops the seventh.
+ * The transitions are kept apart on purpose: a form reset wrapped in the
+ * save transition makes a sheet announce "Saving..." while closing an
+ * untouched form. Keeping both behind one hook stops each sheet from
+ * re-creating that bug.
  */
 export const useSheetLifecycle = ({
   open,

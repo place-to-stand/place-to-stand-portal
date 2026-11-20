@@ -266,7 +266,7 @@ export async function writeAttachmentRows(
  * never be attached; the save is the one place that knows what actually
  * landed on (or left) the task.
  */
-export type AttachmentActivityContext = {
+type AttachmentActivityContext = {
   taskTitle: string
   projectId: string | null
   companyId: string | null

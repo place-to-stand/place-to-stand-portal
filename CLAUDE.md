@@ -42,6 +42,8 @@ The two main apps are `apps/internal/` (internal portal) and `apps/client/` (cli
 - `npm run lint` - Lint all apps via Turbo
 - `npm run type-check` - Type-check all apps via Turbo
 - `npm run cli:link` - Build the `pts` CLI and link it onto your PATH (see `packages/cli/README.md`)
+- `npm run knip` - Find unused files, exports and dependencies (config in `knip.json`)
+- `npm run test:e2e:seed` - Wipe the LOCAL database and load made-up data (`e2e/seed/`); the browser tests (`E2E_WRITES=1 npm run test:e2e`) run on it
 - `npm run design-tokens` - Regenerate `docs/design-system/tokens.json` from the theme sources (`npm run lint` checks it)
 
 ### CI and pre-commit
@@ -96,7 +98,7 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 - **Auth**: Supabase Auth with session-based authentication
 - **Storage**: Supabase Storage (buckets: `user-avatars`, `task-attachments`)
 - **State**: React Server Components + TanStack React Query
-- **Styling**: Tailwind CSS v4, Radix UI, shadcn/ui components
+- **Styling**: Tailwind CSS v4, Base UI (`@base-ui/react`) wrapped in `@pts/ui`, shadcn-style components
 - **Analytics**: PostHog (client and server-side)
 - **Email**: Resend
 - **GitHub Integration**: GitHub App for repo linking (`packages/github`)
@@ -303,7 +305,7 @@ API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 
 **Component library:**
 
-- Radix UI primitives in `apps/internal/components/ui/`
+- Base UI primitives wrapped in `packages/ui` (`@pts/ui/*`); app-only ones in `apps/internal/components/ui/`
 - Custom business components in `apps/internal/components/` organized by feature
 - Rich text editor: TipTap with extensions (highlight, link, image, typography, etc.)
 - Drag-and-drop: `@dnd-kit` for kanban boards and task ordering
@@ -367,7 +369,7 @@ await logTaskCreated(taskId, userId)
 ### Marketing Form Intake
 
 The marketing site's forms land in `form_submissions` and surface at `/submissions`. Nothing
-creates a lead directly — leads are promoted from a submission by hand.
+creates a lead from one: someone reads the submission and adds the lead by hand.
 
 **Endpoints:**
 

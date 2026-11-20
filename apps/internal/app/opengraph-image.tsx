@@ -15,7 +15,7 @@ import { getBusinessIdentityOrDefaults } from '@/lib/business/identity'
  * and website from Settings → Business. Read per request, so it follows a
  * rename without a redeploy.
  *
- * Fonts come from public/fonts, the same files the referral PDF uses.
+ * Fonts are read from public/fonts.
  */
 
 export const dynamic = 'force-dynamic'

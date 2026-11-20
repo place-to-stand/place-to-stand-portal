@@ -25,8 +25,8 @@ const ACKNOWLEDGEMENT_OPTIONS = [
   { value: 'acknowledged', label: 'Acknowledged' },
 ]
 
-// The URL keeps the original `?unacknowledged=` key so existing links still
-// work; '0' now selects the complement rather than meaning "unset".
+// One `?unacknowledged=` key with two states: '1' selects unacknowledged
+// rows, '0' acknowledged ones; absent means no filter.
 const ACK_PARAM: Record<AcknowledgementFilter, string> = {
   unacknowledged: '1',
   acknowledged: '0',
@@ -57,8 +57,8 @@ type SubmissionsFiltersProps = {
   /** `?contact=` — true: identified rows only, false: anonymous only. */
   activeContact?: boolean
   /**
-   * PW1 acknowledgement quick filter — List tab only (archived rows are
-   * never unacknowledged, so the archive page omits the prop entirely).
+   * Acknowledgement quick filter, List tab only (archived rows never count
+   * as unread, so the archive page leaves it off).
    */
   activeAcknowledgement?: AcknowledgementFilter
   showUnacknowledgedFilter?: boolean

@@ -30,7 +30,7 @@ type ProjectMembersFieldProps = {
   disabled?: boolean
 }
 
-export const projectMembersQueryKey = (projectId: string | null) =>
+const projectMembersQueryKey = (projectId: string | null) =>
   ['projectMembers', projectId] as const
 
 /**

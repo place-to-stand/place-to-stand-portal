@@ -51,10 +51,6 @@ import { US_STATES } from '@/lib/companies/billing/us-states'
 import { newRowId, RowChangeBadge, rowChange } from './row-change'
 import { DialogForm } from '@/components/ui/dialog-form'
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
 // Every column sorts; the default is Label A-Z.
 const TAX_RATE_SORT_FIELDS = ['state', 'rate', 'label', 'active'] as const
 const DEFAULT_TAX_RATE_SORT = { field: 'label', direction: 'asc' } as const
@@ -62,10 +58,6 @@ const DEFAULT_TAX_RATE_SORT = { field: 'label', direction: 'asc' } as const
 const DISCARD_TITLE = 'Discard changes?'
 const DISCARD_DESCRIPTION =
   'You have unsaved tax rate changes that will be lost. Continue without saving?'
-
-// ---------------------------------------------------------------------------
-// Form Schema
-// ---------------------------------------------------------------------------
 
 const taxRateFormSchema = z.object({
   state: z.string().trim().min(1, 'State is required').max(50),
@@ -83,10 +75,6 @@ const taxRateFormSchema = z.object({
 })
 
 type TaxRateFormValues = z.infer<typeof taxRateFormSchema>
-
-// ---------------------------------------------------------------------------
-// Main Component
-// ---------------------------------------------------------------------------
 
 type TaxRatesSectionProps = {
   /** The rows as they stand in the page form. */
@@ -114,7 +102,7 @@ export function TaxRatesSection({
   )
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingRate, setEditingRate] = useState<TaxRateRow | null>(null)
-  // Local sort state (PRD 004 §03): two small config tables share this page,
+  // Local sort state: two small config tables share this page,
   // so sort stays out of the URL. undefined = the 'label:asc' default.
   const [sort, setSort] = useState<SortValue | undefined>(undefined)
 
@@ -352,7 +340,6 @@ export function TaxRatesSection({
         </Table>
       </div>
 
-      {/* Tax Rate Form Dialog */}
       <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent>
           <DialogHeader>

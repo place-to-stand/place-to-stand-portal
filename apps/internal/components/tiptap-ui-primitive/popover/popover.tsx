@@ -6,9 +6,9 @@ import { cn } from '@/lib/tiptap-utils'
 import '@/components/tiptap-ui-primitive/popover/popover.css'
 
 /**
- * Vendored TipTap primitive, rebased from Radix onto Base UI. The export
- * surface and the `tiptap-popover` class hook are unchanged, so the editor's
- * SCSS and both consumers (link, color-highlight) keep working as-is.
+ * Vendored TipTap popover primitive, built on Base UI. It keeps TipTap's
+ * export surface and the `tiptap-popover` class that popover.css styles, for
+ * its two consumers (link, color-highlight).
  */
 
 function Popover({ ...props }: PopoverPrimitive.Root.Props) {

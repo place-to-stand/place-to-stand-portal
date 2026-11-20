@@ -6,9 +6,7 @@
  * Drizzle renders a column without its table name inside a single-table
  * select, so `${users.id}` comes out as plain "id" and binds to the INNER
  * table (contacts.id). The query still runs and silently returns the wrong
- * rows. This happened three times, twice in money code: the project owner's
- * contact id (always null), and `billingTypeAsOfSql` /
- * `commissionColumnAsOfSql` (monthly close, by period).
+ * rows, which has broken money code (the monthly close) before.
  *
  * A column is "outer" when its table is not itself interpolated as a table
  * (`from ${t}` / `join ${t}`) in the same template. Columns of the inner

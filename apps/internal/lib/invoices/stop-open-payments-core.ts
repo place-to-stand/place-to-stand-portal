@@ -33,7 +33,7 @@ export type StopPaymentsOutcome =
   | 'paid'
   | 'unreachable'
 
-/** Why an invoice can't leave Sent yet, for each outcome but `clear`. */
+/** Why the invoice can't be voided, reverted, archived or edited yet, for each outcome but `clear`. */
 export function stopPaymentsRefusal(
   outcome: Exclude<StopPaymentsOutcome, 'clear'>,
   action: 'voided' | 'reverted to draft' | 'archived' | 'edited'
@@ -58,8 +58,8 @@ function isMissing(error: unknown): boolean {
 }
 
 /**
- * Makes sure no open Stripe payment can still pay this invoice, before it
- * leaves Sent (void, or back to draft). Cancels an open payment intent and
+ * Makes sure no open Stripe payment can still pay this invoice, before it is
+ * voided, reverted to draft, archived or edited. Cancels an open payment intent and
  * expires an open checkout session. Anything other than `clear` means the
  * caller must refuse: going ahead would take the client's money for an
  * invoice that is no longer payable.

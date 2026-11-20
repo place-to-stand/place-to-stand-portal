@@ -34,13 +34,6 @@ export type FieldError = Error & { field?: TimeLogFormField }
 
 export const TIME_LOGS_QUERY_KEY = 'project-time-logs' as const
 
-export type ProjectTimeLogHistoryDialogParams = {
-  projectId: string
-  projectName: string
-  clientName: string | null
-  currentUserId: string
-}
-
 export type TimeLogEntry = TimeLogWithUser & {
   linked_tasks: Array<{
     id: string

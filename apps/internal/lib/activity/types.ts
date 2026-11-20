@@ -45,7 +45,7 @@ export type ActivityLogWithActor = DbActivityLog & {
 export const ACTIVITY_TARGET_TYPES = [
   'TASK',
   'PROJECT',
-  // Retired in 0113: billing events sit on the COMPANY. Kept so old filters parse.
+  // Not written: billing events sit on the COMPANY. Kept so old filters parse.
   'CLIENT',
   'CONTACT',
   'COMPANY',
@@ -67,7 +67,7 @@ export type ActivityTargetType = (typeof ACTIVITY_TARGET_TYPES)[number]
  * Every verb a writer may emit. Verbs are stored as text, so historical rows
  * for retired verbs (page views, the removed proposals feature, task/PR
  * suggestions) still render through the feed's string-based fallbacks; they
- * are simply no longer part of the writable vocabulary.
+ * are not part of the writable vocabulary.
  */
 export const ActivityVerbs = {
   // Tasks
@@ -151,8 +151,8 @@ export const ActivityVerbs = {
   INVOICE_VIEWED: 'INVOICE_VIEWED',
   INVOICE_PAID: 'INVOICE_PAID',
   INVOICE_VOIDED: 'INVOICE_VOIDED',
-  // Retired with the share toggle (a link is live exactly while sent); kept so
-  // existing activity rows still resolve.
+  // Not written (a share link is live exactly while the invoice is sent);
+  // kept so existing activity rows still resolve.
   INVOICE_SHARED: 'INVOICE_SHARED',
   INVOICE_UNSHARED: 'INVOICE_UNSHARED',
   INVOICE_ARCHIVED: 'INVOICE_ARCHIVED',

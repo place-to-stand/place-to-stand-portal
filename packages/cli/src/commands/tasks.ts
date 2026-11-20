@@ -8,7 +8,7 @@ import { emit, emitMessage } from '../output.js'
 
 type Task = {
   id: string
-  /** Absent from servers that predate it, so the URL line is best-effort. */
+  /** May be absent or null, so the URL line is best-effort. */
   path?: string | null
 }
 
@@ -71,9 +71,8 @@ async function withUrls<T extends Task>(
 }
 
 /**
- * The portal URL also goes to stderr, so a human
- * watching the terminal sees it while `pts tasks create | jq` still gets
- * clean JSON on stdout.
+ * The portal URL also goes to stderr, so a human watching the terminal sees
+ * it while `pts tasks create | jq` still gets clean JSON on stdout.
  */
 function emitTaskUrl(task: { url: string | null }): void {
   if (task.url) {

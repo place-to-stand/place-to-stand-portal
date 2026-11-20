@@ -73,7 +73,7 @@ export async function loadTaskRows(
     id: tasksTable.id,
     projectId: tasksTable.projectId,
     // The lead link must ride along: the task sheet round-trips it on save,
-    // so omitting it here made every board edit silently null tasks.lead_id.
+    // so omitting it here would make every board edit null tasks.lead_id.
     leadId: tasksTable.leadId,
     title: tasksTable.title,
     description: tasksTable.description,
@@ -107,8 +107,8 @@ export async function loadTaskRows(
     return { rows: [], assigneeRows: [] }
   }
 
-  // Two grouped queries replace the old per-row correlated subqueries,
-  // which executed 2 index probes per task row per request.
+  // Counts come from grouped queries over all the rows at once, never a
+  // correlated subquery per task row.
   const taskIds = rows.map(row => row.id)
   const [
     commentCounts,
@@ -190,7 +190,7 @@ export async function loadTaskRows(
   }
 }
 
-export async function loadTaskAssigneeRows(
+async function loadTaskAssigneeRows(
   taskIds: string[]
 ): Promise<TaskAssigneeRow[]> {
   if (!taskIds.length) {

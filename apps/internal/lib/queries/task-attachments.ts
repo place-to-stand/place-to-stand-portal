@@ -27,7 +27,7 @@ type AttachmentSelection = {
   } | null
 }
 
-export type TaskAttachmentDownloadMetadata = {
+type TaskAttachmentDownloadMetadata = {
   id: string
   storagePath: string
   originalName: string

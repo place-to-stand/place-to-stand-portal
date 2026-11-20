@@ -4,7 +4,7 @@ import { createContext, useContext, type ReactNode } from 'react'
 
 import type { SheetEntityKey } from './entities'
 
-export type SheetStackEntryValue = {
+type SheetStackEntryValue = {
   entity: SheetEntityKey
   /** The sheet's param value (`<uuid>`, `new`, `copy-<uuid>`); null while closed. */
   value: string | null

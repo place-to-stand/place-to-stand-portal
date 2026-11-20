@@ -7,13 +7,13 @@ import { useStartRefresh } from '@/components/layout/list-refresh'
 import { writeShallowUrl } from '@/lib/sheets/shallow-url'
 
 /**
- * Filter/search key declaration (PRD 004 §03, R2). Filters are declared
+ * Filter/search key declaration. Filters are declared
  * SEPARATELY from sort — `sort` must never be listed here, so sort-only
  * changes can never read as "filtered" (no `Showing N of M`, no
  * filtered-empty messaging).
  */
 type ListFilterConfig = {
-  /** Raw-value validator; invalid params don't count as active (PRD-003 R4). */
+  /** Raw-value validator; invalid params don't count as active. */
   isValid?: (value: string) => boolean
   /**
    * Normalized default when the param is absent. A param equal to this is
@@ -23,11 +23,11 @@ type ListFilterConfig = {
 }
 
 type UseListParamsOptions = {
-  /** Route the filter state lives on ('/settings/users'). */
+  /** Route the filter state lives on ('/companies'). */
   basePath: string
   /** Pagination keys cleared on every update ('cursor'+'dir', or 'page'). */
   resetKeys: readonly string[]
-  /** Filter/search keys only — never sort (R2). */
+  /** Filter/search keys only — never sort. */
   filters?: Record<string, ListFilterConfig>
   /**
    * Keys the page filters in the browser from data it already holds (a

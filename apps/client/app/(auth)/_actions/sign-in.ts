@@ -5,9 +5,7 @@ import {
   SIGN_IN_THROTTLED_MESSAGE,
 } from '@/lib/auth/throttle'
 
-export type SignInAttemptResult =
-  | { allowed: true }
-  | { allowed: false; error: string }
+type SignInAttemptResult = { allowed: true } | { allowed: false; error: string }
 
 /**
  * Counts one password sign-in attempt before the browser sends it to Supabase.

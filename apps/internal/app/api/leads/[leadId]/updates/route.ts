@@ -7,8 +7,7 @@ import { authorizeRoute } from '@/lib/auth/guard'
  * GET /api/leads/[leadId]/updates
  *
  * Timeline rows for one lead, newest first.
- * CRM endpoint (ADMIN, SALES); the sibling tasks and conversion routes stay
- * admin-only.
+ * CRM endpoint (ADMIN, SALES); the sibling conversion route is admin-only.
  */
 export async function GET(
   _request: Request,

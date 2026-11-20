@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-// SALES: CRM staff (leads and contacts only). See lib/auth/roles.ts.
+// SALES: CRM staff (leads, companies and people). See lib/auth/roles.ts.
 export const USER_ROLES = ['ADMIN', 'CLIENT', 'SALES'] as const
 
 export const createUserSchema = z.object({

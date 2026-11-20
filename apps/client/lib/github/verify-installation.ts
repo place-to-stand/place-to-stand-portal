@@ -42,7 +42,7 @@ export async function ensureInstallationVerified(installation: {
   }
 
   try {
-    // Inside the try on purpose: this now runs during the project page render
+    // Inside the try on purpose: this runs during the project page render
     // (not behind an API route), and a missing GitHub env must degrade to
     // "skip the check", never take the page down.
     const env = getGitHubAppEnv()

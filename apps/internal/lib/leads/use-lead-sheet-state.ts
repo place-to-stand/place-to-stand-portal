@@ -51,7 +51,7 @@ export function useLeadSheetState({
     lead?.status === 'CLOSED_WON' &&
     !lead?.convertedToClientId &&
     Boolean(lead?.companyId)
-  // Winning a lead opens its company's billing (its sheet's Client column) next, for whoever can
+  // Winning a lead opens its company's sheet on billing next, for whoever can
   // make it a client there.
   const canManageClients = roleCan(role, 'clients.manage')
   const { toast } = useToast()
@@ -116,7 +116,7 @@ export function useLeadSheetState({
 
   const handleFormSubmit = useCallback(
     (values: LeadFormValues, mode: SheetSaveMode = 'close') => {
-      // Decision 7: Won needs a company. Say so on the field before asking
+      // Won needs a company. Say so on the field before asking
       // the server, which enforces the same rule.
       const existingWonState = lead
         ? { status: lead.status, companyId: lead.companyId }
@@ -136,7 +136,7 @@ export function useLeadSheetState({
         const result = await saveLead({
           id: lead?.id,
           ...fields,
-          // The server copies the contact's details onto the lead.
+          // The lead links to this contact and reads its details from it.
           contactId: contact?.id,
           contactName: contact?.name ?? '',
           contactEmail: contact?.email ?? null,

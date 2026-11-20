@@ -30,7 +30,7 @@ const moveLeadSchema = z.object({
   rank: z.string().min(1, 'Rank is required'),
 })
 
-export type MoveLeadInput = z.infer<typeof moveLeadSchema>
+type MoveLeadInput = z.infer<typeof moveLeadSchema>
 
 type MoveOutcome =
   | { refused: string }
@@ -128,7 +128,7 @@ async function applyLeadMove(
         return { refused: LEAD_NOT_FOUND_MESSAGE }
       }
 
-      // Decision 7: Won needs a company. The board reverts the card.
+      // Won needs a company. The board reverts the card.
       if (
         breaksWonNeedsCompany(
           { status: targetStatus, companyId: current.companyId },

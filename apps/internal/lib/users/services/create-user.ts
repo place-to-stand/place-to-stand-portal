@@ -13,7 +13,7 @@ import type { CreateUserInput } from '../user-validation'
 
 type Role = CreateUserInput['role']
 
-export type CreatedAuthUser =
+type CreatedAuthUser =
   | { userId: string; temporaryPassword: string }
   | { error: string; alreadyRegistered: boolean }
 

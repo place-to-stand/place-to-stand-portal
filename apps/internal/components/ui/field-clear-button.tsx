@@ -8,8 +8,8 @@ import { cn } from '@/lib/utils'
 /**
  * The × inside a field that empties it (pickers, date fields, search).
  * One size, spot and tooltip everywhere. It sits over the field, left of
- * the chevron; fields reserve `FIELD_CLEAR_PADDING` so text never runs
- * under it.
+ * the chevron; field labels reserve `FIELD_CLEAR_LABEL_SPACE` so text never
+ * runs under it.
  */
 export function FieldClearButton({
   onClear,

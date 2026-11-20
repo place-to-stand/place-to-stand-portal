@@ -87,7 +87,7 @@ async function performRestoreHourBlock(
 
   revalidatePath(HOUR_BLOCKS_PATH)
 
-  // PRD 002 section 05: restoring a closed-month block shows as drift.
+  // Restoring a closed-month block shows as drift.
   const warning = await closedMonthWarning(user, [
     existingHourBlock.billing_month,
   ])

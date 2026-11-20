@@ -148,7 +148,7 @@ export async function loadExistingContact(
   return existing ?? null
 }
 
-/** The plain unique key and its case-blind twin (migration 0124). */
+/** The plain unique key and its case-blind twin. */
 const EMAIL_CONSTRAINTS = ['contacts_email_key', 'uq_contacts_email_lower']
 
 export function isEmailConflict(error: unknown) {

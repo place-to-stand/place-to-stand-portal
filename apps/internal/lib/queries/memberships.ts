@@ -48,7 +48,7 @@ async function touchContacts(executor: Executor, contactIds: string[]) {
 }
 
 /** Current memberships only. */
-export const isCurrentMembership = isNull(memberships.endedAt)
+const isCurrentMembership = isNull(memberships.endedAt)
 
 // Correlated subqueries for selects keyed on a contact or company column.
 // Raw SQL on purpose: they reference the outer row's column, written out
@@ -227,7 +227,7 @@ export async function listContactMemberships(
   return byContact
 }
 
-export type CompanyMember = {
+type CompanyMember = {
   contactId: string
   name: string
   email: string | null
@@ -424,9 +424,10 @@ export class PortalAccessForbiddenError extends Error {
 
 /**
  * Switches a member's portal access to the company's client. Access needs a
- * portal login, so switching it on for a contact without one (or who isn't
- * a current member) does nothing and returns false. Give them a login first
- * (the contact sheet's Create account).
+ * live Client sign-in, so switching it on for a contact without one does
+ * nothing and returns false, as does any change for someone who isn't a
+ * current member. Give them a sign-in first (the person sheet's User
+ * section).
  *
  * The one place portal access is switched on: an actor who can't manage
  * clients (`clients.manage`) throws `PortalAccessForbiddenError`, whatever
@@ -443,7 +444,7 @@ export async function setPortalAccess(
     throw new PortalAccessForbiddenError()
   }
   // Only someone who can sign in to the client portal now: a live Client
-  // sign-in. Nothing here makes one (that's the person sheet's Sign-in).
+  // sign-in. Nothing here makes one (that's the person sheet's User section).
   if (portalAccess && !(await hasLiveClientSignIn(executor, contactId))) {
     return false
   }
@@ -473,7 +474,7 @@ export async function setPortalAccess(
  * CLIENT, not switched off or archived. The one rule for turning portal
  * access on (both sheets show the same, see `canHavePortalAccess`).
  */
-export async function hasLiveClientSignIn(
+async function hasLiveClientSignIn(
   executor: Executor,
   contactId: string
 ): Promise<boolean> {
@@ -491,17 +492,4 @@ export async function hasLiveClientSignIn(
     )
     .limit(1)
   return Boolean(row)
-}
-
-/** The contact has a portal login (`contacts.user_id`). */
-export async function hasPortalLogin(
-  executor: Executor,
-  contactId: string
-): Promise<boolean> {
-  const [row] = await executor
-    .select({ userId: contacts.userId })
-    .from(contacts)
-    .where(eq(contacts.id, contactId))
-    .limit(1)
-  return Boolean(row?.userId)
 }

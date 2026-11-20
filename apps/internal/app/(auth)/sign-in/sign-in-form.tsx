@@ -26,8 +26,9 @@ import { ClientPortalNotice } from './client-portal-notice'
 const INITIAL_STATE: SignInState = {}
 
 /**
- * Hosted Supabase enforces an emails-per-hour limit. Without a visible cooldown a
- * user who clicks twice hits an opaque failure and assumes the feature is broken.
+ * The server throttles sign-in emails per address and IP (`allowAuthEmail`) and
+ * still reports success when it does, so a quick second click can send
+ * nothing. The visible cooldown keeps people from mailing themselves twice.
  */
 const MAGIC_LINK_COOLDOWN_SECONDS = 30
 

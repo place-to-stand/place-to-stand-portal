@@ -4,7 +4,6 @@ import { leadHref } from '@/lib/sheets/hrefs'
 import type { CliLeadRow } from '../queries/leads'
 import { isoTimestamp } from './timestamp'
 
-/** Last touch is the newest entry in `leads updates`. */
 export type CliLead = {
   id: string
   name: string
@@ -17,7 +16,7 @@ export type CliLead = {
   company: string | null
   /** The company's website (read from the company). */
   website: string | null
-  /** The linked company record, when the company name matched one. */
+  /** The lead's company record, if it has one. */
   companyId: string | null
   /** The lead's contact record; name, email and phone are its details. */
   contactId: string

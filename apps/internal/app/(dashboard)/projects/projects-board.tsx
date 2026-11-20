@@ -127,8 +127,8 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
         }
       : null
 
-  // D2/D14: the combobox header is retired; the breadcrumb carries the
-  // active project label and ⌘[/⌘] cycling moves to the shared hook.
+  // The breadcrumb carries the active project label; ⌘[ / ⌘] cycle
+  // projects through the shared hook.
   const activeProjectLabel =
     viewModel.header.projectItems.find(
       item => item.value === viewModel.header.selectedProjectId

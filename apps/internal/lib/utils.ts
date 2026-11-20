@@ -1,3 +1,2 @@
-// cn moved to @pts/ui (PRD 004 D15); re-exported here so existing
-// imports keep working during the migration window.
+// `cn` lives in @pts/ui; re-exported so `@/lib/utils` imports resolve.
 export { cn } from '@pts/ui/cn'

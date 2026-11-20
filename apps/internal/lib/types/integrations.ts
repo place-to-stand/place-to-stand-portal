@@ -9,7 +9,7 @@ import type { projectIntegrationLinks } from '@pts/db/schema'
  */
 export type IntegrationProvider = 'VERCEL' | 'SUPABASE'
 
-export type IntegrationProviderConfig = {
+type IntegrationProviderConfig = {
   provider: IntegrationProvider
   slug: string
   label: string
@@ -46,10 +46,7 @@ export const INTEGRATION_PROVIDERS: Record<
   },
 }
 
-export const INTEGRATION_PROVIDER_ORDER: IntegrationProvider[] = [
-  'VERCEL',
-  'SUPABASE',
-]
+const INTEGRATION_PROVIDER_ORDER: IntegrationProvider[] = ['VERCEL', 'SUPABASE']
 
 export function integrationProviderFromSlug(
   slug: string

@@ -9,7 +9,7 @@ import type { Json } from '@/lib/types/json'
 import { currentActivityAgent } from './agent-context'
 import type { ActivityTargetType, ActivityVerb } from './types'
 
-export type LogActivityOptions = {
+type LogActivityOptions = {
   actorId?: string | null
   actorRole?: UserRoleValue | null
   source?: ActivitySourceValue

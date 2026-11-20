@@ -123,14 +123,13 @@ export function GitHubReposSection({
           const data = await res.json()
           const loadedRepos = data.repos || []
           setRepos(loadedRepos)
-          // Track initial count for dirty state comparison
           if (initialRepoCountRef.current === null) {
             initialRepoCountRef.current = loadedRepos.length
           }
         }
       })
       .catch(() => {
-        // Ignore errors for now
+        // A failed load shows no linked repos.
       })
       .finally(() => {
         setLoading(false)
@@ -293,7 +292,6 @@ export function GitHubReposSection({
     )
   }
 
-  // Determine which repos to display
   // In edit mode: show linked repos (excluding removed) + pending repos
   // In create mode: show only pending repos
   const displayRepos = isCreateMode

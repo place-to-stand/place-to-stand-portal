@@ -45,8 +45,9 @@ function createPostHogClient() {
   })
 }
 
-// Every caller is a server action, so the flush runs after the response is
-// sent instead of holding the save open on a PostHog round trip.
+// Callers run inside a request (server actions, the Stripe webhook, MCP
+// tools), so the flush runs after the response is sent instead of holding it
+// open on a PostHog round trip.
 function flushAndCloseAfterResponse(client: PostHog) {
   after(() => client.shutdown())
 }

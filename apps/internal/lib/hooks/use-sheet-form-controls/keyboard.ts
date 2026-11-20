@@ -4,7 +4,7 @@ import { matchesShortcut } from '@/lib/keyboard/match'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 import { announceSaveMode, type SheetSaveMode } from '@/lib/sheets/save-mode'
 
-export type KeyboardShortcutArgs = {
+type KeyboardShortcutArgs = {
   isActive: boolean
   canSave: boolean
   onSave: (mode: SheetSaveMode) => void

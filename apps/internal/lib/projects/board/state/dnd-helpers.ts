@@ -6,7 +6,7 @@ import type { BoardColumnId } from '../board-constants'
 import { compareTasksByRank } from '../board-utils'
 import type { TaskLookup } from './types'
 
-export type ReorderPlan = {
+type ReorderPlan = {
   projectId: string
   taskId: string
   projectTasks: TaskWithRelations[]

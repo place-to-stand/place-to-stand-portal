@@ -6,8 +6,8 @@ const tokenRequest = new AsyncLocalStorage<true>()
 
 /**
  * Mark `fn` as serving a bearer-token request (CLI or MCP). Such requests
- * have no cookie session, so the page guards in `session.ts` throw a 401
- * there instead of redirecting to the sign-in pages.
+ * have no cookie session, so the page guards in `session.ts` throw a 401 or
+ * 403 there instead of redirecting.
  */
 export function runAsTokenRequest<T>(fn: () => T): T {
   return tokenRequest.run(true, fn)

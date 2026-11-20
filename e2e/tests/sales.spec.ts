@@ -78,7 +78,7 @@ test('sales sees a person with a sign-in read-only, access locked', async ({
   page,
 }) => {
   // The admin test account has a sign-in.
-  const adminEmail = process.env.E2E_ADMIN_EMAIL ?? 'jason@local.test'
+  const adminEmail = process.env.E2E_ADMIN_EMAIL ?? 'ada@example.com'
   await page.goto(`/people?q=${encodeURIComponent(adminEmail)}`)
   await expectHealthy(page)
   // No sign-in or portal access columns for Sales.
@@ -89,8 +89,14 @@ test('sales sees a person with a sign-in read-only, access locked', async ({
     page.getByRole('columnheader', { name: 'Portal access' })
   ).toHaveCount(0)
 
-  // The name cell: the row's middle can be the company link.
-  await page.locator('tbody tr').first().getByRole('cell').first().click()
+  // The name cell (past the select box): the row's middle can be the company
+  // link.
+  await page
+    .locator('tbody tr')
+    .first()
+    .locator('td:not([data-slot=table-select-cell])')
+    .first()
+    .click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await expect(
@@ -283,7 +289,7 @@ test('sales adds a person to a client company, never with portal access', async 
 test('sales can’t rename the staff company', async ({ page }) => {
   // A refused save writes nothing, but a regression would rename it.
   test.skip(!process.env.E2E_WRITES, 'set E2E_WRITES=1 on a throwaway database')
-  const staffName = process.env.E2E_STAFF_COMPANY ?? 'Place To Stand'
+  const staffName = process.env.E2E_STAFF_COMPANY ?? 'Northwind Studio'
   await page.goto(`/companies?q=${encodeURIComponent(staffName)}`)
   await expectHealthy(page)
   const row = page.locator('tbody tr').filter({ hasText: staffName }).first()
@@ -346,7 +352,8 @@ test('sales can’t edit or archive someone else’s lead update', async ({
       .filter({ has: admin.getByText('Log update', { exact: true }) })
       // It opens over the lead sheet: the top one.
       .last()
-    await logDialog.locator('.ProseMirror').click()
+    // The update's own editor (the lead's notes have one too).
+    await logDialog.locator('[id$="-body"] .ProseMirror').click()
     await admin.keyboard.type(marker)
     await logDialog
       .getByRole('button', { name: 'Log update', exact: true })

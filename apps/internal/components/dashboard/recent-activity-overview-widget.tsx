@@ -47,7 +47,7 @@ export function RecentActivityOverviewWidget({
       aria-labelledby='recent-activity-overview-heading'
     >
       {/*
-        gap-0 overrides the Tabs root's default gap-2, which was adding 8px
+        gap-0 overrides the Tabs root's default gap-2, which would add 8px
         between the header rule and the body on top of the body's own py-3.
         Without it the metric cards sit lower than the Hours widget's stat
         cards, which have only their py-3 above them.

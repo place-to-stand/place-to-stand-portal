@@ -1,1 +1,0 @@
-CREATE INDEX "idx_messages_thread_sent_at" ON "messages" USING btree ("thread_id","sent_at" DESC NULLS LAST) WHERE (deleted_at IS NULL);

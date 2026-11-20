@@ -98,11 +98,10 @@ function SidebarProvider({
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (matchesShortcut(event, SHORTCUTS.toggleSidebar)) {
-        // Cmd/Ctrl+B means bold while the caret is in a text field, and the
-        // rich text editor is the obvious case: toggling bold in a task
-        // description was also collapsing the sidebar behind the sheet.
-        // A global chrome shortcut has no business pre-empting the one the
-        // focused control already owns.
+        // Cmd/Ctrl+B means bold while the caret is in a text field (the rich
+        // text editor most of all), so the sidebar shortcut yields to the
+        // focused control there instead of collapsing the sidebar behind a
+        // sheet.
         if (isEditableTarget(event.target)) {
           return
         }

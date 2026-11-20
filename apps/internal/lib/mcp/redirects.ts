@@ -1,13 +1,13 @@
 import 'server-only'
 
 /**
- * Where an authorization code may be sent (PRD 009 Q3: hard allow-list).
+ * Where an authorization code may be sent: a hard allow-list.
  *
- * An MCP access token is a full Supabase session for the admin who approved
+ * An MCP access token is a full Supabase session for the person who approved
  * it — it can change their password, not just call MCP tools. Dynamic client
  * registration lets anyone register a client with any redirect URI, so
- * without this list a phished admin could hand an attacker's server a token
- * by clicking Connect. Codes only ever go to Claude, ChatGPT or the admin's
+ * without this list a phished user could hand an attacker's server a token
+ * by clicking Connect. Codes only ever go to Claude, ChatGPT or the user's
  * own machine.
  *
  * Admitting another MCP client means adding its OAuth callback host here;

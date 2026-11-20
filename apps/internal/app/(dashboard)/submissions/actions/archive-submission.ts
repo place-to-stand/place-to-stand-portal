@@ -14,7 +14,7 @@ import {
 import { submissionIdSchema } from './schemas'
 import type { ActionResult, SubmissionActionInput } from './types'
 
-// W2 (PRD 001 architecture review): deliberately no PostHog server tracking.
+// Deliberately no PostHog server tracking (see acknowledge-submission.ts).
 export async function archiveSubmission(
   input: SubmissionActionInput
 ): Promise<ActionResult> {
@@ -73,7 +73,7 @@ export async function archiveSubmission(
     })
   }
 
-  // D6: archiving an unread row must decrement the sidebar badge.
+  // Archiving an unread row must decrement the sidebar badge.
   revalidatePath('/', 'layout')
 
   return {}

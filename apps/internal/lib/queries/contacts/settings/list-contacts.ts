@@ -251,7 +251,7 @@ export async function listContactsForSettings(
     })
   } else {
     // Field-tagged cursor: payloads minted under a different sort are
-    // rejected and we serve page one (R5 backstop for stale deep links).
+    // rejected and we serve page one (a backstop for stale deep links).
     cursorPayloadForPageInfo = decodeSortCursor(
       input.cursor,
       sort.field,

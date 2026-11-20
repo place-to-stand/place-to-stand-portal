@@ -37,7 +37,8 @@ import { cn } from '@/lib/utils'
 
 const QUERY_KEY = ['notifications'] as const
 
-// Background refresh while the home page is open (paused in hidden tabs).
+// Background refresh on every page, since the header bell is on every page
+// (paused in hidden tabs).
 const POLL_MS = 2 * 60_000
 
 export function useNotificationFeed() {
@@ -111,7 +112,7 @@ export function useNotificationFeed() {
   }
 }
 
-export type NotificationFeedState = ReturnType<typeof useNotificationFeed>
+type NotificationFeedState = ReturnType<typeof useNotificationFeed>
 
 /** The All / Unread / Archived toggle, beside the "Notifications" title. */
 export function NotificationFilterToggle({

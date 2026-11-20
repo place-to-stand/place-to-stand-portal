@@ -38,7 +38,7 @@ function matchesKeys(event: KeyEventLike, keys: string): boolean {
     // `ctrl+y`: the Control key itself, without ⌘.
     if (!event.ctrlKey || event.metaKey) return false
   } else if (want.mod) {
-    // ⌘ or Ctrl on every platform, the convention the portal has always used.
+    // ⌘ or Ctrl on every platform.
     if (!event.metaKey && !event.ctrlKey) return false
   } else if (event.metaKey || event.ctrlKey) {
     return false

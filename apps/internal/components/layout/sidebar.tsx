@@ -119,7 +119,7 @@ export function Sidebar({ user, badges, brand }: Props) {
             </Tooltip>
           </>
         ) : null}
-        {/* Palette entry point (PW1, user-revised placement: sidebar, above Portal). */}
+        {/* Palette entry point, above the Portal group. */}
         <Tooltip>
           <TooltipTrigger asChild>
             <button

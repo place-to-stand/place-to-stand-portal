@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from 'react'
 
 import type { ProjectTimeLogDialogParams, TimeLogEntry } from './types'
 
-export type TimeLogEditContext = {
+type TimeLogEditContext = {
   entry: TimeLogEntry
   params: ProjectTimeLogDialogParams
 }

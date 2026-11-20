@@ -2,7 +2,7 @@ import 'server-only'
 
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 
-/** An app the signed-in user has connected to the portal (PRD 009 §6). */
+/** An app the signed-in user has connected to the portal. */
 export type ConnectedApp = {
   clientId: string
   name: string
@@ -10,9 +10,8 @@ export type ConnectedApp = {
 }
 
 /**
- * auth-js types an OAuth client as `{ id, name }`, but older auth servers
- * (v2.180, once pinned by the local Supabase CLI) return `{ client_id,
- * client_name }`. Read both so the consent page and the connected-apps card
+ * auth-js types an OAuth client as `{ id, name }`, but some auth server
+ * versions (e.g. v2.180) return `{ client_id, client_name }`. Read both so the consent page and the connected-apps card
  * never show "undefined".
  */
 export function oauthClientName(client: object): string {

@@ -55,21 +55,18 @@ export function clientHoursTotalsFor(
  * already in effect and begins after the last non-prepaid term that is already
  * in effect. Everything before it belongs to a closed era.
  *
- * Three things this deliberately handles, each of which `max(effective_from)`
- * got wrong:
+ * Why not `max(effective_from)`:
  *
  * 1. Future-dated terms are excluded (`effective_from <= CURRENT_DATE`).
- *    `update-client.ts` flips the `clients.billing_type` cache column
- *    immediately while dating the term to next month, so a client scheduled to
- *    become prepaid renders a burndown NOW. Selecting that future boundary
- *    clipped every logged hour away and reported the full purchased amount as
+ *    Screens show the newest term, so a client scheduled to become prepaid
+ *    next month already renders a burndown. Using that future boundary would
+ *    clip every logged hour away and report the full purchased amount as
  *    remaining.
  * 2. Consecutive same-type terms take the era's START, not the latest row. A
  *    same-month edit-then-revert can upsert a second prepaid term; `max` would
  *    jump the boundary forward and discard usage that legitimately drew down.
  * 3. A client with no prepaid term at all has no row in the returned map,
- *    which callers treat as "count everything" — matching the old behaviour
- *    for net_30-only clients.
+ *    which callers treat as "count everything".
  */
 async function fetchPrepaidEraStarts(
   db: DbClient,
@@ -112,11 +109,11 @@ async function fetchPrepaidEraStarts(
  * Turns the per-client era map into one sargable predicate: clients are
  * grouped by distinct era date, and each group contributes
  * `(client_id IN (...) AND date_col >= era)`. Clients with no prepaid era
- * (the `0001-01-01` fallback — count everything) skip the date clause
- * entirely. Distinct eras are few (most clients never switch billing type),
- * so the OR stays short and every branch can use an index on the date column
- * — unlike the previous correlated subquery, which Postgres re-evaluated per
- * candidate row and which made the predicate unindexable.
+ * (absent from the map: count everything) skip the date clause entirely.
+ * Distinct eras are few (most clients never switch billing type), so the OR
+ * stays short and every branch can use an index on the date column. A
+ * correlated subquery here would be re-evaluated per candidate row and could
+ * not use the index.
  */
 function buildEraScopedCondition(
   clientIdColumn: AnyColumn,
@@ -147,12 +144,11 @@ function buildEraScopedCondition(
 /**
  * THE authoritative prepaid burndown for a set of clients. Every surface that
  * shows "hours remaining" — internal clients list, projects list, project
- * workspace header/overview, client portal — must read it from here.
+ * workspace header, client portal — must read it from here.
  *
  * Both sides of the subtraction are scoped to the CLIENT, never to whichever
  * projects a given page happens to have loaded. Deriving the client total from
- * a partial set of project rows is what made the project workspace header
- * disagree with the clients list.
+ * a partial set of project rows makes one surface disagree with another.
  *
  * Both sides are also scoped to the SAME prepaid era. Hours expire when a
  * client switches to net_30: blocks bought in a closed era are not credited,

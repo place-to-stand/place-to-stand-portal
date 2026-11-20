@@ -127,11 +127,7 @@ export async function signInWithPassword(
   redirect(redirectTo ?? '/')
 }
 
-/* ------------------------------------------------------------------ */
-/*  Magic link                                                        */
-/* ------------------------------------------------------------------ */
-
-export type MagicLinkState = {
+type MagicLinkState = {
   error?: string
   success?: boolean
 }
@@ -154,9 +150,8 @@ export async function sendMagicLink(input: {
   }
 
   try {
-    // `generateLink` never creates an account, which is what `shouldCreateUser:
-    // false` bought on the old `signInWithOtp` path — an unknown address simply
-    // errors here rather than minting an auth user.
+    // `generateLink` never creates an account: an unknown address errors here
+    // rather than minting an auth user.
     const { data, error } =
       await getSupabaseServiceClient().auth.admin.generateLink({
         type: 'magiclink',

@@ -26,7 +26,7 @@ export type UseActivityFeedOptions = {
   requireContext?: boolean
 }
 
-export type UseActivityFeedResult = {
+type UseActivityFeedResult = {
   logs: ActivityLogWithActor[]
   isLoading: boolean
   isError: boolean

@@ -32,7 +32,7 @@ const emailInvoiceSchema = contentSchema.extend({
   requestId: z.string().uuid(),
 })
 
-export type EmailInvoiceInput = z.infer<typeof emailInvoiceSchema>
+type EmailInvoiceInput = z.infer<typeof emailInvoiceSchema>
 
 type Result<T> =
   | { ok: true; data: T; error?: undefined }

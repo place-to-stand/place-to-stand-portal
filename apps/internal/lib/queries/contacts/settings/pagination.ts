@@ -137,13 +137,12 @@ export const linkedClientsCountSql = sql<number>`(
 )`
 
 /**
- * Per-sort descriptor (PRD 004 §03, R5): order expression + cursor value
- * encoding + comparison predicates per field, mirroring
- * `USER_SORT_DESCRIPTORS`. `phone` is nullable and sorts NULLS LAST in both
- * directions; its cursor encodes null as '' (phones are never empty
- * strings). The cursor path is only exercised by the default name sort
- * today — the contacts pages paginate by offset — so the null boundary
- * doesn't need exact backward-pagination semantics.
+ * Per-sort descriptor: order expression + cursor value encoding +
+ * comparison predicates per field. `phone` is nullable and sorts NULLS LAST
+ * in both directions; its cursor encodes null as '' (phones are never empty
+ * strings). Only the CLI and MCP take the cursor path, with the default name
+ * sort; the People pages paginate by offset, so the null boundary doesn't
+ * need exact backward-pagination semantics.
  */
 export type ContactSortDescriptor = {
   encode: (row: ContactsSettingsListItem) => string

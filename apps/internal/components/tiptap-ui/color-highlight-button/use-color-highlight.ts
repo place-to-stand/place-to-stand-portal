@@ -4,18 +4,15 @@ import { useCallback, useEffect, useState } from 'react'
 import { type Editor } from '@tiptap/react'
 import { useHotkeys } from 'react-hotkeys-hook'
 
-// --- Hooks ---
 import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 import { useIsMobile } from '@pts/ui/hooks/use-mobile'
 
-// --- Lib ---
 import {
   isMarkInSchema,
   isNodeTypeSelected,
   isExtensionAvailable,
 } from '@/lib/tiptap-utils'
 
-// --- Icons ---
 import { HighlighterIcon } from '@/components/tiptap-icons/highlighter-icon'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 

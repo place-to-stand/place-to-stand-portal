@@ -34,7 +34,7 @@ const updateLeadUpdateSchema = z.object({
   occurredAt: occurredAtSchema,
 })
 
-export type UpdateLeadUpdateInput = z.infer<typeof updateLeadUpdateSchema>
+type UpdateLeadUpdateInput = z.infer<typeof updateLeadUpdateSchema>
 
 export async function updateLeadUpdate(
   input: UpdateLeadUpdateInput

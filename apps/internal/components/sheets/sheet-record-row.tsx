@@ -297,7 +297,7 @@ export function RecordRowField({
 }
 
 /** A record card's label | value grid (labels in a 7rem column). */
-export const RECORD_FIELD_GRID_CLASS =
+const RECORD_FIELD_GRID_CLASS =
   'grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-x-4 gap-y-0.5 px-3 py-2'
 
 /** The stack of SheetRecordRows. */

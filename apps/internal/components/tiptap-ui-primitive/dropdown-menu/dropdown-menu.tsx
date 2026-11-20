@@ -6,12 +6,11 @@ import { cn } from '@/lib/tiptap-utils'
 import '@/components/tiptap-ui-primitive/dropdown-menu/dropdown-menu.css'
 
 /**
- * Vendored TipTap primitive, rebased from Radix onto Base UI. The export
- * surface and the `tiptap-dropdown-menu` class hook are unchanged, so the
- * editor's SCSS and both consumers (heading, list) keep working as-is.
+ * Vendored TipTap dropdown primitive, built on Base UI. It keeps TipTap's
+ * export surface and the `tiptap-dropdown-menu` class that
+ * dropdown-menu.css styles, for its two consumers (heading, list).
  *
- * `forwardRef` is gone: React 19 passes `ref` as an ordinary prop, and these
- * wrappers only forwarded it through.
+ * No `forwardRef`: React 19 passes `ref` as an ordinary prop.
  */
 
 function DropdownMenu({ ...props }: MenuPrimitive.Root.Props) {
@@ -114,15 +113,11 @@ function DropdownMenuContent({
 }
 
 /**
- * Base UI splits Radix's single Content into Portal > Positioner > Popup, and
- * all three are mandatory.
+ * Base UI needs all three of Portal > Positioner > Popup.
  *
- * The Radix version took a `portal` prop so the toolbar could render menus in
- * place on desktop. That does not survive the port: the fixed toolbar is an
- * `overflow-x: auto` scroll container, so an in-place popup is clipped by it
- * and anchors against the wrong box. The prop is gone rather than kept as a
- * no-op — a prop that claims to control DOM placement while doing nothing is
- * worse than no prop.
+ * Menus always portal. The fixed toolbar is an `overflow-x: auto` scroll
+ * container, so a popup rendered in place would be clipped by it and anchor
+ * against the wrong box. Don't add a prop to render in place.
  */
 function MenuPopup({
   className,
@@ -141,7 +136,6 @@ function MenuPopup({
       >
         <MenuPrimitive.Popup
           className={className}
-          // Restores the Radix version's onCloseAutoFocus preventDefault.
           // These triggers are tabIndex={-1} toolbar buttons, so Base UI's
           // default of focusing the trigger on close would pull the caret out
           // of the document after picking a heading or list style.

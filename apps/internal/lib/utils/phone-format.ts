@@ -8,7 +8,6 @@
  * Only accepts digits, strips all other characters
  */
 export function formatPhoneUS(value: string): string {
-  // Strip all non-digits and limit to 10
   const digits = value.replace(/\D/g, '').slice(0, 10)
 
   if (digits.length === 0) return ''

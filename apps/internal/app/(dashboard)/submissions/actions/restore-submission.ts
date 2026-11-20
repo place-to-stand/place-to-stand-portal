@@ -14,7 +14,7 @@ import {
 import { submissionIdSchema } from './schemas'
 import type { ActionResult, SubmissionActionInput } from './types'
 
-// W2 (PRD 001 architecture review): deliberately no PostHog server tracking.
+// Deliberately no PostHog server tracking (see acknowledge-submission.ts).
 export async function restoreSubmission(
   input: SubmissionActionInput
 ): Promise<ActionResult> {
@@ -82,7 +82,7 @@ export async function restoreSubmission(
     })
   }
 
-  // D6: restoring an unread row must re-increment the sidebar badge.
+  // Restoring an unread row must re-increment the sidebar badge.
   revalidatePath('/', 'layout')
 
   return {}

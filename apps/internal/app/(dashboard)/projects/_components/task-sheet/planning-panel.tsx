@@ -141,7 +141,6 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
     DEFAULT_PLANNING_TIER
   )
 
-  // Session management
   const {
     activeThread,
     activeThreadId,
@@ -157,7 +156,6 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
   const activeModelLabel = getModelLabel(activeModel)
   const dispatchModelLabel = getModelLabel(dispatchModel)
 
-  // Streaming plan generation
   const {
     content: streamContent,
     contentType: streamContentType,
@@ -235,7 +233,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
     wasThreadStreamingRef.current = isThreadStreaming
   }, [isThreadStreaming, invalidateRevisions])
 
-  // Deployments for this task — used for version nav coloring + accept button state
+  // Deployments for this task: they color the version nav and gate the dispatch button.
   const { deployments: allDeployments } = useTaskDeployments(task.id, true)
 
   // Compute deploy status for a given version
@@ -325,7 +323,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
   const currentVersionLabel =
     currentVersionMeta?.label ?? `v${displayedVersion}`
 
-  // Check if current version already has a deployment (disables accept button)
+  // A version that already has a deployment can't be dispatched again.
   const versionAlreadyDispatched =
     (currentVersionMeta?.deployStatus ?? 'none') !== 'none'
 
@@ -382,7 +380,6 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
     invalidateRevisions,
   ])
 
-  // Handle feedback submission
   const handleFeedbackSubmit = useCallback(() => {
     if (!feedbackInput.trim() || !activeThreadId || !activeThread || isBusy)
       return
@@ -418,7 +415,6 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
     invalidateRevisions,
   ])
 
-  // Dispatch the current plan
   const handleDispatch = useCallback(() => {
     if (!displayContent || !activeThread || !activeThreadId) return
 

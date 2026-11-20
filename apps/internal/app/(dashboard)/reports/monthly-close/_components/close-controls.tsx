@@ -16,7 +16,7 @@ import { formatCurrency } from '@pts/ui/numbers'
 import { formatShortDay } from './format'
 
 type CloseControlsProps = {
-  /** 1-indexed month + year of the period being viewed (W4: page converts). */
+  /** 1-indexed month + year of the period being viewed (the page converts). */
   year: number
   month: number
   displayMonth: string

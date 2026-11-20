@@ -1,7 +1,7 @@
 /**
- * The checks that live in built-in rules (base.mjs, next.mjs)
- * rather than in a pts rule: dates and numbers, Radix, title= on a native
- * button, redirecting guards in API routes, and the query layer's imports.
+ * The checks that live in built-in rules (base.mjs, next.mjs) rather than in
+ * a pts rule: dates and numbers, Radix, the no-restricted-syntax selectors
+ * (syntax-rules.mjs) and the query layer's imports.
  */
 import { spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'

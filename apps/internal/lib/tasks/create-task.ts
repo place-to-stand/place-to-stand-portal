@@ -86,7 +86,7 @@ export async function createTaskForActor({
     return { error: 'Unable to attach files. Remove them and upload again.' }
   }
 
-  // One transaction: the task, its assignee and its attachment rows land
+  // One transaction: the task, its assignees and its attachment rows land
   // together or not at all, so a failed save leaves nothing behind to retry
   // into a duplicate.
   let attachmentChanges: AttachmentRowChanges

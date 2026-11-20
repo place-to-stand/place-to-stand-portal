@@ -2,11 +2,10 @@ import { nextApp } from '@pts/lint-config/next'
 import { toOxlint } from '@pts/lint-config/to-oxlint'
 
 /**
- * lib/queries files that already log activity or check permissions, from
- * before the rule existed. The rule applies to every other (and every new)
- * query file. Moving each one's logging and permission checks up into
- * lib/data, lib/<domain> or the server action is follow-up D12
- * (docs/reviews/pr-279-swarm-audit.md): delete its line here when you do.
+ * lib/queries files that still log activity or check permissions, exempt
+ * from the rule; it applies to every other query file. When a file's logging
+ * and permission checks move up into lib/data, lib/<domain> or the server
+ * action, delete its line here.
  */
 const QUERY_LAYER_ALLOWLIST = [
   'lib/queries/command-palette.ts',
@@ -23,7 +22,6 @@ const QUERY_LAYER_ALLOWLIST = [
   'lib/queries/memberships.ts',
   'lib/queries/projects/listing.ts',
   'lib/queries/task-comments.ts',
-  'lib/queries/tasks/basic.ts',
   'lib/queries/tasks/relations.ts',
   'lib/queries/time-logs/mutations.ts',
   'lib/queries/time-logs/read.ts',

@@ -225,8 +225,8 @@ export class PortalAccessRefusal extends Error {}
 
 /**
  * Switches portal access on and off for members of a client company inside
- * the caller's transaction. Granting needs a sign-in (`contacts.user_id`) and
- * a current membership; a person without either throws
+ * the caller's transaction. Granting needs a live Client sign-in and a
+ * current membership; a person without either throws
  * `PortalAccessRefusal`, rolling the save back.
  */
 export async function applyPortalAccessInTx(

@@ -1,8 +1,8 @@
 import posthog from 'posthog-js'
 
-// Dev sessions were flooding the production PostHog project with Turbopack
-// build-error overlays, mid-edit HMR ReferenceErrors, and localhost analytics,
-// so capture is limited to production builds.
+// Capture is limited to production builds, so dev sessions don't flood the
+// production PostHog project with Turbopack build-error overlays, mid-edit HMR
+// ReferenceErrors and localhost analytics.
 // Also skipped when the key is unset, so a deployment without PostHog env
 // vars still boots quietly.
 if (

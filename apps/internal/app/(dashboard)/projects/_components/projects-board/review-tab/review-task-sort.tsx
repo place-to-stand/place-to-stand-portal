@@ -13,7 +13,7 @@ import type { TaskWithRelations } from '@/lib/types'
 /**
  * Sortable headers for the Review tab's three tables (Done, Accepted,
  * Archived). Three tables share the page, so each keeps its sort in local
- * state, as the invoice settings tables do. Default: Updated, newest first.
+ * state, as the Settings → Billing tables do. Default: Updated, newest first.
  */
 const REVIEW_SORT_FIELDS = [
   'task',

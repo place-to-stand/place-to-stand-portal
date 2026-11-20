@@ -16,8 +16,8 @@ export function sameTaskHome(home: TaskHome) {
 }
 
 /**
- * Picking one clears the other: a lead wins over a project, so callers that
- * send both (an older client, the CLI) still land a valid task.
+ * Picking one clears the other: a lead wins over a project, so a caller that
+ * sends both still lands a valid task.
  */
 export function resolveTaskHome(input: {
   projectId?: string | null

@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils'
 
 import type { ProjectActionControls } from './projects-board-tabs'
 
-export type ProjectsBoardTabsHeaderProps = {
+type ProjectsBoardTabsHeaderProps = {
   initialTab: 'board' | 'activity' | 'review' | 'timeLogs'
   boardHref: string
   activityHref: string

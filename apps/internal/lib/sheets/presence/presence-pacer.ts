@@ -6,7 +6,7 @@
  * waits, and only the latest state goes out when it ends (nothing, when
  * it is back to what was last sent).
  */
-export const PRESENCE_GAP_MS = 8000
+const PRESENCE_GAP_MS = 8000
 
 type Timers = {
   now: () => number

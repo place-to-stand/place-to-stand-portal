@@ -6,8 +6,8 @@ import { expect, test } from '@playwright/test'
 test('a draft invoice with unsaved edits cannot be sent', async ({ page }) => {
   await page.goto('/invoices')
   await page.waitForLoadState('networkidle')
-  const draft = page.getByRole('row').filter({ hasText: /Draft/ }).first()
-  test.skip((await draft.count()) === 0, 'No draft invoice to open.')
+  const draft = page.locator('tbody tr').filter({ hasText: 'Draft' }).first()
+  await expect(draft).toBeVisible()
   await draft.click()
 
   const sheet = page.getByRole('dialog')
@@ -15,7 +15,7 @@ test('a draft invoice with unsaved edits cannot be sent', async ({ page }) => {
   await expect(send).toBeEnabled()
 
   const notes = sheet.getByLabel(/notes|memo/i).first()
-  test.skip((await notes.count()) === 0, 'No free-text field to edit.')
+  await expect(notes).toBeVisible()
   await notes.fill(`${(await notes.inputValue()) || ''} (edited)`)
 
   await expect(send).toBeDisabled()

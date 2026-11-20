@@ -16,7 +16,7 @@ const DIRECTIVE =
   /^(eslint-disable-next-line|eslint-disable-line|eslint-disable|eslint-enable|oxlint-disable-next-line|oxlint-disable-line|oxlint-disable|oxlint-enable|eslint-env|eslint|exported|globals?)(?:\s|$)/u
 
 /** A directive comment's kind, rule list and description, or null. */
-export function parseDirective(comment) {
+function parseDirective(comment) {
   const text = comment.value.trim()
   const match = DIRECTIVE.exec(text)
   if (!match) return null

@@ -7,8 +7,6 @@ import type { SaveTaskResult } from '@/lib/tasks/types'
 import { revalidateProjectTaskViews } from './shared'
 import type { BaseTaskInput } from '@/lib/tasks/schemas'
 
-export type { SaveTaskResult }
-
 /**
  * Browser entry point for creating and updating tasks.
  *

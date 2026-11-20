@@ -11,7 +11,7 @@ import {
 } from '@/lib/types/integrations'
 
 /** The signed-in user performing the link/unlink; the role is never assumed. */
-export type IntegrationLinkActor = Pick<AppUser, 'id' | 'role'>
+type IntegrationLinkActor = Pick<AppUser, 'id' | 'role'>
 
 export async function getProjectIntegrationLinks(
   projectId: string
@@ -81,7 +81,7 @@ export async function getIntegrationLinkById(
 }
 
 /** `db` or an open transaction, so a sheet save can write links in its own. */
-export type IntegrationLinkExecutor = typeof db | DbTx
+type IntegrationLinkExecutor = typeof db | DbTx
 
 /**
  * Writes a link row for an external project. A previously unlinked row for

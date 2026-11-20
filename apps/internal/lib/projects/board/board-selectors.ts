@@ -5,7 +5,7 @@ type MemberDirectoryEntry = {
   avatarUrl: string | null
 }
 
-export type TaskMemberDirectory = Map<string, MemberDirectoryEntry>
+type TaskMemberDirectory = Map<string, MemberDirectoryEntry>
 
 export type RenderAssigneeFn = (task: TaskWithRelations) => Array<{
   id: string

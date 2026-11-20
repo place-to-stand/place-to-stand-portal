@@ -37,9 +37,9 @@ applyTo: '**/*.{tsx,jsx}'
 - State updates on unmounted components
 - Array mutations instead of immutable updates
 
-## shadcn/Radix Components
+## shadcn/Base UI Components
 
-- Use Radix primitives correctly - they handle accessibility
+- Use the `@pts/ui` wrappers (Base UI primitives) - they handle accessibility
 - Custom overrides should not break built-in accessibility
 - Tooltips must be keyboard accessible
 - Dialogs need proper focus management

@@ -161,7 +161,7 @@ export function SubmissionDetailSheet({
 }: SubmissionDetailSheetProps) {
   const router = useRouter()
   const { toast } = useToast()
-  // D9: acknowledge/unacknowledge keep the sheet open, so the state is
+  // Acknowledge/unacknowledge keep the sheet open, so the state is
   // lifted optimistically — the `submission` prop is stale only until the
   // parent re-renders from router.refresh() (selection is derived from
   // fresh props in the table).
@@ -175,8 +175,8 @@ export function SubmissionDetailSheet({
 
   // Reconcile the optimistic override: drop it when the sheet closes, a
   // different row is opened, or the refreshed server state confirms it.
-  // Without this, re-opening a row after an external change (e.g. a D8
-  // beacon reset) would replay a stale "acknowledged" override. Uses the
+  // Without this, re-opening a row after an external change (e.g. a beacon
+  // re-flagging it as unread) would replay a stale "acknowledged" override. Uses the
   // adjust-state-during-render pattern (not an effect) so React restarts
   // the render immediately instead of cascading a second commit.
   if (
@@ -229,7 +229,7 @@ export function SubmissionDetailSheet({
       () =>
         acknowledgeSubmission({
           id: submission.id,
-          // Version token: the row as rendered (F3 stale-view guard).
+          // Version token: the row as rendered (the stale-view guard).
           expectedLastActivityAt: submission.lastActivityAt,
         }),
       'Unable to acknowledge submission',
@@ -248,7 +248,7 @@ export function SubmissionDetailSheet({
     )
   }, [runInlineAction, submission])
 
-  // D9: archive/restore CLOSE the sheet — the row leaves the
+  // Archive/restore CLOSE the sheet — the row leaves the
   // current tab's list.
   const runClosingAction = useCallback(
     (
@@ -393,7 +393,7 @@ export function SubmissionDetailSheet({
                     label='Email'
                     value={
                       displaySubmission.contactEmail ? (
-                        // PW2: the natural post-triage action is emailing the
+                        // The natural post-triage action is emailing the
                         // prospect — make the address actionable.
                         <a
                           href={`mailto:${displaySubmission.contactEmail}`}
@@ -706,9 +706,9 @@ export function SubmissionDetailSheet({
                   ) : null}
                 </ul>
               </div>
-              {/* Only once the marketing site asked for email (PRD 008). Rows
-                from before that cutover never requested delivery, and an
-                "Emails" block full of dashes would read as a failure. */}
+              {/* Only when the marketing site asked for email. Rows that never
+                requested delivery would show an "Emails" block full of
+                dashes, which reads as a failure. */}
               {emailStamps ? (
                 <>
                   <Separator />

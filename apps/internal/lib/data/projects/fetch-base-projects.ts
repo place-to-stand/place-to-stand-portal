@@ -6,7 +6,7 @@ import { companies, projects } from '@/lib/db/schema'
 import { createSearchPattern } from '@/lib/pagination/cursor'
 import type { DbProject } from '@/lib/types'
 
-export type BaseProjectFetchResult = {
+type BaseProjectFetchResult = {
   projects: DbProject[]
   projectIds: string[]
   companyIds: string[]
@@ -14,7 +14,7 @@ export type BaseProjectFetchResult = {
   projectClientLookup: Map<string, string | null>
 }
 
-export type FetchBaseProjectsOptions = {
+type FetchBaseProjectsOptions = {
   projectIds?: string[]
   /**
    * Status predicate. Undefined = no status filtering; an empty array means

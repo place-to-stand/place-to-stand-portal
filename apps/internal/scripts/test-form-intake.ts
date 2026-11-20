@@ -17,14 +17,13 @@
  *
  * The mailing-list signup intake uses CONTACT_INTAKE_TOKEN as well.
  *
- * Add `--deliver` to also exercise email delivery (PRD 008): claim-once sends,
+ * Add `--deliver` to also exercise email delivery: claim-once sends,
  * replay safety, the per-address throttle, and the audit `captured` gate. That
  * mode reads the messages back out of local Mailpit, so it only works against
  * a non-production server.
  *
  * Writes real rows to whatever DATABASE_URL points at, then deletes them — do
  * not aim it at production.
- *
  */
 
 import { randomUUID } from 'crypto'
@@ -279,7 +278,6 @@ async function main() {
     (await submitAudit(auditBeacon({ status: 'not_a_status' }))).status === 400
   )
 
-  // --- Audit happy path ---------------------------------------------------
   console.log('\nAudit progression')
   for (const beacon of [
     auditBeacon({
@@ -374,7 +372,7 @@ async function main() {
 
   const capturedAtFirstCapture = captured?.capturedAt
 
-  // --- The race this design exists for ------------------------------------
+  // The race this design exists for: a stale beacon after the capture.
   console.log('\nStale pagehide beacon (older updatedAt, lower status, nulls)')
   const stale = await submitAudit(
     auditBeacon({
@@ -454,7 +452,6 @@ async function main() {
     afterNewer?.capturedAt
   )
 
-  // --- Contact ------------------------------------------------------------
   console.log('\nContact submission')
   const contact = await submitContact({
     submissionId,
@@ -524,7 +521,6 @@ async function main() {
     retry.status
   )
 
-  // --- Subscribe ----------------------------------------------------------
   if (SUBSCRIBE_TOKEN) {
     const subscribeBody = {
       submissionId: subscribeId,
@@ -605,7 +601,6 @@ async function main() {
     console.log('\nSubscribe submission skipped (CONTACT_INTAKE_TOKEN unset)')
   }
 
-  // --- Email delivery (PRD 008) -------------------------------------------
   const deliveryKeys: string[] = []
   const deliveryEmails: string[] = []
 
@@ -768,7 +763,7 @@ async function main() {
     })
     // The progress beacon is stamped AFTER the captured push: the stale gate
     // must still let the capture through, because a status advance is never
-    // stale. Before the fix this returned 200 with id:null and lost the lead.
+    // stale. Gating it would return 200 with id:null and lose the lead.
     const scored = await submitAudit(auditBody('completed', 5000))
     check(
       'completed + deliver -> skipped',
@@ -922,7 +917,6 @@ async function main() {
     )
   }
 
-  // --- Cleanup ------------------------------------------------------------
   for (const key of [
     sessionId,
     submissionId,

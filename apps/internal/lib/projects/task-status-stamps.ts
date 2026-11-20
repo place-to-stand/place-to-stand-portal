@@ -1,7 +1,7 @@
 /** Statuses that mean the task is not finished — reaching one reopens it. */
 const REOPENING_STATUSES = new Set(['ON_DECK', 'IN_PROGRESS', 'BLOCKED'])
 
-export type TaskStatusStamps = {
+type TaskStatusStamps = {
   completedAt: string | null
   /** Present only when the write must clear acceptance. */
   acceptedAt?: null

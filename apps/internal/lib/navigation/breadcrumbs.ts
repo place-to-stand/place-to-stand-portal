@@ -1,7 +1,7 @@
 import { NAV_GROUPS } from '@/components/layout/navigation-config'
 
 /**
- * Breadcrumb segment (PRD 004 §01, D2). Group segments carry no href —
+ * Breadcrumb segment. Group segments carry no href —
  * they have no landing pages; section segments link; the final segment
  * is plain text.
  */

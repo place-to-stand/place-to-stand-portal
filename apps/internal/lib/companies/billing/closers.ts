@@ -1,9 +1,9 @@
 /**
- * Closer splits (client-safe — shared by the company sheet's billing, the save action
- * and the term queries).
+ * Closer splits (client-safe — shared by the company sheet's billing, the save
+ * action and the term queries).
  *
  * A commission term pays its closer rate to zero or more closers. Each closer
- * is an admin user or a contact (an insider at the client can help close the
+ * is a staff user (ADMIN or SALES) or a contact (an insider at the client can help close the
  * deal) and takes `sharePercent` of the closer rate. With any closers the
  * shares must total exactly 100; with none, the closer share stays in House.
  */
@@ -95,7 +95,7 @@ export function closerSplitsEqual(
   return b.every(c => shares.get(closerKey(c)) === c.sharePercent)
 }
 
-/** "Kris Crawford (50%), Chris Donahue (50%)" — a lone closer drops the share. */
+/** "Alex Rivera (50%), Sam Lee (50%)" — a lone closer drops the share. */
 export function describeClosers(closers: readonly ClientCloser[]): string {
   if (closers.length === 1) return closers[0].name
   return closers

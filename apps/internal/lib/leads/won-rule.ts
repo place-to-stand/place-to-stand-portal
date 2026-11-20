@@ -1,7 +1,7 @@
 import type { LeadStatusValue } from '@/lib/leads/constants'
 
 /**
- * Decision 7: a lead needs a company before it can be Won, because a won
+ * A lead needs a company before it can be Won, because a won
  * lead's next step is billing that company. Shared by the sheet (inline
  * error), the board (drag revert) and `saveLeadForActor` / `moveLead`, which
  * enforce it for the app, CLI and MCP alike.
@@ -16,8 +16,8 @@ type LeadWonState = {
 
 /**
  * True when this write would leave the lead Won without a company. A lead
- * that was already Won without one (before the rule) can still be edited, so
- * old records don't lock up; it just can't lose a company it has.
+ * already Won without one can still be edited, so such records don't lock
+ * up; a Won lead just can't lose a company it has.
  */
 export function breaksWonNeedsCompany(
   next: LeadWonState,

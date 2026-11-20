@@ -5,7 +5,7 @@ import type { TaskWithRelations } from '@/lib/types'
 import type { TaskLookup } from './types'
 
 /** Where a card sits on the board: its column and its rank in it. */
-export type TaskPlace = Pick<TaskWithRelations, 'status' | 'rank'>
+type TaskPlace = Pick<TaskWithRelations, 'status' | 'rank'>
 
 export const placeOf = (task: TaskPlace): TaskPlace => ({
   status: task.status,
@@ -13,7 +13,7 @@ export const placeOf = (task: TaskPlace): TaskPlace => ({
 })
 
 /** The board with `fields` applied to one card (same map if it's gone). */
-export function updateTask(
+function updateTask(
   lookup: TaskLookup,
   projectId: string,
   taskId: string,

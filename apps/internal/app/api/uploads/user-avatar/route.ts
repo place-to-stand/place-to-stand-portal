@@ -94,7 +94,7 @@ export async function POST(request: Request) {
   await ensureAvatarBucket(supabase)
 
   // Always stage uploads in the pending folder — the save action moves them
-  // into the user's folder (finalizeUserAvatar / resolveAvatarUpdate), so a
+  // into the user's folder (`resolveAvatarUpdate`), so a
   // cancelled sheet never leaves the live avatar pointing at a deleted object.
   const path = generateAvatarPath({
     actorId: actor.id,

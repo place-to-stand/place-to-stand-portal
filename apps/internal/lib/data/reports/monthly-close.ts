@@ -42,15 +42,6 @@ function toFiniteNumber(value: string | number | null | undefined): number {
   return Number.isFinite(n) ? n : 0
 }
 
-/**
- * Fetches and assembles the complete Monthly Close Report for a date range.
- * All split rates are read from the partner rate schedule based on the
- * period's start date, so historical months render at the rates that were in
- * effect at the time.
- *
- * @param startDate - Start date in 'yyyy-MM-dd' format (inclusive)
- * @param endDate - End date in 'yyyy-MM-dd' format (inclusive)
- */
 /** Month navigation bounds, read once per request. */
 export const fetchReportBounds = cache(fetchReportDateBounds)
 
@@ -73,11 +64,19 @@ export async function clampToReportBounds(
   return requested
 }
 
+/**
+ * Fetches and assembles the complete Monthly Close Report for a date range.
+ * All split rates are read from the partner rate schedule based on the
+ * period's start date, so historical months render at the rates that were in
+ * effect at the time.
+ *
+ * @param startDate - Start date in 'yyyy-MM-dd' format (inclusive)
+ * @param endDate - End date in 'yyyy-MM-dd' format (inclusive)
+ */
 export const fetchMonthlyCloseReport = cache(
   async (startDate: string, endDate: string): Promise<MonthlyCloseReport> => {
     const rates = getPartnerRatesForPeriod(startDate)
 
-    // Fetch all data sources in parallel
     const [
       payrollRows,
       originationRows,
@@ -98,9 +97,7 @@ export const fetchMonthlyCloseReport = cache(
       fetchReportBounds(),
     ])
 
-    // ------------------------------------------------------------------
     // Payroll
-    // ------------------------------------------------------------------
     const payrollData: PayrollRow[] = payrollRows.map(row => {
       const totalHours = toFiniteNumber(row.totalHours)
       return {
@@ -126,11 +123,9 @@ export const fetchMonthlyCloseReport = cache(
       hourlyRate: rates.payrollPerHour,
     }
 
-    // ------------------------------------------------------------------
     // Origination — group rows from all 4 sub-queries by `${kind}:${id}`
     // so a single originator with both prepaid AND net_30 clients rolls
     // into one row.
-    // ------------------------------------------------------------------
     const originatorMap = new Map<
       string,
       {
@@ -145,9 +140,8 @@ export const fetchMonthlyCloseReport = cache(
     >()
 
     for (const row of originationRows) {
-      // Pre-cutover: internal-user originators were not paid out — the
-      // commission they would have earned is absorbed by the residual
-      // house. Drop those rows before grouping so they don't appear in
+      // When the period's rates don't pay internal-user originators, the
+      // commission they would have earned is absorbed by house. Drop those rows before grouping so they don't appear in
       // the origination section, the rollup total, or the partner-payouts
       // aggregate.
       if (row.originatorKind === 'user' && !rates.internalOriginationPayable) {
@@ -209,11 +203,9 @@ export const fetchMonthlyCloseReport = cache(
       commissionPerHour: rates.originationPerHour,
     }
 
-    // ------------------------------------------------------------------
     // Closer — same pattern, grouped by `${kind}:${id}`. A client with
     // several closers contributes one detail per closer; each is credited
     // its share of the client's billing hours.
-    // ------------------------------------------------------------------
     const closerMap = new Map<
       string,
       Omit<CloserGroupRow, 'totalHours' | 'totalCommission'>
@@ -270,14 +262,12 @@ export const fetchMonthlyCloseReport = cache(
       commissionPerHour: rates.closerPerHour,
     }
 
-    // ------------------------------------------------------------------
     // Partner Payouts — lump-sum view by payee
     //
     // Merges Payroll (user), Origination (user or contact), and Closer
     // (user or contact) into a single "cut a check for this amount" row per person.
     // Keyed on `${kind}:${id}` so users and contacts with the same UUID
     // don't collide.
-    // ------------------------------------------------------------------
     const payeeMap = new Map<
       string,
       {
@@ -388,9 +378,7 @@ export const fetchMonthlyCloseReport = cache(
         payroll.totalAmount + origination.totalAmount + closer.totalAmount,
     }
 
-    // ------------------------------------------------------------------
     // Prepaid billing
-    // ------------------------------------------------------------------
     const prepaidData: PrepaidBillingRow[] = prepaidRows.map(row => {
       const totalHours = toFiniteNumber(row.totalHours)
       return {
@@ -413,9 +401,7 @@ export const fetchMonthlyCloseReport = cache(
       hourlyRate: rates.billablePerHour,
     }
 
-    // ------------------------------------------------------------------
     // Net 30 billing
-    // ------------------------------------------------------------------
     const net30Data: Net30Row[] = net30Rows.map(row => {
       const totalHours = toFiniteNumber(row.totalHours)
       return {
@@ -438,10 +424,8 @@ export const fetchMonthlyCloseReport = cache(
       hourlyRate: rates.billablePerHour,
     }
 
-    // ------------------------------------------------------------------
     // Sales tax collected — a liability passed through, never revenue, so
     // it stays out of Billing In and every split.
-    // ------------------------------------------------------------------
     const salesTaxData = salesTaxRows.map(row => ({
       invoiceId: row.invoiceId,
       invoiceNumber: row.invoiceNumber,
@@ -463,7 +447,6 @@ export const fetchMonthlyCloseReport = cache(
       ),
     }
 
-    // ------------------------------------------------------------------
     // Totals + House (rate-based, billing basis)
     //
     // The reporting model:
@@ -473,15 +456,13 @@ export const fetchMonthlyCloseReport = cache(
     //   Closer       → BILLING basis (billing hours × closer rate)
     //   House        → BILLING basis (billing hours × house rate)
     //
-    // House is computed DIRECTLY from the rate schedule — March 2026 will
-    // show 40% ($80/hr), April 2026+ will show 25% ($50/hr). Because
-    // Payroll lives on a different population, the four buckets don't
-    // cleanly reconcile to Billing In in a single month — that's a real
-    // cash-vs-accrual gap and is expected.
+    // House is computed DIRECTLY from the rate schedule for the period
+    // (`lib/billing/partner-rates.ts`). Because Payroll lives on a different
+    // population, the four buckets don't cleanly reconcile to Billing In in a
+    // single month. That's a real cash-vs-accrual gap and is expected.
     //
     // work_billable_total is exposed as a separate metric (Work Billable
     // card) for payroll context.
-    // ------------------------------------------------------------------
     const workBillableTotal = billableWorkHours * rates.billablePerHour
 
     const combinedBillingTotal =
@@ -490,7 +471,7 @@ export const fetchMonthlyCloseReport = cache(
     // hours purchased + net_30 hours logged (same population as
     // origination/closer). Billing hours no closer is credited with (no
     // closer on the as-of term, or an archived one) keep their closer share
-    // in house (PRD 007) — nobody is paid it, so it is reported here rather
+    // in house: nobody is paid it, so it is reported here rather
     // than vanishing from the split. Origination is optional too (a client
     // can come in from an ad), and its unpaid share stays in house the same way.
     // House is an ESTIMATE either way: it is the firm's nominal share, not a
@@ -502,9 +483,9 @@ export const fetchMonthlyCloseReport = cache(
       round2(billingHours - closer.totalHours)
     )
     const unassignedCloserAmount = unassignedCloserHours * rates.closerPerHour
-    // Pre-April 2026 internal originators weren't paid by policy
-    // (`internalOriginationPayable`), so the gap there is that rule, not a
-    // missing originator — and those closes froze it outside this line.
+    // When internal originators aren't paid (`internalOriginationPayable`
+    // false), the gap is that rule, not a missing originator, so it stays
+    // out of this line.
     const unassignedOriginationHours = rates.internalOriginationPayable
       ? Math.max(0, round2(billingHours - origination.totalHours))
       : 0

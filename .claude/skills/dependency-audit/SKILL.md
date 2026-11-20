@@ -59,7 +59,7 @@ Check health of key dependencies:
 - **Drizzle ORM** - Database layer stability
 - **Supabase client** - Auth/storage compatibility
 - **TanStack Query** - Caching layer
-- **Radix UI / shadcn** - Component primitives
+- **Base UI / shadcn** - Component primitives
 - **TipTap** - Rich text editor
 - **dnd-kit** - Drag and drop
 - **date-fns** - Date handling

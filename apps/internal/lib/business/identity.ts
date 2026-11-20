@@ -55,7 +55,7 @@ function sendingAddressFor(identity: BusinessIdentity): string {
 }
 
 /** `Name <address>` for automated mail. */
-export function fromAddressFor(identity: BusinessIdentity): string {
+function fromAddressFor(identity: BusinessIdentity): string {
   return formatSender(identity.name, sendingAddressFor(identity))
 }
 

@@ -56,7 +56,7 @@ import {
 import type { ProjectSheetLinkChanges } from '@/lib/projects/sheet/use-project-sheet-state'
 import { SheetNoticeSlot } from '@/components/sheets/sheet-notice-slot'
 
-export type ProjectSheetFormProps = {
+type ProjectSheetFormProps = {
   form: UseFormReturn<ProjectSheetFormValues>
   fieldState: ProjectSheetFieldState
   isEditing: boolean
@@ -107,7 +107,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
     onLoadTheirs,
   } = props
 
-  // Track repos in state for undo/redo integration
+  // Repo edits live in state so undo/redo can snapshot them.
   const [pendingRepos, setPendingRepos] = useState<PendingRepo[]>([])
   const [removedRepoIds, setRemovedRepoIds] = useState<Set<string>>(new Set())
 
@@ -170,7 +170,6 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
   const save = useCallback(
     (mode: SheetSaveMode, e?: React.BaseSyntheticEvent) => {
       e?.preventDefault()
-      // Convert removedRepoIds Set to array for submission
       // onSubmit reports its own result; validation errors stay on fields.
       void form.handleSubmit(values =>
         onSubmit(
@@ -196,7 +195,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
   )
   const handleSave = useCallback((mode: SheetSaveMode) => save(mode), [save])
 
-  // External state for undo/redo (repos)
+  // External state for undo/redo (repos and hosting links).
   // IMPORTANT: getExternalState must be stable (no state dependencies) because the
   // history hook's main effect depends on it. If it changes, the effect re-runs
   // and resets history. We use refs to access current state instead.

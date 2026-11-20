@@ -49,8 +49,8 @@ export async function DELETE(
   try {
     const { loggedOn } = await softDeleteTimeLog(user, projectId, timeLogId)
 
-    // PRD 002 section 05: non-blocking, admin-only closed-month warning.
-    // (JSON 200 instead of 204 so the warning can ride the response.)
+    // Non-blocking, admin-only closed-month warning. JSON 200 instead of
+    // 204 so the warning can ride the response.
     const warning = await closedMonthWarning(user, [loggedOn])
     return NextResponse.json(warning ? { ok: true, warning } : { ok: true })
   } catch (error) {
@@ -99,7 +99,7 @@ export async function POST(
   try {
     const { loggedOn } = await restoreTimeLog(user, projectId, timeLogId)
 
-    // PRD 002 section 05: non-blocking, admin-only closed-month warning.
+    // Non-blocking, admin-only closed-month warning.
     const warning = await closedMonthWarning(user, [loggedOn])
     return NextResponse.json(warning ? { ok: true, warning } : { ok: true })
   } catch (error) {
@@ -173,9 +173,8 @@ export async function PATCH(
   const payload = parsed.data
 
   try {
-    // F6: capture the pre-mutation date via the mutation's return value — a
-    // move OUT of a closed month must warn too, and the request only carries
-    // the new date.
+    // The mutation returns the date before the change: a move OUT of a
+    // closed month must warn too, and the request only carries the new date.
     const { previousLoggedOn } = await updateTimeLog(user, {
       projectId,
       timeLogId,
@@ -186,7 +185,7 @@ export async function PATCH(
       taskIds: payload.taskIds ?? [],
     })
 
-    // PRD 002 section 05: non-blocking, admin-only closed-month warning.
+    // Non-blocking, admin-only closed-month warning.
     const warning = await closedMonthWarning(user, [
       previousLoggedOn,
       payload.loggedOn,

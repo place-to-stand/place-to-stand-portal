@@ -58,9 +58,9 @@ Review the specified files for:
 - Captions/transcripts for video/audio
 - No auto-playing media with sound
 
-### 7. Component-Specific (shadcn/Radix)
+### 7. Component-Specific (shadcn/Base UI)
 
-- Radix primitives used correctly (they handle a11y)
+- Base UI primitives (through `@pts/ui`) used correctly (they handle a11y)
 - Custom overrides don't break accessibility
 - Tooltips accessible to keyboard users
 - Dropdown menus with proper ARIA
@@ -80,7 +80,7 @@ Fix: Code example or recommendation
 ## Actions
 
 1. Read component files in scope
-2. Check for Radix/shadcn primitive usage
+2. Check for `@pts/ui` (Base UI) primitive usage
 3. Verify keyboard interaction patterns
 4. Analyze color usage and contrast
 5. Review form patterns

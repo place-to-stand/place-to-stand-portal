@@ -22,14 +22,14 @@ const FORM_ERROR_FIELDS = [
   'general',
 ] as const
 
-export type UseTimeLogFormStateOptions = {
+type UseTimeLogFormStateOptions = {
   currentUserId: string
   admins: ProjectTimeLogDialogParams['admins']
   projectMembers: ProjectTimeLogDialogParams['projectMembers']
   getToday: () => string
 }
 
-export type UseTimeLogFormStateResult = {
+type UseTimeLogFormStateResult = {
   hoursInput: string
   onHoursChange: (value: string) => void
   loggedOnInput: string

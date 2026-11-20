@@ -23,7 +23,7 @@ type UserMenuProps = {
 }
 
 /** The first word of the person's name, else the email's local part. */
-export function menuFirstName(fullName: string | null, email: string) {
+function menuFirstName(fullName: string | null, email: string) {
   const first = fullName?.trim().split(/\s+/)[0]
   return first || email.split('@')[0] || email
 }

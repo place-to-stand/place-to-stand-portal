@@ -62,8 +62,8 @@ export function LeadUpdateItem({
   const canChange = canChangeLeadUpdate({ role, userId }, update.authorId)
 
   // Same double-sanitize convention as task comments: the dialog sanitizes
-  // before send, and the renderer sanitizes again before injecting. Pre-RTE
-  // rows hold plain text, which passes through unchanged.
+  // before send, and the renderer sanitizes again before injecting. A
+  // plain-text body passes through unchanged.
   const sanitizedBody = useMemo(
     () => sanitizeEditorHtml(update.body ?? ''),
     [update.body]

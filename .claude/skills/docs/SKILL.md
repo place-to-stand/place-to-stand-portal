@@ -66,7 +66,7 @@ ARIA roles, keyboard interactions
 
 ### 3. Database Schema Documentation
 
-For tables in `lib/db/schema.ts`:
+For tables in `packages/db/src/schema.ts`:
 
 ```markdown
 ## Table: table_name

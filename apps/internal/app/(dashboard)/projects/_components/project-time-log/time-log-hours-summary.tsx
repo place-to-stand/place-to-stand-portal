@@ -18,7 +18,7 @@ import { balanceTone } from '@/lib/billing/balance-tone'
 import { getJson } from '@/lib/http/get-json'
 import type { TimeLogHours } from '@/lib/projects/time-log/load-time-log-hours'
 
-export const TIME_LOG_HOURS_QUERY_KEY = 'time-log-hours' as const
+const TIME_LOG_HOURS_QUERY_KEY = 'time-log-hours' as const
 
 /**
  * The top of every time-log dialog (create and edit, from every entry

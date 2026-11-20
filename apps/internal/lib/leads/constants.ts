@@ -101,5 +101,3 @@ export function getLeadSourceLabel(
 
   return LEAD_SOURCE_LABELS[source] ?? source
 }
-
-export { isTerminalLeadStatus } from './stage-rules'

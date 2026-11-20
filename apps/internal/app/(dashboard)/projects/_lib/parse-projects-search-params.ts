@@ -19,7 +19,7 @@ type ParsedProjectsSearchParams = {
 }
 
 /**
- * Implicit landing status filter (PRD 004 §03, R2): a clean `/projects` URL
+ * Implicit landing status filter: a clean `/projects` URL
  * shows onboarding + active projects without counting as "filtered".
  */
 export const DEFAULT_STATUS_FILTER: ProjectStatusValue[] = [
@@ -39,19 +39,19 @@ export function isProjectStatusValue(
   return (PROJECT_STATUS_ENUM_VALUES as readonly string[]).includes(value)
 }
 
-export type ParsedProjectsLandingSearchParams = {
+type ParsedProjectsLandingSearchParams = {
   /** Selected statuses; empty array = explicitly cleared (`?status=none`). */
   statuses: ProjectStatusValue[]
   search: string | null
   /**
    * True when the URL deviates from the clean landing (non-default status
-   * selection or a search query). The implicit default is NOT active (R2).
+   * selection or a search query). The implicit default is NOT active.
    */
   filtersActive: boolean
 }
 
 /**
- * URL semantics (preserved from the original client-side filter):
+ * URL semantics:
  * no param = DEFAULT_STATUS_FILTER; `?status=none` = explicitly cleared;
  * otherwise comma-joined list (invalid entries dropped, all-invalid falls
  * back to the default).

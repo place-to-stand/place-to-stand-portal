@@ -39,7 +39,7 @@ function DropdownMenuTrigger({
 
 function DropdownMenuContent({
   className,
-  // House rule: dropdown popups left-align with their trigger; deviations
+  // House rule 4: dropdown popups left-align with their trigger; deviations
   // (e.g. row-action menus hanging left) opt in with an explicit `align`.
   align,
   alignOffset = 0,
@@ -53,7 +53,7 @@ function DropdownMenuContent({
     MenuPrimitive.Positioner.Props,
     'alignOffset' | 'side' | 'sideOffset'
   > & { align?: PopupAlign } & {
-    /** Radix compatibility: keeps the menu mounted while closed. */
+    /** Keeps the menu mounted while closed. */
     forceMount?: boolean
   }) {
   return (
@@ -85,12 +85,11 @@ function DropdownMenuGroup({ ...props }: MenuPrimitive.Group.Props) {
 
 type RadixItemCompatProps = {
   /**
-   * Radix compatibility: fires on activation (click or keyboard). Calling
-   * `event.preventDefault()` inside the handler keeps the menu open, matching
-   * Radix semantics.
+   * Fires on activation (click or keyboard). Calling `event.preventDefault()`
+   * inside the handler keeps the menu open.
    */
   onSelect?: (event: Event) => void
-  /** Radix compatibility: maps to Base UI's `label` for typeahead matching. */
+  /** Maps to Base UI's `label` for typeahead matching. */
   textValue?: string
 }
 
@@ -104,8 +103,8 @@ function useRadixSelectAdapter(
       if (onSelect) {
         onSelect(event.nativeEvent)
         if (event.nativeEvent.defaultPrevented) {
-          // Stops Base UI's internal close-on-click handler (Radix's
-          // preventDefault-keeps-open contract).
+          // Stops Base UI's internal close-on-click handler, so
+          // preventDefault keeps the menu open.
           ;(
             event as unknown as { preventBaseUIHandler?: () => void }
           ).preventBaseUIHandler?.()
@@ -227,9 +226,8 @@ function DropdownMenuLabel({
   inset?: boolean
 }) {
   // Plain div, not Menu.GroupLabel: Base UI's GroupLabel throws at runtime
-  // unless nested in <Menu.Group>, while Radix's Label (the API consumers
-  // wrote against) was a free-standing styled div. Presentation-only either
-  // way — this keeps every existing call site valid anywhere in the menu.
+  // unless nested in <Menu.Group>, and a label here may sit anywhere in the
+  // menu. It is presentation-only either way.
   return (
     <div
       data-slot='dropdown-menu-label'

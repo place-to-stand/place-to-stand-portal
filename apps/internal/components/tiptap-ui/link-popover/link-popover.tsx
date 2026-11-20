@@ -3,21 +3,17 @@
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 import type { Editor } from '@tiptap/react'
 
-// --- Hooks ---
 import { useIsMobile } from '@pts/ui/hooks/use-mobile'
 import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
-// --- Icons ---
 import { CornerDownLeftIcon } from '@/components/tiptap-icons/corner-down-left-icon'
 import { ExternalLinkIcon } from '@/components/tiptap-icons/external-link-icon'
 import { LinkIcon } from '@/components/tiptap-icons/link-icon'
 import { TrashIcon } from '@/components/tiptap-icons/trash-icon'
 
-// --- Tiptap UI ---
 import type { UseLinkPopoverConfig } from '@/components/tiptap-ui/link-popover'
 import { useLinkPopover } from '@/components/tiptap-ui/link-popover'
 
-// --- UI Primitives ---
 import type { ButtonProps } from '@/components/tiptap-ui-primitive/button'
 import { Button, ButtonGroup } from '@/components/tiptap-ui-primitive/button'
 import {

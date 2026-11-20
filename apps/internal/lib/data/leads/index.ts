@@ -74,7 +74,6 @@ export const fetchLeadsBoard = cache(
         rank: row.rank,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
-        // Conversion
         convertedAt: row.convertedAt ?? null,
         convertedToClientId: row.convertedToClientId ?? null,
         openTaskCount: Number(row.openTaskCount ?? 0),
@@ -137,7 +136,6 @@ export const fetchLeadById = cache(
       rank: lead.rank,
       createdAt: lead.createdAt,
       updatedAt: lead.updatedAt,
-      // Conversion
       convertedAt: lead.convertedAt ?? null,
       convertedToClientId: lead.convertedToClientId ?? null,
       openTaskCount: Number(lead.openTaskCount ?? 0),
@@ -201,7 +199,6 @@ export const fetchArchivedLeads = cache(
       rank: row.rank,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
-      // Conversion
       convertedAt: row.convertedAt ?? null,
       convertedToClientId: row.convertedToClientId ?? null,
       openTaskCount: Number(row.openTaskCount ?? 0),
@@ -255,9 +252,8 @@ async function selectLeadRows({
     rank: includeRank ? leads.rank : sql<string>`'zzzzzzzz'`,
     createdAt: leads.createdAt,
     updatedAt: leads.updatedAt,
-    // Conversion
     convertedAt: leads.convertedAt,
-    // A won lead's client is its company (0111).
+    // A converted lead's client is its company.
     convertedToClientId: sql<
       string | null
     >`case when ${leads.convertedAt} is not null then ${leads.companyId} end`,

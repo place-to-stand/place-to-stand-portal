@@ -26,9 +26,9 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
   // getClaims() verifies the session JWT's signature and expiry. With the
   // project on asymmetric signing keys (ES256) that happens in-process against
   // a JWKS cached for 10 minutes — no round trip to Supabase Auth per request.
-  // With the legacy HS256 secret it falls back to getUser() internally, so
-  // behaviour is unchanged until the key is rotated. Either way the only claim
-  // trusted here is `sub`; role, disabled and deleted state come from our own
+  // With an HS256 secret it falls back to getUser() internally. Either way
+  // the only claim trusted here is `sub`; role, disabled and deleted state
+  // come from our own
   // users row below, on every request.
   const { data, error } = await supabase.auth.getClaims()
 
@@ -126,7 +126,6 @@ export const requireClientUser = async () => {
  * ended (sign-out, or an orphaned sign-in taken over and re-linked to a
  * person) would otherwise keep working until it expires. Ending a session
  * deletes its auth.sessions row; this makes that end the token at once.
- * (Security review, Nov 2026.)
  */
 async function sessionIsLive(
   sessionId: unknown,
@@ -143,8 +142,8 @@ async function sessionIsLive(
   } catch (error) {
     // Fail closed: an unverifiable session counts as ended. A database
     // outage would fail the users-row lookup next anyway; the one error this
-    // alone could cause (the role can't read auth.sessions) is ruled out by
-    // the pre-merge has_table_privilege check in the release runbook.
+    // alone could cause (the role can't read auth.sessions) would sign every
+    // client out, so the database role must keep SELECT on auth.sessions.
     console.error('Session check failed; treating the session as ended', error)
     return false
   }

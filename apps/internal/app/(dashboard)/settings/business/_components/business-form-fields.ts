@@ -9,9 +9,9 @@ export const textSchema = businessSettingsSchema.omit({
 })
 export type TextInput = z.input<typeof textSchema>
 export type TextOutput = z.output<typeof textSchema>
-export type TextField = keyof TextInput
+type TextField = keyof TextInput
 
-export type Field = {
+type Field = {
   name: TextField
   label: string
   optional?: boolean

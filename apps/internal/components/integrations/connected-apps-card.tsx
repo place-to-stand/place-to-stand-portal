@@ -20,7 +20,7 @@ const QUERY_KEY = ['connectedApps'] as const
 type ApiResponse<T> = { ok: true; data: T } | { ok: false; error: string }
 
 /**
- * Apps connected to the portal through the MCP server (PRD 009 §6). They are
+ * Apps connected to the portal through the MCP server. They are
  * connected from the app itself (claude.ai, Claude Code), so this card only
  * lists and revokes.
  */

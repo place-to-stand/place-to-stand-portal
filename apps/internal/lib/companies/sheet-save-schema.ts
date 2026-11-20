@@ -70,8 +70,8 @@ export const saveCompanySheetSchema = saveCompanySchema.extend({
   billing: companyBillingIntentSchema.default({ kind: 'none' }),
   /**
    * Everyone at the company who can see it in the client portal after this
-   * save (people joining included). Omitted leaves access as it is; turning
-   * it on for someone without a sign-in gives them one.
+   * save (people joining included). Omitted leaves access as it is. It never
+   * makes a sign-in: without one, the switch gives no access.
    */
   portalAccessContactIds: z.array(z.string().uuid()).max(500).optional(),
   /**

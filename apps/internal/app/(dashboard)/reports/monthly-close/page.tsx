@@ -73,7 +73,7 @@ export default async function MonthlyClosePage({
   const validMonth = bounded.month - 1
   const validYear = bounded.year
 
-  // W4: the URL month param is 0-indexed; the close layer is 1-indexed.
+  // The URL month param is 0-indexed; the close layer is 1-indexed.
   const closeMonthNumber = validMonth + 1
   const monthKey = `${validYear}-${String(closeMonthNumber).padStart(2, '0')}`
 

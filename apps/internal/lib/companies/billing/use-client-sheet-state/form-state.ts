@@ -84,7 +84,7 @@ export function useClientBillingForm({
   const [isLoadingContacts, setIsLoadingContacts] = useState(false)
   const { openNew } = useSheetParams()
 
-  // Origination — one picker offers admins and contacts; whichever is
+  // Origination — one picker offers staff users and contacts; whichever is
   // selected determines the kind, so the two selections are mutually exclusive.
   const [isOriginationPickerOpen, setIsOriginationPickerOpen] = useState(false)
   // Kept as ids, known from the client row before the people load: loading
@@ -210,7 +210,7 @@ export function useClientBillingForm({
     originationUserId !== initialOriginationUserId ||
     originationContactId !== initialOriginationContactId
   const closerDirty = !closerSplitsEqual(closerShares, initialClosers)
-  // Closer + origination are one effective-dated commission term (PRD 007).
+  // Closer + origination are one effective-dated commission term.
   const commissionDirty = originationDirty || closerDirty
   const hasUnsavedChanges = form.formState.isDirty || commissionDirty
 
@@ -366,7 +366,7 @@ export function useClientBillingForm({
 
   const collectFields = useCallback((): CompanyBillingFields | null => {
     // Origination and closers are both optional. With no closer the closer
-    // share stays in house (estimated) on the Monthly Close (PRD 007).
+    // share stays in house (estimated) on the Monthly Close.
     const splitError = closerSplitError(closerShares)
     if (splitError) {
       setCloserError(splitError)

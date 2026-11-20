@@ -10,9 +10,9 @@ export type ThemedValue = string | { light: string; dark: string }
 
 export type ColorToken = { name: string; value: ThemedValue; usage: string }
 
-export type ScaleToken = { name: string; value: ThemedValue; usage: string }
+type ScaleToken = { name: string; value: ThemedValue; usage: string }
 
-export type TypeStyle = {
+type TypeStyle = {
   name: string
   fontSize: string
   lineHeight: string
@@ -23,7 +23,7 @@ export type TypeStyle = {
   usage: string
 }
 
-export type TypeGroup = {
+type TypeGroup = {
   name: string
   family: string
   note: string

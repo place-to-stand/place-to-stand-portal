@@ -58,7 +58,7 @@ function InvoiceRow({
   return (
     // py-2.5 matches TaskRows, so invoice and task accordions have the same
     // row rhythm. The action buttons are size-8, which sets the real floor
-    // here — the padding was doing nothing but adding height.
+    // here, so more padding would only add height.
     <li className='flex flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4'>
       <div className='min-w-0 space-y-1'>
         <div className='flex flex-wrap items-center gap-2'>

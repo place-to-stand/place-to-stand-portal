@@ -1,6 +1,6 @@
 /**
  * Dimming for archived table rows. The fade is applied per-cell rather than
- * to the row so the trailing Actions cell can opt back out — restore/delete
+ * to the row so the trailing Actions cell can opt back out: restore
  * controls are the whole point of an archive view and must stay legible.
  *
  * The leading select box stays sharp too, for bulk restore.

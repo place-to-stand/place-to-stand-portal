@@ -8,10 +8,10 @@ declare global {
   var __drizzle_db__: Db | undefined
 }
 
-// Module-level memo: one client per process in every environment. Memoising
-// only outside production (via globalThis) meant that on Vercel every `db.`
-// access built a fresh postgres.js pool and a new TLS connection to the
-// pooler, which alone put page loads over a second.
+// Module-level memo: one client per process in every environment, production
+// included. A client per `db.` access would build a fresh postgres.js pool and
+// a new TLS connection to the pooler each time, which alone puts page loads
+// over a second.
 let _db: Db | undefined
 
 function getDb(): Db {

@@ -4,7 +4,7 @@
  * complete the session with `payment_status: 'unpaid'` and settle later with
  * `checkout.session.async_payment_succeeded` (or `_failed`).
  */
-export type CheckoutPaymentOutcome =
+type CheckoutPaymentOutcome =
   | 'paid' // money collected: mark the invoice paid
   | 'awaiting' // completed but not settled yet: wait for the async event
   | 'failed' // the delayed payment failed: let the client pay again

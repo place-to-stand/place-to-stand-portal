@@ -196,7 +196,7 @@ export function ComponentsRecordRows() {
               id: 'design-lead',
               contactName: 'Northwind redesign',
               status: 'PROPOSAL_SENT',
-              assigneeName: 'Jason D.',
+              assigneeName: 'Alex R.',
             }}
             openable={false}
           />

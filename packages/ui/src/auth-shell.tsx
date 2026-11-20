@@ -6,8 +6,8 @@ import { cn } from './cn'
 
 /**
  * The signed-out chrome for both portals: the marketing site's dark blueprint
- * background, the PTS lockup, and a translucent panel for whatever form the
- * page owns.
+ * background, the business's lockup, and a translucent panel for whatever
+ * form the page owns.
  *
  * Dark regardless of the viewer's theme. The marketing identity is dark-only,
  * and these screens are the handoff from the marketing site — the signed-in

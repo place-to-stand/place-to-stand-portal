@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 const ADMIN_ACCESS_SUMMARY =
   'It will act as you: read companies, clients and their billing, people, projects, tasks, leads, form submissions, invoices, hour blocks, time logs, the monthly close and activity, and create and update companies, people, tasks, task comments and leads.'
 
-/** SALES reaches what the portal gives them (PRD 009 D6). */
+/** What a SALES user's consent grants: what the portal gives them. */
 const SALES_ACCESS_SUMMARY =
   'It will act as you: read and update companies, people and leads, log lead updates, read their activity, and work tasks on the projects you belong to.'
 
@@ -41,7 +41,7 @@ function redirectHost(uri: string): string | null {
 }
 
 /**
- * OAuth consent screen for Supabase Auth's OAuth 2.1 server (PRD 009 §2).
+ * OAuth consent screen for Supabase Auth's OAuth 2.1 server.
  * Supabase redirects here with an `authorization_id`; the proxy has already
  * sent signed-out visitors through `/sign-in` and back.
  */

@@ -23,20 +23,20 @@ export class SupabaseApiError extends Error {
   }
 }
 
-export type SupabaseProfile = {
+type SupabaseProfile = {
   id: string
   primaryEmail: string | null
   firstName: string | null
   lastName: string | null
 }
 
-export type SupabaseOrganization = {
+type SupabaseOrganization = {
   id: string
   slug: string
   name: string
 }
 
-export type SupabaseProject = {
+type SupabaseProject = {
   id: string
   ref: string
   name: string
@@ -87,7 +87,7 @@ export async function fetchSupabaseProfile(
   }
 }
 
-export async function fetchSupabaseOrganizations(
+async function fetchSupabaseOrganizations(
   token: string
 ): Promise<SupabaseOrganization[]> {
   const organizations = await supabaseFetch<

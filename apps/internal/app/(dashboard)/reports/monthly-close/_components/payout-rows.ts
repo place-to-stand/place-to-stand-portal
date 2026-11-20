@@ -5,7 +5,7 @@ import { formatCurrency, formatHours, formatPercent } from '@pts/ui/numbers'
 
 export type PayoutColumn = 'payroll' | 'origination' | 'closer' | 'profitShare'
 
-export type PayoutDetailLine = {
+type PayoutDetailLine = {
   label: string
   column: PayoutColumn
   amount: number

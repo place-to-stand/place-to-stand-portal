@@ -17,7 +17,7 @@ const SOURCE_OPTIONS = LEAD_SOURCE_TYPES.map(value => ({
   label: LEAD_SOURCE_LABELS[value],
 }))
 
-/** Search over the board's leads, then owner and source (PRD 004 §03). */
+/** Search over the board's leads, then owner and source. */
 export function LeadsBoardFilters({
   search,
   source,

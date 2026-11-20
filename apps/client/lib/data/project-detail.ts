@@ -8,7 +8,7 @@ import { projects } from '@pts/db/schema'
 import type { AppUser } from '@/lib/auth/session'
 import { resolvePortalScope } from '@/lib/auth/view-as'
 
-export type ProjectDetail = {
+type ProjectDetail = {
   id: string
   name: string
   status: string

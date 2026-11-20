@@ -31,7 +31,7 @@ type ProjectsLandingFiltersProps = {
 }
 
 /**
- * Landing toolbar (PRD 004 §03, D6/R2): governs all three project sections.
+ * Landing toolbar: governs all three project sections.
  * URL semantics: no param = DEFAULT_STATUS_FILTER, `?status=none` =
  * explicitly cleared, otherwise comma-joined; the implicit default never
  * counts as an active filter.

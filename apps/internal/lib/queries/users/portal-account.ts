@@ -86,7 +86,7 @@ export async function getPortalAccountSummary(
  * Sign-in times live only on Supabase's `auth.users`, so read them for the
  * served page by id rather than joining the auth schema into the list query.
  */
-export async function fetchLastSignIns(
+async function fetchLastSignIns(
   userIds: string[]
 ): Promise<Map<string, string>> {
   if (!userIds.length) return new Map()

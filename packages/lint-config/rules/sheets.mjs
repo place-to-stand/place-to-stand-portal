@@ -8,8 +8,8 @@
  *                   from useSheetParams. On when `entities` is set.
  *   param-in-stack  never read a sheet param by hand (searchParams.get('task'),
  *                   params.company, destructuring): useSheetParams in the
- *                   browser, pageSheetParam on the server (PR #365). On when
- *                   `entities` is set.
+ *                   browser, pageSheetParam on the server. On when `entities`
+ *                   is set.
  *   link-in-place   a linked record opens its sheet over the page (SheetLink),
  *                   never an href that leaves for the record's list
  *   layer-z         no z-index on SheetContent / SheetOverlay: sheetLayerZ in

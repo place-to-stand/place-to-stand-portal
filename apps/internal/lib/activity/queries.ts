@@ -35,15 +35,14 @@ import type {
 } from './types'
 
 /**
- * Page-view verbs were retired in Sep 2026 (they were ~half the table and
- * carried no information). Rows written before that stay in the table for
- * the record but never surface in a feed.
+ * Page-view verbs. Nothing writes them any more; old rows stay in the table
+ * for the record but never surface in a feed.
  */
 const RETIRED_VERBS = ['PROJECT_VIEWED', 'CLIENT_VIEWED']
 
 /**
- * Billing and portal-access events sit on the company (target COMPANY since
- * 0113). Anyone who can't manage clients (Sales) reads only the verbs
+ * Billing and portal-access events sit on the company (target COMPANY).
+ * Anyone who can't manage clients (Sales) reads only the verbs
  * `ACTIVITY_VERB_AUDIENCE` marks `any`, so an unclassified or retired verb
  * stays hidden from them.
  */
@@ -164,8 +163,9 @@ async function scopedActivityWhere(
 
 /**
  * Access control lives here, not in the callers (this project has NO RLS):
- * admins see everything; SALES (CRM staff) may read lead and contact activity
- * only (`canReadActivity`). Requested filters narrow the result set.
+ * admins see everything; SALES (CRM staff) may read lead, contact and company
+ * activity (`canReadActivity`), plus the history of a task they can work,
+ * without billing events. Requested filters narrow the result set.
  */
 export async function fetchActivityLogs(
   user: AppUser,
@@ -236,8 +236,8 @@ export async function countActivityLogs(
 /**
  * Returns the NEWEST logs in the window (oldest first, for prompting), scoped
  * by the same rule as `fetchActivityLogs` (`canReadActivity`): admins may
- * read every row; SALES only LEAD and CONTACT rows, and only by naming those
- * target types. A caller passing no `targetType` therefore gets the unscoped
+ * read every row; SALES only LEAD, CONTACT and COMPANY rows (no billing
+ * events), and only by naming those target types. A caller passing no `targetType` therefore gets the unscoped
  * window, which is admin-only — a future non-admin call site fails loudly
  * instead of silently leaking. (Callers: the dashboard recent-activity
  * summary route, admin-only, and the MCP `recent_activity` tool.)
@@ -291,8 +291,8 @@ export async function fetchActivityLogsSince(
   const filteredQuery = whereClause ? baseQuery.where(whereClause) : baseQuery
 
   // Take the newest `limit` rows, then flip to chronological order. Ordering
-  // ascending with a limit returned the *oldest* rows of a busy window, so the
-  // "recent activity" briefing described the start of the week, not the end.
+  // ascending with a limit would return the *oldest* rows of a busy window,
+  // so the briefing would describe the start of the week, not the end.
   const rows = (await filteredQuery
     .orderBy(desc(activityLogs.createdAt), desc(activityLogs.id))
     .limit(effectiveLimit)) as ActivityLogSelection[]
@@ -374,7 +374,7 @@ function encodeCursor(createdAt: string, id: string): string {
   return `${createdAt}${CURSOR_SEPARATOR}${id}`
 }
 
-/** Accepts the legacy bare-timestamp cursor so in-flight clients keep paging. */
+/** Also accepts a bare timestamp cursor (no `|id`), which pages by time alone. */
 function decodeCursor(value: string): { createdAt: string; id: string | null } {
   const separatorIndex = value.lastIndexOf(CURSOR_SEPARATOR)
   if (separatorIndex === -1) {

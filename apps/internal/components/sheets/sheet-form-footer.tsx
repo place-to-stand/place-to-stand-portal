@@ -26,7 +26,7 @@ import {
 /**
  * A save button's hover hint: what it does and its keys, in the same tooltip
  * style as Undo and Redo ("Save and close ⌘S"). The keys stay out of the
- * button itself (Jason, Nov 6). A disabled button shows its reason instead.
+ * button itself. A disabled button shows its reason instead.
  */
 function SaveKeysTooltip({
   label,
@@ -136,7 +136,7 @@ export function FormFooterBar({
 /** How long Save reads "Saved" after a keep-open save. */
 const SAVED_FOR_MS = 2000
 
-export type SheetFormFooterProps = {
+type SheetFormFooterProps = {
   /** The id of the <form> the submit button targets. */
   formId: string
   /**

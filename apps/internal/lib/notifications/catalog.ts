@@ -46,7 +46,7 @@ const CHAT_DELIVERY =
 /**
  * Every notification the portal pushes outside itself, rendered with
  * placeholder data through the same builders the notifier uses. Google Chat is
- * the only channel today (audited Sep 2026: no Slack, SMS, or other webhooks).
+ * the only channel: there is no Slack, SMS or other webhook.
  */
 export function buildNotificationCatalog(): NotificationTemplateEntry[] {
   const origin = new URL(serverEnv.GOOGLE_REDIRECT_URI).origin

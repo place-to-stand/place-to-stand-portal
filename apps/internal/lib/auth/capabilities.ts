@@ -437,7 +437,7 @@ export function creatableProjectTypes<T extends string>(
   return []
 }
 
-export type CapabilityScope = { detail: string }
+type CapabilityScope = { detail: string }
 
 export function capabilityScope(
   capability: Capability,

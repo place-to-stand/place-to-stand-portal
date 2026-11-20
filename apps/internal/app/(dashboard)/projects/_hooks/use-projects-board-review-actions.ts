@@ -13,12 +13,12 @@ import type { ActionResult } from '../actions/action-types'
 type ReviewActionKind = 'accept' | 'unaccept' | 'restore'
 type ReviewActionState = { type: ReviewActionKind; taskId: string }
 
-export type UseProjectsBoardReviewActionsArgs = {
+type UseProjectsBoardReviewActionsArgs = {
   activeProjectId: string | null
   toast: (options: ToastOptions) => void
 }
 
-export type UseProjectsBoardReviewActionsResult = {
+type UseProjectsBoardReviewActionsResult = {
   handleAcceptAllDone: () => void
   handleAcceptTask: (taskId: string) => void
   handleUnacceptTask: (taskId: string) => void

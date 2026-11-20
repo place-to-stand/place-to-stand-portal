@@ -22,20 +22,20 @@ export class VercelApiError extends Error {
   }
 }
 
-export type VercelUser = {
+type VercelUser = {
   id: string
   username: string
   email: string | null
   name: string | null
 }
 
-export type VercelTeam = {
+type VercelTeam = {
   id: string
   slug: string
   name: string
 }
 
-export type VercelProject = {
+type VercelProject = {
   id: string
   name: string
   framework: string | null
@@ -94,7 +94,7 @@ export async function fetchVercelUser(token: string): Promise<VercelUser> {
   }
 }
 
-export async function fetchVercelTeams(token: string): Promise<VercelTeam[]> {
+async function fetchVercelTeams(token: string): Promise<VercelTeam[]> {
   const teams: VercelTeam[] = []
   let until: number | undefined
 
@@ -144,7 +144,7 @@ const toRepoFullName = (link: RawVercelProject['link']) =>
  * Lists the projects visible in one scope: a team when `team` is given,
  * otherwise the member's personal account.
  */
-export async function fetchVercelProjects(
+async function fetchVercelProjects(
   token: string,
   team: VercelTeam | null
 ): Promise<VercelProject[]> {

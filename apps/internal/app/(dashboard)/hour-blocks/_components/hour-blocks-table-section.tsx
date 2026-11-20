@@ -41,7 +41,7 @@ import { SheetLink, cellLinkClass } from '@/components/ui/sheet-link'
 
 type HourBlocksTableMode = 'active' | 'archive'
 
-export type HourBlocksTableSectionProps = {
+type HourBlocksTableSectionProps = {
   hourBlocks: HourBlockWithClient[]
   selection: RowSelection
   mode: HourBlocksTableMode
@@ -53,7 +53,7 @@ export type HourBlocksTableSectionProps = {
   onRequestDelete: (block: HourBlockWithClient) => void
   onRestore: (block: HourBlockWithClient) => void
   emptyMessage: string
-  /** Route the sort/filter params live on (PRD 004 §03). */
+  /** Route the sort/filter params live on. */
   basePath: string
 }
 

@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { htmlToPlainText } from '@/lib/activity/text-diff'
 
 /**
- * Output bounds (PRD 009 §4): a list never floods the model's context. Lists
+ * Output bounds: a list never floods the model's context. Lists
  * are limit-capped rather than cursor-paged — `hasMore` tells the agent to
  * narrow its filters, which is what it should do anyway.
  */

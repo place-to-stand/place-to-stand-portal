@@ -33,10 +33,10 @@ import type {
 } from '@/lib/command-palette/types'
 
 /**
- * ⌘K palette record search (PRD 004 §01, D13): every kind of record with a
- * sheet, each result opening it. Fuzzy semantics inherited from
- * `createSearchPattern` by design (W3). Admin-only (`portal.command_palette`),
- * so beyond R3 there are no per-record visibility rules.
+ * ⌘K palette record search: every kind of record with a sheet, each result
+ * opening it. Matching uses `createSearchPattern`, like the list searches.
+ * Admin-only (`portal.command_palette`), so beyond hiding other people's
+ * PERSONAL projects there are no per-record visibility rules.
  */
 export async function searchCommandPalette(
   user: AppUser,
@@ -147,7 +147,7 @@ async function searchPeople(
 }
 
 /**
- * Projects by name, slug or client name (R7); each opens its board, or its
+ * Projects by name, slug or client name; each opens its board, or its
  * sheet when the board can't be addressed.
  */
 async function searchProjects(

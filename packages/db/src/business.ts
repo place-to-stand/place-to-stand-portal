@@ -6,9 +6,9 @@ import { businessSettings, companies } from './schema'
 /**
  * The install's own business, read in one place by both apps (emails, PDFs,
  * share pages, dates). The name comes from the staff company; everything else
- * from the one `business_settings` row (migration 0137).
+ * from the one `business_settings` row.
  *
- * A database before 0137, or with no row yet, still renders: the name falls
+ * A database without that table, or with no row yet, still renders: the name falls
  * back to the product's, and every other field is left empty. No install
  * starts with another business's contact details.
  */
@@ -125,7 +125,7 @@ async function readStaffCompanyName(db: DbClient): Promise<string | null> {
 
 /**
  * Reads the business. Never throws for a missing table or row (a database not
- * yet migrated to 0137): it returns the fallbacks instead, so email and PDFs
+ * yet migrated): it returns the fallbacks instead, so email and PDFs
  * keep working during a release.
  */
 export async function readBusinessIdentity(
@@ -253,7 +253,7 @@ export type ProfitSharePolicy = {
 
 /**
  * The profit share, or null when it is off: no start month, no partners, or
- * a database before migration 0137.
+ * a database without its columns yet.
  */
 export async function readProfitSharePolicy(
   db: DbClient

@@ -3,7 +3,7 @@
  *
  * The team notification email, the Submissions table's Source column, and the
  * detail sheet all call this, so the three can never describe the same row
- * differently. Pure on purpose: no env, no dates, no DB types beyond the eight
+ * differently. Pure on purpose: no env, no dates, no DB types beyond the six
  * attribution fields.
  */
 
@@ -16,7 +16,7 @@ export type AttributionChannel =
   | 'campaign'
   | 'direct'
 
-export type AttributionInput = {
+type AttributionInput = {
   utmSource: string | null
   utmMedium: string | null
   utmCampaign: string | null
@@ -25,7 +25,7 @@ export type AttributionInput = {
   referrer: string | null
 }
 
-export type AttributionSummary = {
+type AttributionSummary = {
   channel: AttributionChannel
   /** Human-readable, e.g. `Google Ads · brand-search · "shopify agency"`. */
   label: string

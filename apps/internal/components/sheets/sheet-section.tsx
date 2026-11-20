@@ -31,7 +31,7 @@ type SheetSectionProps = {
    * any other (Comments, Activity) stays muted.
    */
   icon?: LucideIcon
-  /** One line under the title — the place for copy that used to hang off each field. */
+  /** One line under the title: the place for copy about the section, not a hint on each field. */
   description?: string
   /**
    * The section holds a list or an empty state (Comments): the heading sits

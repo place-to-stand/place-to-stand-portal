@@ -13,9 +13,9 @@ type DialogParamExtras = {
 }
 
 /**
- * Derives `ProjectTimeLogDialog` params from a fully-relational project row.
- * Extracted from the board's inline JSX so the task sheet can build the same
- * params. Callers must only invoke this with a genuine `ProjectWithRelations`
+ * Derives `ProjectTimeLogDialog` params from a fully-relational project row,
+ * for the task sheet and the time-log context routes. Callers must only
+ * invoke this with a genuine `ProjectWithRelations`
  * (the lead overlay's init payload does not guarantee `burndown`).
  */
 export function buildProjectTimeLogDialogParams(

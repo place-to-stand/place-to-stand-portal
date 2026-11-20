@@ -31,9 +31,8 @@ export async function computeMetrics(since: Date): Promise<ActivityMetrics> {
 }
 
 /**
- * Page views were logged as activity until Sep 2026; historical rows still
- * carry `*_VIEWED` verbs and must not count as project activity or feed the
- * prompt.
+ * Old page-view rows carry `*_VIEWED` verbs and must not count as project
+ * activity or feed the prompt. INVOICE_VIEWED is a real event and stays.
  */
 export function isViewEvent(log: ActivityLogWithActor): boolean {
   return log.verb.endsWith('_VIEWED') && log.target_type !== 'INVOICE'
@@ -43,7 +42,7 @@ export function isViewEvent(log: ActivityLogWithActor): boolean {
  * Counted in the database rather than from the fetched sample so a busy
  * window that exceeds the fetch limit still reports every touched project.
  */
-export async function countActiveProjects(since: Date): Promise<number> {
+async function countActiveProjects(since: Date): Promise<number> {
   const result = await db
     .select({ count: countDistinct(activityLogs.targetProjectId) })
     .from(activityLogs)
@@ -58,7 +57,7 @@ export async function countActiveProjects(since: Date): Promise<number> {
   return result[0]?.count ?? 0
 }
 
-export async function countNewLeads(since: Date): Promise<number> {
+async function countNewLeads(since: Date): Promise<number> {
   const result = await db
     .select({ count: count() })
     .from(leads)
@@ -69,7 +68,7 @@ export async function countNewLeads(since: Date): Promise<number> {
   return result[0]?.count ?? 0
 }
 
-export async function countBlockedTasks(): Promise<number> {
+async function countBlockedTasks(): Promise<number> {
   const result = await db
     .select({ count: count() })
     .from(tasks)

@@ -215,7 +215,7 @@ export function useDashboardLayoutEditor({
 }
 
 /** The hidden tray is the list after the columns. */
-export const HIDDEN_LIST_INDEX = DASHBOARD_LAYOUT_COLUMN_COUNT
+const HIDDEN_LIST_INDEX = DASHBOARD_LAYOUT_COLUMN_COUNT
 
 /** Columns, then the hidden tray, as mutable lists of the given layout. */
 function layoutLists(layout: DashboardLayout): DashboardWidgetId[][] {
