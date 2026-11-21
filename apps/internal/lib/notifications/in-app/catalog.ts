@@ -59,8 +59,8 @@ export const IN_APP_NOTIFICATIONS: InAppNotificationGroup[] = [
         type: 'task_mention',
         name: 'Mentioned you',
         sample: {
-          title: 'Kris Crawford mentioned you in Homepage mobile pass',
-          body: '@Jason Desiderio can you check the nav on your phone?',
+          title: 'Alex Rivera mentioned you in Homepage mobile pass',
+          body: '@Jordan Park can you check the nav on your phone?',
         },
         recipients: 'Each person @mentioned who can open the task.',
         when: 'Someone else mentions you in a task’s description or a comment on it.',
@@ -117,8 +117,8 @@ export const IN_APP_NOTIFICATIONS: InAppNotificationGroup[] = [
         type: 'lead_mention',
         name: 'Mentioned you',
         sample: {
-          title: 'Dave Pokk mentioned you on Ada Lovelace',
-          body: '@Jason Desiderio she wants a call with an engineer this week.',
+          title: 'Priya Shah mentioned you on Ada Lovelace',
+          body: '@Jordan Park she wants a call with an engineer this week.',
         },
         recipients:
           'Each person @mentioned (every admin and Sales person can open leads).',

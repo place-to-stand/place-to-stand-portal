@@ -7,6 +7,7 @@ import {
   LifeBuoy,
   Loader2,
   LogOut,
+  Megaphone,
   Moon,
   Sun,
 } from 'lucide-react'
@@ -28,6 +29,7 @@ import { signOut } from '@/app/(dashboard)/_actions/sign-out'
 import { useTheme } from '@/components/providers/theme-provider'
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
 import { useGetHelp } from '@/components/help/get-help-dialog'
+import { useWhatsNew, WhatsNewDot } from '@/components/help/whats-new-dialog'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 import { openAccountSheet } from '@/lib/account/use-account-sheet'
@@ -49,6 +51,7 @@ export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
   const { theme, toggleTheme } = useTheme()
   const { setOpen: setShortcutsOpen } = useKeyboardShortcuts()
   const { setOpen: setGetHelpOpen } = useGetHelp()
+  const whatsNew = useWhatsNew()
 
   const initials = user.full_name
     ? user.full_name
@@ -72,12 +75,20 @@ export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
               'group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:px-0'
           )}
         >
-          <Avatar size='sm'>
-            {avatarSrc ? (
-              <AvatarImage src={avatarSrc} alt={user.full_name ?? user.email} />
+          <span className='relative shrink-0'>
+            <Avatar size='sm'>
+              {avatarSrc ? (
+                <AvatarImage
+                  src={avatarSrc}
+                  alt={user.full_name ?? user.email}
+                />
+              ) : null}
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+            {whatsNew.hasUnseen ? (
+              <WhatsNewDot className='ring-background absolute -top-0.5 -right-0.5 ring-2' />
             ) : null}
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
+          </span>
           <div
             className={cn(
               'flex min-w-0 flex-1 flex-col text-left leading-tight',
@@ -160,6 +171,18 @@ export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
             >
               <LifeBuoy className='h-4 w-4' />
               <span>Get help</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={event => {
+                event.preventDefault()
+                setIsMenuOpen(false)
+                whatsNew.open()
+              }}
+              className='flex items-center gap-2'
+            >
+              <Megaphone className='h-4 w-4' />
+              <span>What&rsquo;s new</span>
+              {whatsNew.hasUnseen ? <WhatsNewDot className='ml-auto' /> : null}
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />

@@ -11,6 +11,8 @@ import { ViewerAccessProvider } from '@/components/providers/viewer-access-provi
 import { AccountSheet } from '@/components/account/account-sheet'
 import { KeyboardShortcutsProvider } from '@/components/keyboard/keyboard-shortcuts-dialog'
 import { GetHelpProvider } from '@/components/help/get-help-dialog'
+import { WhatsNewProvider } from '@/components/help/whats-new-dialog'
+import type { ChangelogWeek } from '@/lib/help/changelog-utils'
 
 import { Sidebar, type SidebarBrand } from './sidebar'
 import { CommandPaletteProvider } from './command-palette'
@@ -28,6 +30,8 @@ interface Props {
   brand: SidebarBrand
   /** A notice above every page (the business setup banner). */
   banner?: ReactNode
+  /** What's new, from CHANGELOG.md, newest week first. */
+  changelog: ChangelogWeek[]
 }
 
 /**
@@ -43,6 +47,7 @@ export function AppShell({
   presenceKey,
   brand,
   banner,
+  changelog,
 }: Props) {
   // Keyed by nav href so future counts (e.g. leads) reuse the same channel.
   const navBadges = useMemo(
@@ -67,23 +72,25 @@ export function AppShell({
       <BusinessNameProvider name={brand.name}>
         <KeyboardShortcutsProvider>
           <GetHelpProvider>
-            <CommandPaletteProvider>
-              <SidebarProvider
-                defaultOpen={sidebarDefaultOpen}
-                style={{ '--sidebar-width': '13rem' } as React.CSSProperties}
-                className='bg-muted h-dvh min-h-0 overflow-hidden'
-              >
-                <Sidebar user={user} badges={navBadges} brand={brand} />
-                <div className='flex h-dvh min-h-0 min-w-0 flex-1 flex-col'>
-                  {banner}
-                  <ListRefreshProvider>{children}</ListRefreshProvider>
-                </div>
-                {/* Reads `?account=`; Suspense keeps the URL read client-only. */}
-                <Suspense fallback={null}>
-                  <AccountSheet user={user} />
-                </Suspense>
-              </SidebarProvider>
-            </CommandPaletteProvider>
+            <WhatsNewProvider weeks={changelog}>
+              <CommandPaletteProvider>
+                <SidebarProvider
+                  defaultOpen={sidebarDefaultOpen}
+                  style={{ '--sidebar-width': '13rem' } as React.CSSProperties}
+                  className='bg-muted h-dvh min-h-0 overflow-hidden'
+                >
+                  <Sidebar user={user} badges={navBadges} brand={brand} />
+                  <div className='flex h-dvh min-h-0 min-w-0 flex-1 flex-col'>
+                    {banner}
+                    <ListRefreshProvider>{children}</ListRefreshProvider>
+                  </div>
+                  {/* Reads `?account=`; Suspense keeps the URL read client-only. */}
+                  <Suspense fallback={null}>
+                    <AccountSheet user={user} />
+                  </Suspense>
+                </SidebarProvider>
+              </CommandPaletteProvider>
+            </WhatsNewProvider>
           </GetHelpProvider>
         </KeyboardShortcutsProvider>
       </BusinessNameProvider>
