@@ -34,12 +34,15 @@ export function changedFiles(base, head, filter) {
  * carry it onto every pull request.
  */
 export function bodyHasLine(body, line) {
+  // An unclosed comment or fence hides the rest of the description when
+  // GitHub renders it, so it hides the rest here too.
   const visible = (body ?? '')
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/```[\s\S]*?```/g, '')
+    .replace(/<!--[\s\S]*?(-->|$)/g, '')
+    .replace(/^[ \t]*(```|~~~)[\s\S]*?(^[ \t]*\1|(?![\s\S]))/gm, '')
   const [key, value] = line.split(':').map(part => part.trim())
+  // The whole line: "Prod migration: done not yet" doesn't count.
   const pattern = new RegExp(
-    `^[ \\t]*${escape(key)}:[ \\t]*${escape(value)}\\b`,
+    `^[ \\t]*${escape(key)}:[ \\t]*${escape(value)}[ \\t]*\\r?$`,
     'im'
   )
   return pattern.test(visible)
