@@ -29,7 +29,7 @@ type RecipientFieldProps = {
   /** The row's label, "To" or "Cc". */
   label: string
   options: RecipientOption[]
-  /** Heading over the options in the picker, e.g. "BBX Co contacts". */
+  /** Heading over the options in the picker, e.g. "Northwind Studio contacts". */
   groupHeading: string
   searchPlaceholder: string
   /** Current list, lowercase emails. */
