@@ -46,6 +46,13 @@ Pick the package and the size of the change:
 Then one plain sentence for the changelog. Commit the file it creates in
 `.changeset/`.
 
+The **Changeset** PR check fails a pull request that changes a published
+package without a changeset naming it. Only `*.test.*` files and lint config
+don't count; `LICENSE`, `tsconfig.base.json` and `scripts/build-package.mjs`
+count for every published package, since they change what ships. For a change nobody installing the package would
+notice (a dev dependency, say), put the line `Changeset: none` in the pull
+request description instead.
+
 ## How a release happens
 
 1. A pull request with a changeset merges to `main`.
@@ -84,5 +91,5 @@ lockfile; an admin merges it past the checks.
    that all point into `src/`.
 2. Add a `tsconfig.build.json` like `packages/ui`'s, a `build:package` script (not `build`, so app builds skip it) running
    `node ../../scripts/build-package.mjs`, and the `prepublishOnly` guard.
-3. Add its folder to `PUBLISHED` in `scripts/publish-packages.mjs`.
+3. Add its folder to `PUBLISHED` in `scripts/published-packages.mjs`.
 4. Add a README written for someone outside this repo.

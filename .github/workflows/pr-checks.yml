@@ -19,6 +19,8 @@ env:
   PR_BODY: ${{ github.event.pull_request.body }}
   BASE_SHA: ${{ github.event.pull_request.base.sha }}
   HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  # The release PR's branch, trusted only from this repo, never a fork.
+  HEAD_REF: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref || '' }}
 
 jobs:
   changelog:
@@ -33,6 +35,19 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: node scripts/pr-checks/changelog.mjs "$BASE_SHA" "$HEAD_SHA"
+
+  changeset:
+    name: Changeset
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/pr-checks/changeset.mjs "$BASE_SHA" "$HEAD_SHA"
 
   prod-migration:
     name: Prod migration
