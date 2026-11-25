@@ -10,7 +10,13 @@ import {
   type ReactNode,
 } from 'react'
 import { useRouter } from 'next/navigation'
-import { CircleUserRound, Keyboard, LifeBuoy, Plug } from 'lucide-react'
+import {
+  CircleUserRound,
+  Keyboard,
+  LifeBuoy,
+  Megaphone,
+  Plug,
+} from 'lucide-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 import {
@@ -26,6 +32,7 @@ import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'
 import { filterNavGroupsForRole } from '@/lib/auth/roles'
 import { useGetHelp } from '@/components/help/get-help-dialog'
+import { useWhatsNew } from '@/components/help/whats-new-dialog'
 import type { PaletteSearchResult } from '@/lib/command-palette/types'
 import { CommandPaletteRecords } from '@/components/layout/command-palette-records'
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
@@ -134,6 +141,7 @@ function CommandPalette() {
   )
   // Get help has no place on the page, so the palette lists it.
   const { setOpen: setGetHelpOpen } = useGetHelp()
+  const { open: openWhatsNew } = useWhatsNew()
   const router = useRouter()
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebouncedValue(query.trim(), DEBOUNCE_MS)
@@ -272,6 +280,16 @@ function CommandPalette() {
           >
             <LifeBuoy className='size-4' />
             <span>Get help</span>
+          </CommandItem>
+          <CommandItem
+            value='Help whats new changelog changes updates release notes'
+            onSelect={() => {
+              handleOpenChange(false)
+              openWhatsNew()
+            }}
+          >
+            <Megaphone className='size-4' />
+            <span>What&rsquo;s new</span>
           </CommandItem>
           <CommandItem
             value='Help keyboard shortcuts keys'

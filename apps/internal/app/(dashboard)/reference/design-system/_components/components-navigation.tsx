@@ -132,7 +132,7 @@ export function ComponentsTextLinks() {
                 />
               }
             >
-              Heatonist
+              Northwind Studio
             </MetaLink>
             <MetaLink
               href='/reference/design-system'
@@ -143,7 +143,7 @@ export function ComponentsTextLinks() {
                 />
               }
             >
-              Hot Ones storefront rebuild and checkout migration
+              Storefront rebuild and checkout migration
             </MetaLink>
           </div>
         </Example>

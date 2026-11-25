@@ -8,6 +8,7 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { requirePage } from '@/lib/auth/session'
 import { brandPropsFor, getBusinessIdentity } from '@/lib/business/identity'
 import { fetchUnacknowledgedSubmissionCount } from '@/lib/data/form-submissions'
+import { getChangelog } from '@/lib/help/changelog'
 import { listStaffWithPhotos } from '@/lib/queries/users'
 import { presenceRoomKey } from '@/lib/sheets/presence/room-key'
 import { SheetHost } from '@/lib/sheets/sheet-host'
@@ -50,6 +51,7 @@ export default async function DashboardLayout({
       presenceKey={presenceRoomKey()}
       brand={brandPropsFor(business)}
       banner={showSetupBanner ? <BusinessSetupBanner /> : null}
+      changelog={getChangelog()}
     >
       {children}
       <AvatarPreloader staff={staffWithPhotos} />
