@@ -47,8 +47,9 @@ Then one plain sentence for the changelog. Commit the file it creates in
 `.changeset/`.
 
 The **Changeset** PR check fails a pull request that changes a published
-package's shipped files without a changeset naming it. Tests, lint config and
-tsconfig files don't count. For a change nobody installing the package would
+package without a changeset naming it. Only `*.test.*` files and lint config
+don't count; `LICENSE`, `tsconfig.base.json` and `scripts/build-package.mjs`
+count for every published package, since they change what ships. For a change nobody installing the package would
 notice (a dev dependency, say), put the line `Changeset: none` in the pull
 request description instead.
 

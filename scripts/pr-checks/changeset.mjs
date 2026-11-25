@@ -19,24 +19,40 @@ const NONE = 'Changeset: none'
 const RELEASE_BRANCH = 'changeset-release/main'
 const CHANGESET = /^\.changeset\/(?!README\.md$)[^/]+\.md$/
 
-/** Files that never reach npm: tests and the package's own tooling. */
+/**
+ * Files in a published package that never reach npm: the tests the build
+ * leaves out (tsconfig.build.json excludes *.test.* files in src) and the
+ * package's lint and editor config. Anything else, tsconfig files included,
+ * can change what ships.
+ */
 const NOT_SHIPPED =
-  /(\.(test|spec)\.[cm]?[jt]sx?$|\/(__tests__|__snapshots__|fixtures)\/|\/(oxlint\.config\.mjs|lint-suppressions\.json|tsconfig(\.[^/]*)?\.json)$)/
+  /(\/src\/.*\.test\.[cm]?[jt]sx?$|\/(oxlint\.config\.mjs|lint-suppressions\.json|components\.json|[^/]*\.tsbuildinfo)$)/
+
+/** Files outside the packages that change what every one of them ships. */
+const SHARED = ['LICENSE', 'scripts/build-package.mjs', 'tsconfig.base.json']
+
+const BUMP = /^(patch|minor|major)$/
 
 /** The names a changeset's front matter bumps, e.g. '@placetostand/ui'. */
 export function changesetPackages(text) {
-  const front = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text)
-  if (!front) return []
+  const front = /^---[ \t]*\r?\n([\s\S]*?)^---[ \t]*\r?$/m.exec(text)
+  if (!front || front.index !== 0) return []
   return front[1]
     .split(/\r?\n/)
-    .map(line => /^\s*['"]?([^'":\s]+)['"]?\s*:/.exec(line)?.[1])
-    .filter(Boolean)
+    .map(line =>
+      /^\s*['"]?([^'":\s]+)['"]?\s*:\s*['"]?([a-z]+)['"]?\s*$/.exec(line)
+    )
+    .filter(match => match && BUMP.test(match[2]))
+    .map(match => match[1])
 }
 
 export function checkChangeset({ files, body, headRef, packages, changesets }) {
   if (headRef === RELEASE_BRANCH) return { ok: true, why: 'release PR' }
-  const touched = packages.filter(({ dir }) =>
-    files.some(file => file.startsWith(`${dir}/`) && !NOT_SHIPPED.test(file))
+  const shared = files.some(file => SHARED.includes(file))
+  const touched = packages.filter(
+    ({ dir }) =>
+      shared ||
+      files.some(file => file.startsWith(`${dir}/`) && !NOT_SHIPPED.test(file))
   )
   if (touched.length === 0)
     return { ok: true, why: 'no published package changed' }
@@ -47,10 +63,25 @@ export function checkChangeset({ files, body, headRef, packages, changesets }) {
   return { ok: false, missing }
 }
 
+/** PUBLISHED as `rev` has it, read as text so nothing from it runs. */
+function publishedAt(rev) {
+  let source
+  try {
+    source = git('show', `${rev}:scripts/published-packages.mjs`)
+  } catch {
+    return []
+  }
+  const list = /PUBLISHED\s*=\s*\[([^\]]*)\]/.exec(source)?.[1] ?? ''
+  return [...list.matchAll(/['"]([^'"]+)['"]/g)].map(match => match[1])
+}
+
 function main() {
   const { base, head } = readRange('changeset.mjs')
   const files = changedFiles(base, head)
-  const packages = PUBLISHED.map(dir => ({
+  // The base branch's list too, so a PR can't switch the check off by
+  // emptying the list it is checked against.
+  const dirs = [...new Set([...PUBLISHED, ...publishedAt(base)])]
+  const packages = dirs.map(dir => ({
     dir,
     name: JSON.parse(git('show', `${head}:${dir}/package.json`)).name,
   }))
