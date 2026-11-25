@@ -8,13 +8,16 @@ import { NO_SELECTION_MESSAGE } from './projects-board-tabs.constants'
 import type { ProjectsBoardActiveProject } from './board-tab-content'
 
 type TimeLogsTabContentProps = {
+  /** The tab it fills: Time logs, or Feedback (the same shape). */
+  value?: 'timeLogs' | 'feedback'
   isActive: boolean
   activeProject: ProjectsBoardActiveProject
-  /** The Time logs list held to this project (`ProjectTimeLogsList`). */
+  /** The tab's list held to this project, rendered on the server. */
   list: ReactNode
 }
 
 export function TimeLogsTabContent({
+  value = 'timeLogs',
   isActive,
   activeProject,
   list,
@@ -25,7 +28,7 @@ export function TimeLogsTabContent({
 
   return (
     <TabsContent
-      value='timeLogs'
+      value={value}
       className='flex min-h-0 flex-1 flex-col gap-4 sm:gap-6'
     >
       {activeProject && list ? (

@@ -8,7 +8,12 @@ export type { ProjectOwnerSummary } from '@/lib/projects/sheet/project-sheet-for
 import type { ParsedSort } from '@/lib/pagination/sort'
 import type { ProjectSortField } from './sort'
 
-export type SelectProject = typeof projects.$inferSelect
+/** A project row as these queries select it (`projectFields`): every column
+ * but the feedback settings, which only the Feedback tab reads. */
+export type SelectProject = Omit<
+  typeof projects.$inferSelect,
+  'feedbackEnabled' | 'feedbackOrigins'
+>
 
 export const projectFields = {
   id: projects.id,
@@ -32,7 +37,7 @@ export type ProjectClientSummary = {
   deletedAt: string | null
 }
 
-export type ProjectsSettingsListItem = typeof projects.$inferSelect & {
+export type ProjectsSettingsListItem = SelectProject & {
   client: ProjectClientSummary | null
   owner: ProjectOwnerSummary | null
 }

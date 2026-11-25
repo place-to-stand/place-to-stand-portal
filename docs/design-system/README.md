@@ -42,20 +42,21 @@ Each kind of record has one icon and one colour everywhere it appears: sidebar, 
 - **Add an entity** by adding it to `ENTITIES` and its `--entity-<token>` to `portal.css` (`:root`, `.dark` and `.email-paper`), then `npm run design-tokens` and a usage note. `scripts/check-entities.mjs` (run by `npm run lint`) fails on a missing icon or token, a shared icon, or under 3:1 icon-on-card contrast in either theme.
 - **Palette B, grouped by job: sales warm, work blue, money green.** Each theme gets its own step: darker in light, lighter in dark.
 
-| Group | Entity                   | Icon                 | Light                | Dark              |
-| ----- | ------------------------ | -------------------- | -------------------- | ----------------- |
-| Sales | Lead                     | `Handshake`          | amber (62% L), 3.8:1 | amber-300, 12.4:1 |
-|       | Company                  | `Building2`          | orange-700, 5.2:1    | orange-400, 7.5:1 |
-|       | Person                   | `ContactRound`       | rose-600, 4.5:1      | rose-400, 6.3:1   |
-|       | Sign-in (a person state) | `ContactRound` + dot | violet-600, 6.2:1    | violet-300, 7.9:1 |
-| Work  | Project                  | `FolderKanban`       | blue-600, 5.3:1      | blue-400, 6.8:1   |
-|       | Task                     | `ListTodo`           | indigo-500, 4.6:1    | indigo-300, 8.9:1 |
-|       | Time log                 | `Clock`              | sky-700, 5.9:1       | sky-300, 10.8:1   |
-| Money | Client (a company state) | `Building2` + dot    | green-800, 7.1:1     | green-500, 8.1:1  |
-|       | Invoice                  | `Receipt`            | teal-700, 5.4:1      | teal-300, 12.2:1  |
-|       | Hour block               | `Hourglass`          | lime-700, 5.0:1      | lime-400, 11.7:1  |
-| Admin | Submission               | `Inbox`              | slate-500, 4.8:1     | slate-400, 6.8:1  |
-|       | Template                 | `LayoutTemplate`     | stone-600, 7.6:1     | stone-300, 12.0:1 |
+| Group | Entity                   | Icon                 | Light                  | Dark                   |
+| ----- | ------------------------ | -------------------- | ---------------------- | ---------------------- |
+| Sales | Lead                     | `Handshake`          | amber (62% L), 3.8:1   | amber-300, 12.4:1      |
+|       | Company                  | `Building2`          | orange-700, 5.2:1      | orange-400, 7.5:1      |
+|       | Person                   | `ContactRound`       | rose-600, 4.5:1        | rose-400, 6.3:1        |
+|       | Sign-in (a person state) | `ContactRound` + dot | violet-600, 6.2:1      | violet-300, 7.9:1      |
+| Work  | Project                  | `FolderKanban`       | blue-600, 5.3:1        | blue-400, 6.8:1        |
+|       | Task                     | `ListTodo`           | indigo-500, 4.6:1      | indigo-300, 8.9:1      |
+|       | Time log                 | `Clock`              | sky-700, 5.9:1         | sky-300, 10.8:1        |
+|       | Feedback                 | `MessageSquareMore`  | magenta (52% L), 6.2:1 | magenta (76% L), 7.8:1 |
+| Money | Client (a company state) | `Building2` + dot    | green-800, 7.1:1       | green-500, 8.1:1       |
+|       | Invoice                  | `Receipt`            | teal-700, 5.4:1        | teal-300, 12.2:1       |
+|       | Hour block               | `Hourglass`          | lime-700, 5.0:1        | lime-400, 11.7:1       |
+| Admin | Submission               | `Inbox`              | slate-500, 4.8:1       | slate-400, 6.8:1       |
+|       | Template                 | `LayoutTemplate`     | stone-600, 7.6:1       | stone-300, 12.0:1      |
 
 Contrast is the icon on `card` (WCAG 1.4.11 asks 3:1). Time log and hour block are different things: a time log is hours worked (`Clock`), an hour block is prepaid hours bought (`Hourglass`). `Mail`, `Sparkles` and `CalendarClock` stay free for email, AI and timestamps.
 
@@ -189,7 +190,7 @@ Signed-out screens (`AuthShell`) are always dark, whatever the user's theme, bec
 5. **Sortable tables use `layout='fixed'`.** Give every header a width class and `truncate` long-text cells, so sorting and paging can't make columns jump. (guard: review)
 6. **Sheet and dialog Save is always enabled.** Never gate Save on `isDirty` or has-changes. (An inline editor outside a sheet, like the client notes card, may disable Save until something changed.) Disable it only while a save is in flight or when a real validation precondition fails. (guard: lint `pts/save-not-gated-on-dirty`)
 7. **Save means done, which closes the sheet.** A successful save closes the sheet, for create and edit alike. A create sheet never turns into an edit sheet. (guard: review)
-8. **One Save, one transaction; only Save writes.** Every control inside a sheet changes the form, and Save writes the record and everything that goes with it (people, billing, sign-in, links, assignees) in one database transaction; closing with unsaved changes asks "Discard changes?". Instant actions are records of their own or act outside the app (comments, lead updates, logging time, invoice send/void, acknowledging a submission or marking it spam / not spam, planning, password reset): they save on their own click. Sending an invoice is blocked while it has unsaved edits. Create and edit show the same sheet. Details: `components/sheet.md`. (guard: review)
+8. **One Save, one transaction; only Save writes.** Every control inside a sheet changes the form, and Save writes the record and everything that goes with it (people, billing, sign-in, links, assignees) in one database transaction; closing with unsaved changes asks "Discard changes?". Instant actions are records of their own or act outside the app (comments, lead updates, logging time, invoice send/void, acknowledging a submission or marking it spam / not spam, the same on a feedback report plus Turn into task, planning, password reset): they save on their own click. Sending an invoice is blocked while it has unsaved edits. Create and edit show the same sheet. Details: `components/sheet.md`. (guard: review)
 9. **Minimal helper copy.** See Content fundamentals. (guard: review)
 10. **Dates go through `@placetostand/ui/dates`.** `formatCalendarDate` for dates, timestamps and month labels (`{ month: 'long', year: 'numeric' }`); `formatRelativeTime` for "3 days ago". Never `toLocaleDateString`, a bare `Intl.DateTimeFormat`, or date-fns `format()` in the UI. (guard: lint `no-restricted-properties`; lint `no-restricted-imports`)
 11. **Icon-only row actions use `RowActionButton`** (`@placetostand/ui/row-action-button`): a real tooltip plus a matching accessible name. `Button` has no icon sizes and no `title`, so an icon-only button can only be a `RowActionButton`. Pass `tooltip={false}` only on a menu or popover trigger (its popup is labelled) or inside a `Tooltip` of its own; the label still names it. Never `title=` on any button. (guard: types; lint `no-restricted-syntax`)

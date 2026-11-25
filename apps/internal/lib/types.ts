@@ -81,7 +81,12 @@ export type DbClientMember = {
   deleted_at: string | null
 }
 
-export type DbProject = SnakeRow<typeof projects>
+// The feedback settings are read and saved only by a project's Feedback tab
+// (lib/queries/feedback.ts), so project rows elsewhere don't carry them.
+export type DbProject = Omit<
+  SnakeRow<typeof projects>,
+  'feedback_enabled' | 'feedback_origins'
+>
 
 export type DbTask = SnakeRow<typeof tasks>
 

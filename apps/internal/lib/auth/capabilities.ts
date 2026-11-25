@@ -226,6 +226,16 @@ export const CAPABILITIES = {
     surfaces: ['app', 'mcp'],
   },
 
+  // Projects & tasks: feedback from the widget on project websites
+  'feedback.manage': {
+    area: 'Projects & tasks',
+    label: 'Feedback reports',
+    description:
+      'The Feedback list, a project’s Feedback tab and its settings, and turning a report into a task.',
+    roles: ADMIN_ONLY,
+    surfaces: ['app'],
+  },
+
   // Directory
   'companies.manage': {
     area: 'Directory',

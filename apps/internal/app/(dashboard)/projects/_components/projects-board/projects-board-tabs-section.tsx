@@ -9,9 +9,11 @@ type NavigationProps = Pick<
   | 'activityHref'
   | 'reviewHref'
   | 'timeLogsHref'
+  | 'feedbackReportsHref'
   | 'activityDisabled'
   | 'reviewDisabled'
   | 'timeLogsDisabled'
+  | 'feedbackReportsDisabled'
 >
 
 type BoardProps = Pick<
@@ -61,7 +63,10 @@ type ReviewProps = Pick<
 
 type DropProps = Pick<ProjectsBoardTabsProps, 'recentlyMovedTaskId'>
 
-type TimeLogsProps = Pick<ProjectsBoardTabsProps, 'timeLogsList'>
+type TimeLogsProps = Pick<
+  ProjectsBoardTabsProps,
+  'timeLogsList' | 'feedbackReportsList'
+>
 
 export type ProjectsBoardTabsSectionProps = {
   initialTab: ProjectsBoardTabsProps['initialTab']

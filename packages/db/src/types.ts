@@ -31,6 +31,7 @@ import type {
   leadStageHistory,
   activityOverviewCache,
   formSubmissions,
+  feedbackReports,
 } from './schema'
 
 // Select types (for reading from DB)
@@ -71,6 +72,7 @@ export type ActivityOverviewCache = InferSelectModel<
   typeof activityOverviewCache
 >
 export type FormSubmission = InferSelectModel<typeof formSubmissions>
+export type FeedbackReport = InferSelectModel<typeof feedbackReports>
 
 // Insert types (for writing to DB)
 export type NewUser = InferInsertModel<typeof users>
@@ -94,3 +96,4 @@ export type NewContact = InferInsertModel<typeof contacts>
 export type NewInvoice = InferInsertModel<typeof invoices>
 export type NewInvoiceLineItem = InferInsertModel<typeof invoiceLineItems>
 export type NewFormSubmission = InferInsertModel<typeof formSubmissions>
+export type NewFeedbackReport = InferInsertModel<typeof feedbackReports>

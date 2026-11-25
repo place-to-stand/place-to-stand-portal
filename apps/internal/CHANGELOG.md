@@ -13,6 +13,7 @@ here, unless its description says `Changelog: none`.
 
 ## Week of November 23, 2026
 
+- **Feedback:** a new Feedback list (and a Feedback tab on each project) collects bugs, requests and questions sent from a project's website, with a screenshot and a link to the visitor's session. Turn a report into a task with one click. Each project chooses whether it takes feedback and from which websites.
 - **Submissions:** contact form messages that look like spam (sales pitches, bots) get a Spam badge, send no emails and don't count as unacknowledged. Not spam on the submission sends the emails it missed; Mark as spam and the new Spam filter are there too.
 
 ## Week of November 16, 2026

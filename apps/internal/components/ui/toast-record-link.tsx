@@ -7,6 +7,7 @@ import { ENTITIES, type AccentEntity } from '@/lib/entity-accents'
 import type { SheetEntityKey } from '@/lib/sheets/entities'
 import {
   contactSheetHref,
+  feedbackHref,
   hourBlockHref,
   invoiceHref,
   leadHref,
@@ -25,6 +26,7 @@ const SHEET_ENTITY: Record<SheetEntityKey, AccentEntity> = {
   contact: 'contact',
   invoice: 'invoice',
   submission: 'submission',
+  feedback: 'feedback',
   'hour-block': 'hourBlock',
   project: 'project',
   company: 'company',
@@ -41,6 +43,7 @@ const ARCHIVED_HREF: Partial<Record<SheetEntityKey, (id: string) => string>> = {
   'hour-block': id => hourBlockHref(id, { archived: true }),
   lead: id => leadHref(id, { archived: true }),
   submission: id => submissionHref(id, { archived: true }),
+  feedback: id => feedbackHref(id, { archived: true }),
 }
 
 /** "Open task", in the entity's icon and name. */
