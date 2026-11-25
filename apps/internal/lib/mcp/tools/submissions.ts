@@ -44,10 +44,16 @@ export function registerSubmissionTools(server: McpServer) {
       search: searchText
         .describe('Match on name, email or company.')
         .optional(),
+      spam: z
+        .boolean()
+        .optional()
+        .describe(
+          'true lists only submissions flagged as spam, false leaves them out. Left out, both are listed (spamReason says which).'
+        ),
       limit: listLimit,
     },
     run: async (
-      { kind, status, unread, archived, search, limit },
+      { kind, status, unread, archived, search, spam, limit },
       { user }
     ) => {
       const result = await fetchFormSubmissions(user, {
@@ -58,6 +64,7 @@ export function registerSubmissionTools(server: McpServer) {
         unacknowledgedOnly: unread || undefined,
         archived,
         search,
+        spam,
       })
 
       return {

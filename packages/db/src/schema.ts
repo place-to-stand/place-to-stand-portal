@@ -2362,6 +2362,12 @@ export const formSubmissions = pgTable(
       mode: 'string',
     }),
 
+    // Why the row looks like spam (`honeypot`, `too_fast`, `sales_pitch`,
+    // or `marked` when a person flagged it). NULL = not spam. A spam row is
+    // kept, never emailed, and never counts as unacknowledged; "Not spam"
+    // clears it. See apps/internal/lib/form-submissions/spam.ts.
+    spamReason: text('spam_reason'),
+
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`now()`)
       .notNull(),

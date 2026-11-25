@@ -43,6 +43,7 @@ import {
   FORM_SUBMISSION_KIND_TOKENS,
   FORM_SUBMISSION_STATUS_LABELS,
   FORM_SUBMISSION_STATUS_TOKENS,
+  SPAM_BADGE_TOKEN,
   isFormSubmissionKind,
   isFormSubmissionStatus,
   isUnacknowledgedSubmission,
@@ -575,15 +576,30 @@ export function SubmissionsTable({
                           {/* Single line so rows keep a uniform height: the
                           badge never shrinks, the detail truncates. */}
                           <div className='flex min-w-0 items-center gap-2'>
-                            <Badge
-                              variant='outline'
-                              className={cn(
-                                'shrink-0',
-                                FORM_SUBMISSION_STATUS_TOKENS[submission.status]
-                              )}
-                            >
-                              {FORM_SUBMISSION_STATUS_LABELS[submission.status]}
-                            </Badge>
+                            {submission.spamReason !== null ? (
+                              <Badge
+                                variant='outline'
+                                className={cn('shrink-0', SPAM_BADGE_TOKEN)}
+                              >
+                                Spam
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant='outline'
+                                className={cn(
+                                  'shrink-0',
+                                  FORM_SUBMISSION_STATUS_TOKENS[
+                                    submission.status
+                                  ]
+                                )}
+                              >
+                                {
+                                  FORM_SUBMISSION_STATUS_LABELS[
+                                    submission.status
+                                  ]
+                                }
+                              </Badge>
+                            )}
                             {outcome ? (
                               <span
                                 className='min-w-0 truncate'

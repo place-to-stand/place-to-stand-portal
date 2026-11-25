@@ -52,3 +52,7 @@ export function parseContactFilter(
 export function isContactFilterValue(value: string): boolean {
   return value === '1' || value === '0'
 }
+
+/** `?spam=`, same shape: '1' = spam only, '0' = everything but spam. */
+export const parseSpamFilter = parseContactFilter
+export const isSpamFilterValue = isContactFilterValue

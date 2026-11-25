@@ -57,6 +57,22 @@ export const submissionRestoredEvent = (
   metadata: toMetadata({ status: args.status }),
 })
 
+export const submissionMarkedSpamEvent = (
+  args: SubmissionEventArgs
+): ActivityEvent => ({
+  verb: ActivityVerbs.SUBMISSION_MARKED_SPAM,
+  summary: `Marked ${describeSubmission(args)} as spam`,
+  metadata: toMetadata({ status: args.status }),
+})
+
+export const submissionMarkedNotSpamEvent = (
+  args: SubmissionEventArgs
+): ActivityEvent => ({
+  verb: ActivityVerbs.SUBMISSION_MARKED_NOT_SPAM,
+  summary: `Marked ${describeSubmission(args)} as not spam`,
+  metadata: toMetadata({ status: args.status }),
+})
+
 /**
  * Machine-emitted on first insert only (never on a later audit beacon).
  * PII-free on purpose: the row itself carries the contact details, so the

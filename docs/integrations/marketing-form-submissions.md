@@ -301,8 +301,28 @@ interface ContactSubmissionPayload {
     landingPath
   }
   client: { viewport; screenWidth; timezone; language; userAgent }
+
+  // Optional: what the visitor's browser saw. See §4.2.1.
+  bot?: {
+    honeypot: boolean // the hidden trap field held text
+    elapsedMs: number | null // form load to Send, in ms
+  }
 }
 ```
+
+#### 4.2.1 Spam
+
+The portal checks every contact submission (`detectContactSpam`,
+`apps/internal/lib/form-submissions/spam.ts`) and stores why it looks like spam in
+`form_submissions.spam_reason`: `honeypot` (the hidden field was filled), `too_fast` (sent under 3
+seconds after the form loaded), or `sales_pitch` (the subject and message read like someone selling
+to us; it needs at least one strong sign, such as a lead list, a priced package or a "reply stop"
+line). A person marking it by hand stores `marked`.
+
+A spam row is still recorded, answered `200` like any other, and listed with a Spam badge. It is
+never emailed (`deliver` is ignored) and never counts as unacknowledged. "Not spam" on the sheet
+clears the flag and flags the row as unacknowledged; it sends no email. A replay keeps the first
+verdict. `bot` is optional, so a site deploy without it is judged on wording alone.
 
 ### 4.3 Subscribe — `POST /api/integrations/subscribe-submissions`
 

@@ -49,6 +49,8 @@ type FormSubmissionFilters = {
    * most of the list at ad volume, so this is the "show me people" switch.
    */
   hasContact?: boolean
+  /** true: spam only. false: everything but spam. */
+  spam?: boolean
 }
 
 function buildFilters({
@@ -59,6 +61,7 @@ function buildFilters({
   archived,
   search,
   hasContact,
+  spam,
 }: FormSubmissionFilters) {
   const searchQuery = search?.trim() ?? ''
   const searchPattern = searchQuery ? createSearchPattern(searchQuery) : null
@@ -74,6 +77,7 @@ function buildFilters({
     unacknowledgedOnly
       ? and(
           isNull(formSubmissions.acknowledgedAt),
+          isNull(formSubmissions.spamReason),
           or(
             eq(formSubmissions.kind, 'contact'),
             inArray(formSubmissions.status, ['completed', 'captured'])
@@ -81,6 +85,11 @@ function buildFilters({
         )
       : undefined,
     acknowledgedOnly ? isNotNull(formSubmissions.acknowledgedAt) : undefined,
+    spam === true
+      ? isNotNull(formSubmissions.spamReason)
+      : spam === false
+        ? isNull(formSubmissions.spamReason)
+        : undefined,
     hasContact === true
       ? or(
           isNotNull(formSubmissions.contactName),
@@ -434,6 +443,7 @@ export async function countUnacknowledgedFormSubmissions() {
       and(
         isNull(formSubmissions.deletedAt),
         isNull(formSubmissions.acknowledgedAt),
+        isNull(formSubmissions.spamReason),
         or(
           eq(formSubmissions.kind, 'contact'),
           inArray(formSubmissions.status, ['completed', 'captured'])
@@ -596,6 +606,45 @@ export async function getFormSubmissionById(
       )
     )
     .limit(1)
+
+  return row ?? null
+}
+
+/**
+ * Mark an active row as spam by hand, or clear the flag ("Not spam").
+ * Direction-guarded like `setFormSubmissionArchived`: marking only touches a
+ * row that isn't spam, clearing only one that is, so double-clicks change
+ * state once. Clearing also clears acknowledgement, so a real lead the
+ * checks caught flags as unacknowledged like any new submission. Returns the
+ * updated row, or null when nothing changed.
+ */
+export async function setFormSubmissionSpam(id: string, spam: boolean) {
+  const [row] = await db
+    .update(formSubmissions)
+    .set(
+      spam
+        ? {
+            spamReason: 'marked',
+            updatedAt: sql`timezone('utc'::text, now())`,
+          }
+        : {
+            spamReason: null,
+            acknowledgedAt: null,
+            acknowledgedBy: null,
+            updatedAt: sql`timezone('utc'::text, now())`,
+          }
+    )
+    .where(
+      and(
+        eq(formSubmissions.id, id),
+        isNull(formSubmissions.deletedAt),
+        isNull(formSubmissions.destroyedAt),
+        spam
+          ? isNull(formSubmissions.spamReason)
+          : isNotNull(formSubmissions.spamReason)
+      )
+    )
+    .returning()
 
   return row ?? null
 }
