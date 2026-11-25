@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { UserRoundX } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@placetostand/ui/avatar'
 import {
   ContextMenuItem,
   ContextMenuRadioGroup,
@@ -14,7 +14,7 @@ import {
   ContextMenuSub,
   ContextMenuSubContent,
   ContextMenuSubTrigger,
-} from '@pts/ui/context-menu'
+} from '@placetostand/ui/context-menu'
 
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import type { AssigneeOption, SetAssigneeResult } from '@/lib/assignees/types'

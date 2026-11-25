@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import {
   ContactLinkPicker,
   type ContactLink,

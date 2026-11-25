@@ -1,4 +1,4 @@
-import { TabsContent } from '@pts/ui/tabs'
+import { TabsContent } from '@placetostand/ui/tabs'
 import { ActivityFeed } from '@/components/activity/activity-feed'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
 import { NO_SELECTION_MESSAGE } from './projects-board-tabs.constants'

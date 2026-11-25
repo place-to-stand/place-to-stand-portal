@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { TriangleAlert } from 'lucide-react'
 
-import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
+import { Alert, AlertContent, AlertDescription } from '@placetostand/ui/alert'
 
 /**
  * What Save will do beyond the form itself ("Ada Lovelace will get an email

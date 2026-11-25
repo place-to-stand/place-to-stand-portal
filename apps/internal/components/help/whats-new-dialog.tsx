@@ -16,7 +16,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@pts/ui/dialog'
+} from '@placetostand/ui/dialog'
 
 import {
   changelogVersion,

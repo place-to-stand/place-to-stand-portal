@@ -1,6 +1,6 @@
 'use client'
 
-import { Separator } from '@pts/ui/separator'
+import { Separator } from '@placetostand/ui/separator'
 import { InvoiceRecordRow } from '@/components/sheets/entity-record-rows'
 import { EntityList } from '@/components/sheets/entity-list'
 import type { HourBlockWithClient } from '@/lib/hour-blocks/hour-block-form'

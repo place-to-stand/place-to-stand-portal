@@ -65,7 +65,7 @@ function expectFired(config, cases) {
 
 const base = common()
 
-test('dates and numbers go through @pts/ui', () => {
+test('dates and numbers go through @placetostand/ui', () => {
   expectFired(base, [
     ...[
       'd.toLocaleDateString()',

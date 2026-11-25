@@ -1,6 +1,6 @@
 import type { ComponentProps, ReactNode } from 'react'
 
-import { Label } from '@pts/ui/label'
+import { Label } from '@placetostand/ui/label'
 import {
   ENTITY_ACCENTS,
   ENTITY_ICONS,

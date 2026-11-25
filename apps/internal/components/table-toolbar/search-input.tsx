@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { Search } from 'lucide-react'
 
-import { Input } from '@pts/ui/input'
+import { Input } from '@placetostand/ui/input'
 import { FieldClearButton } from '@/components/ui/field-clear-button'
 import { cn } from '@/lib/utils'
 

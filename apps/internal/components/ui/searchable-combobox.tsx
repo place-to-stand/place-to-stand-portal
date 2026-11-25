@@ -3,11 +3,15 @@
 import * as React from 'react'
 import { CheckIcon } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@placetostand/ui/avatar'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/users/initials'
 import { matchedHint } from '@/lib/utils/search-match'
-import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@placetostand/ui/popover'
 import {
   Command,
   CommandEmpty,

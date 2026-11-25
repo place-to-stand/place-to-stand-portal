@@ -2,10 +2,10 @@
 
 import { useState } from 'react'
 
-import { Button } from '@pts/ui/button'
-import { Input } from '@pts/ui/input'
-import { Label } from '@pts/ui/label'
-import { Switch } from '@pts/ui/switch'
+import { Button } from '@placetostand/ui/button'
+import { Input } from '@placetostand/ui/input'
+import { Label } from '@placetostand/ui/label'
+import { Switch } from '@placetostand/ui/switch'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { RoleBadge } from '@/components/auth/role-badge'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'

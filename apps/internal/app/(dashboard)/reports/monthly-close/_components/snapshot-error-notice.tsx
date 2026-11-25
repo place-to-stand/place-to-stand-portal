@@ -5,7 +5,7 @@ import {
   AlertContent,
   AlertDescription,
   AlertTitle,
-} from '@pts/ui/alert'
+} from '@placetostand/ui/alert'
 
 type SnapshotErrorNoticeProps = {
   message: string

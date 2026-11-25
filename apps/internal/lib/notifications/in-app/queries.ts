@@ -23,7 +23,7 @@ import {
   workableTasksFilter,
 } from '@/lib/projects/access'
 import { myTaskHref } from '@/lib/sheets/hrefs'
-import { companyCalendarDate } from '@pts/ui/dates'
+import { companyCalendarDate } from '@placetostand/ui/dates'
 
 import { getBusinessIdentity } from '@/lib/business/identity'
 

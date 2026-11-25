@@ -4,9 +4,13 @@ import { useMemo, type RefObject } from 'react'
 import { useDroppable, useDraggable } from '@dnd-kit/core'
 import { Plus } from 'lucide-react'
 
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { formatCalendarDate } from '@pts/ui/dates'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
+import { formatCalendarDate } from '@placetostand/ui/dates'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 import { cn } from '@/lib/utils'
 import type { TaskWithRelations } from '@/lib/types'
 import type { RenderAssigneeFn } from '@/lib/projects/board/board-selectors'

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 
-import { TabsContent } from '@pts/ui/tabs'
+import { TabsContent } from '@placetostand/ui/tabs'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
 import { NO_SELECTION_MESSAGE } from './projects-board-tabs.constants'
 import type { ProjectsBoardActiveProject } from './board-tab-content'

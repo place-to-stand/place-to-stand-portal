@@ -1,6 +1,6 @@
 'use client'
 
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 import { PageShell } from '@/components/layout/page-shell'
 import type { Role } from '@/lib/auth/capabilities'
 import type { DashboardLayout } from '@/lib/dashboard/layout'

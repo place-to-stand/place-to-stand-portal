@@ -1,6 +1,6 @@
 import { Info, XCircle } from 'lucide-react'
 
-import { authErrorClass, authNoticeClass } from '@pts/ui/auth-shell'
+import { authErrorClass, authNoticeClass } from '@pts/portal-ui/auth-shell'
 
 import { cn } from '@/lib/utils'
 

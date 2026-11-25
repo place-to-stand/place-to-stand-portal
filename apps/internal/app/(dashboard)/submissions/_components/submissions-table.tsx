@@ -11,10 +11,14 @@ import {
 import { RecordContextMenu } from '@/components/table/record-context-menu'
 import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
-import { Badge } from '@pts/ui/badge'
+import { Badge } from '@placetostand/ui/badge'
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
-import { EmptyState } from '@pts/ui/empty-state'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { EmptyState } from '@placetostand/ui/empty-state'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import {
   Table,
@@ -23,7 +27,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@pts/ui/table'
+} from '@placetostand/ui/table'
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useStartRefresh } from '@/components/layout/list-refresh'
 import { useListParams } from '@/hooks/use-list-params'
@@ -32,7 +36,7 @@ import {
   useSheetParamSelection,
 } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
-import { formatCalendarDate, formatRelativeTime } from '@pts/ui/dates'
+import { formatCalendarDate, formatRelativeTime } from '@placetostand/ui/dates'
 import {
   ATTRIBUTION_CHANNEL_LABELS,
   describeAttribution,

@@ -1,4 +1,4 @@
-import { describeTimeZone } from '@pts/ui/dates'
+import { describeTimeZone } from '@placetostand/ui/dates'
 
 import type { SearchableComboboxItem } from '@/components/ui/searchable-combobox'
 

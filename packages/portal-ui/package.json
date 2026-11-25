@@ -1,0 +1,32 @@
+{
+  "name": "@pts/portal-ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Our portals' own UI layer on top of @placetostand/ui: the Place To Stand brand, sign-in shell, status colours and entity colours. Never published.",
+  "type": "module",
+  "exports": {
+    "./auth-shell": "./src/auth-shell.tsx",
+    "./brand": "./src/brand.tsx",
+    "./brand-icon-assets": "./src/brand-icon-assets.ts",
+    "./brand-og-mark": "./src/brand-og-mark.tsx",
+    "./business-brand": "./src/business-brand.tsx",
+    "./status-tints": "./src/status-tints.ts",
+    "./styles/portal.css": "./src/styles/portal.css"
+  },
+  "scripts": {
+    "type-check": "tsc7 --noEmit",
+    "lint": "pts-lint"
+  },
+  "dependencies": {
+    "@placetostand/ui": "*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@pts/lint-config": "^0.1.0",
+    "@types/react": "^19.3.0",
+    "typescript": "^6.0.3"
+  }
+}

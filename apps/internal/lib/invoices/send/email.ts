@@ -6,8 +6,8 @@ import {
   type InvoiceEmailArgs,
   type RenderedEmail,
 } from '@pts/email'
-import { formatCalendarDate } from '@pts/ui/dates'
-import { formatCurrency } from '@pts/ui/numbers'
+import { formatCalendarDate } from '@placetostand/ui/dates'
+import { formatCurrency } from '@placetostand/ui/numbers'
 
 import { invoiceEmailedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'

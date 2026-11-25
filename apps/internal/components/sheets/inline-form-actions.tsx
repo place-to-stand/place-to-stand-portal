@@ -2,7 +2,7 @@
 
 import { Loader2, Plus } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 
 /**

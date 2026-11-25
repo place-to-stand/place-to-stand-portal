@@ -3,8 +3,12 @@
 import { useState } from 'react'
 import { Bell } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
+import { Button } from '@placetostand/ui/button'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@placetostand/ui/popover'
 
 import {
   NotificationActions,

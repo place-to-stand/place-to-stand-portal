@@ -5,7 +5,7 @@ import {
   RecordRowActions,
 } from '@/components/table/record-row-action'
 import { RecordContextMenu } from '@/components/table/record-context-menu'
-import { TableCell, TableRow } from '@pts/ui/table'
+import { TableCell, TableRow } from '@placetostand/ui/table'
 import { formatProjectDateRange } from '@/lib/projects/sheet/project-formatters'
 import { cn } from '@/lib/utils'
 

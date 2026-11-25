@@ -1,1 +1,1 @@
-export { cn } from '@pts/ui/cn'
+export { cn } from '@placetostand/ui/cn'

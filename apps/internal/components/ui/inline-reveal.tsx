@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 
-import { Collapsible, CollapsibleContent } from '@pts/ui/collapsible'
+import { Collapsible, CollapsibleContent } from '@placetostand/ui/collapsible'
 
 import { cn } from '@/lib/utils'
 

@@ -39,7 +39,7 @@ applyTo: '**/*.{tsx,jsx}'
 
 ## shadcn/Base UI Components
 
-- Use the `@pts/ui` wrappers (Base UI primitives) - they handle accessibility
+- Use the `@placetostand/ui` wrappers (Base UI primitives) - they handle accessibility
 - Custom overrides should not break built-in accessibility
 - Tooltips must be keyboard accessible
 - Dialogs need proper focus management

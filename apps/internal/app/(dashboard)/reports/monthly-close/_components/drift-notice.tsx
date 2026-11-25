@@ -3,7 +3,7 @@
 import { useTransition } from 'react'
 import { TriangleAlert } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import {
   Table,
   TableBody,
@@ -11,13 +11,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@pts/ui/table'
-import { formatCalendarDate } from '@pts/ui/dates'
+} from '@placetostand/ui/table'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 import { toast } from '@/components/ui/use-toast'
 import type { CloseDrift } from '@/lib/data/reports/close'
 
 import { recloseMonthAction } from '../actions/reclose-month'
-import { formatCurrency, formatHours } from '@pts/ui/numbers'
+import { formatCurrency, formatHours } from '@placetostand/ui/numbers'
 
 type DriftNoticeProps = {
   year: number

@@ -8,8 +8,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@pts/ui/table'
-import { EmptyState } from '@pts/ui/empty-state'
+} from '@placetostand/ui/table'
+import { EmptyState } from '@placetostand/ui/empty-state'
 
 import type { ProjectWithClient, ProjectsTableMode } from './types'
 import { ProjectsTableRow } from './projects-table-row'

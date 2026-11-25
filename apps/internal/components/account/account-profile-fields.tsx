@@ -2,7 +2,7 @@
 
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
-import { Input } from '@pts/ui/input'
+import { Input } from '@placetostand/ui/input'
 
 import { AvatarUploadField } from '@/components/forms/avatar-upload-field'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'

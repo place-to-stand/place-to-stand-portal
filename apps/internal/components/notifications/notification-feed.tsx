@@ -15,11 +15,11 @@ import {
 } from '@tanstack/react-query'
 import { Archive, ArchiveRestore, Circle } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
-import { formatRelativeTime } from '@pts/ui/dates'
-import { Tabs, TabsList, TabsTrigger } from '@pts/ui/tabs'
-import { EmptyState } from '@pts/ui/empty-state'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { Button } from '@placetostand/ui/button'
+import { formatRelativeTime } from '@placetostand/ui/dates'
+import { Tabs, TabsList, TabsTrigger } from '@placetostand/ui/tabs'
+import { EmptyState } from '@placetostand/ui/empty-state'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { useToast } from '@/components/ui/use-toast'
 import type {
   NotificationFeed,

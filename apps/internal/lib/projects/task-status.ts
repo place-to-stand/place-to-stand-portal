@@ -1,9 +1,9 @@
-import type { BadgeTint } from '@pts/ui/badge-tints'
+import type { BadgeTint } from '@placetostand/ui/badge-tints'
 import {
   TASK_STATUS_HUES,
   TASK_STATUS_LABELS,
   TASK_STATUS_TINTS as TASK_STATUS_TOKENS,
-} from '@pts/ui/status-tints'
+} from '@pts/portal-ui/status-tints'
 
 // Display vocabulary, not the DB enum: ACCEPTED (accepted_at set) and
 // ARCHIVED (deleted_at set) are derived states with no task_status value.

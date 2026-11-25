@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ArrowLeftIcon } from 'lucide-react'
 
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 
 export default function ProjectNotFound() {
   return (

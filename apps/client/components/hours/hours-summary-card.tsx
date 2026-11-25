@@ -1,5 +1,5 @@
-import { Card } from '@pts/ui/card'
-import { formatHours } from '@pts/ui/numbers'
+import { Card } from '@placetostand/ui/card'
+import { formatHours } from '@placetostand/ui/numbers'
 
 import { SummaryHeader } from '@/components/ui/summary-header'
 import type { ClientHoursSummary } from '@/lib/data/hours'

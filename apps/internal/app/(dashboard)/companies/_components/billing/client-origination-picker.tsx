@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'

@@ -3,7 +3,7 @@ import 'server-only'
 import { cache } from 'react'
 
 import { readProfitSharePolicy, type ProfitSharePolicy } from '@pts/db/business'
-import { companyMonthEndCutoff } from '@pts/ui/dates'
+import { companyMonthEndCutoff } from '@placetostand/ui/dates'
 
 import {
   profitShareAppliesTo,
@@ -23,7 +23,7 @@ import { fetchUsersByIds } from '@/lib/queries/reports/profit-share-partners'
 
 /**
  * The instant a month ends for the profit share: midnight in the Business
- * time zone (Settings → Business; see companyMonthEndCutoff in @pts/ui/dates).
+ * time zone (Settings → Business; see companyMonthEndCutoff in @placetostand/ui/dates).
  * Closed months keep the profit share frozen in their snapshot, even if the
  * zone changes later.
  */

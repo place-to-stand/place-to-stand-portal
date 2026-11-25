@@ -1,6 +1,6 @@
 import { ExternalLink } from 'lucide-react'
 
-import { authLinkClass, authNoticeClass } from '@pts/ui/auth-shell'
+import { authLinkClass, authNoticeClass } from '@pts/portal-ui/auth-shell'
 
 type Props = {
   clientPortalUrl: string

@@ -2,7 +2,7 @@
 
 import { Keyboard, Moon, Sun } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'

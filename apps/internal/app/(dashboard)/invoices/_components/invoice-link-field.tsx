@@ -3,9 +3,9 @@
 import { useCallback, useId, useState } from 'react'
 import { Check, Copy, ExternalLink, SquareArrowOutUpRight } from 'lucide-react'
 
-import { Input } from '@pts/ui/input'
-import { Label } from '@pts/ui/label'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { Input } from '@placetostand/ui/input'
+import { Label } from '@placetostand/ui/label'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { invoicePreviewHref, invoiceShareHref } from '@/lib/invoices/links'
 
 /**

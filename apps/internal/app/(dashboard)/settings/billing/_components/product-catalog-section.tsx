@@ -6,11 +6,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 
 import { FormSection } from '@/components/forms/form-section'
-import { EmptyState } from '@pts/ui/empty-state'
-import { Checkbox } from '@pts/ui/checkbox'
+import { EmptyState } from '@placetostand/ui/empty-state'
+import { Checkbox } from '@placetostand/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -18,11 +18,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@pts/ui/dialog'
-import { Input } from '@pts/ui/input'
-import { formatCurrency } from '@pts/ui/numbers'
-import { Label } from '@pts/ui/label'
-import { Switch } from '@pts/ui/switch'
+} from '@placetostand/ui/dialog'
+import { Input } from '@placetostand/ui/input'
+import { formatCurrency } from '@placetostand/ui/numbers'
+import { Label } from '@placetostand/ui/label'
+import { Switch } from '@placetostand/ui/switch'
 import {
   Table,
   TableBody,
@@ -30,7 +30,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@pts/ui/table'
+} from '@placetostand/ui/table'
 import {
   SortableTableHead,
   type SortValue,

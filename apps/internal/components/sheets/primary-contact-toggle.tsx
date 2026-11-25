@@ -2,8 +2,12 @@
 
 import { Star } from 'lucide-react'
 
-import { buttonVariants } from '@pts/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { buttonVariants } from '@placetostand/ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 import { RECORD_ROW_HOVER_ACTION_CLASS } from '@/components/sheets/sheet-record-row'
 import { cn } from '@/lib/utils'
 

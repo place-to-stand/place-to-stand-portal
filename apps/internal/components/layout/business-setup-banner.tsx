@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { IdCard } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 
 /**
  * Shown to admins until someone saves Settings → Business: until then,

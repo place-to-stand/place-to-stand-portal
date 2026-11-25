@@ -1,11 +1,13 @@
 @import 'tailwindcss';
 @source '../../../packages/ui/src';
+@source '../../../packages/portal-ui/src';
 @import 'tw-animate-css';
 @plugin '@tailwindcss/typography';
 @import '../styles/variables.css';
 @import '../styles/keyframe-animations.css';
 
 @import '../../../packages/ui/src/styles/theme.css';
+@import '../../../packages/portal-ui/src/styles/portal.css';
 
 /* Remove decorative backticks from inline code in prose */
 .prose :where(code)::before,

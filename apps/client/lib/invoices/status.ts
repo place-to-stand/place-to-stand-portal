@@ -1,7 +1,7 @@
-import { INVOICE_STATUS_TINTS, statusTint } from '@pts/ui/status-tints'
+import { INVOICE_STATUS_TINTS, statusTint } from '@pts/portal-ui/status-tints'
 
 /**
- * Client-facing invoice labels. Colours come from `@pts/ui/status-tints`, shared
+ * Client-facing invoice labels. Colours come from `@pts/portal-ui/status-tints`, shared
  * with the internal portal.
  *
  * DRAFT is intentionally absent — drafts are filtered out in the query and are

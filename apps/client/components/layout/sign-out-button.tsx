@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 
-import { DropdownMenuItem } from '@pts/ui/dropdown-menu'
+import { DropdownMenuItem } from '@placetostand/ui/dropdown-menu'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
 /** The account menu's sign-out row. The item itself is the control. */

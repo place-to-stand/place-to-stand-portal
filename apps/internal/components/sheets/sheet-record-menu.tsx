@@ -2,14 +2,14 @@
 
 import { Archive, ChevronDown, Copy } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@pts/ui/dropdown-menu'
+} from '@placetostand/ui/dropdown-menu'
 
 type SheetRecordMenuProps = {
   /** The record's kind in words, for the button's name ("task actions"). */

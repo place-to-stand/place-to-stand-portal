@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Search } from 'lucide-react'
 
-import { BrandLogo, BrandLogoMark } from '@pts/ui/brand'
+import { BrandLogo, BrandLogoMark } from '@pts/portal-ui/brand'
 
 import { cn } from '@/lib/utils'
 import type { AppUser } from '@/lib/auth/session'
@@ -24,7 +24,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'

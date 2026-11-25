@@ -8,7 +8,7 @@ import type { ProjectIntegrationLinkSummary } from '@/lib/types/integrations'
 import { DndContext, type DndContextProps } from '@dnd-kit/core'
 import { useSearchParams } from 'next/navigation'
 
-import { TabsContent } from '@pts/ui/tabs'
+import { TabsContent } from '@placetostand/ui/tabs'
 import {
   BOARD_GRID_CLASS,
   BOARD_PANEL_CLASS,

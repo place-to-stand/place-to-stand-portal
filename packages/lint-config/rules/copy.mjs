@@ -11,7 +11,7 @@
  *              "account", client-portal "user" / "client", "Partners",
  *              "Delete forever"); on when the `portal` option is set
  *   figures    Content fundamentals: hours, money and percentages only
- *              through @pts/ui/numbers, never glued on by hand
+ *              through @placetostand/ui/numbers, never glued on by hand
  *
  * Options: `portal` ('internal' or 'client': which word list applies),
  * `exceptions` (the files where one check is off) and `root`, the directory
@@ -94,7 +94,7 @@ export const copy = {
       details:
         'components/sheet.md: no generic "Details" heading; name the section for what it holds.',
       words: `Copy (${README}, Content fundamentals): {{message}}. A deliberate use (the website's contact form) takes an oxlint-disable comment saying why.`,
-      figures: `Content fundamentals (${README}): hours, money and percentages are formatted only by @pts/ui/numbers (formatHours → "1.5h", formatCurrency → "$1,234.00", formatPercent → "8.25%"). This {{what}}. Need a variant (no cents, a sign)? Add an option to packages/ui/src/numbers.ts.`,
+      figures: `Content fundamentals (${README}): hours, money and percentages are formatted only by @placetostand/ui/numbers (formatHours → "1.5h", formatCurrency → "$1,234.00", formatPercent → "8.25%"). This {{what}}. Need a variant (no cents, a sign)? Add an option to packages/ui/src/numbers.ts.`,
     },
   },
   create(context) {

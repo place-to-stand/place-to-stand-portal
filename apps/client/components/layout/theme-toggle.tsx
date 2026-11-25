@@ -2,7 +2,7 @@
 
 import { MoonIcon, SunIcon } from 'lucide-react'
 
-import { DropdownMenuItem } from '@pts/ui/dropdown-menu'
+import { DropdownMenuItem } from '@placetostand/ui/dropdown-menu'
 import { useTheme } from '@/components/providers/theme-provider'
 
 /**

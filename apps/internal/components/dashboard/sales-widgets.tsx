@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 
-import { Button } from '@pts/ui/button'
-import { EmptyState } from '@pts/ui/empty-state'
+import { Button } from '@placetostand/ui/button'
+import { EmptyState } from '@placetostand/ui/empty-state'
 import type { SalesHomeData, SalesLeadItem } from '@/lib/dashboard/sales-types'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { EmptyValue } from '@/components/table/empty-value'

@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { formatCalendarDate } from '@pts/ui/dates'
-import { formatCurrency } from '@pts/ui/numbers'
+import { formatCalendarDate } from '@placetostand/ui/dates'
+import { formatCurrency } from '@placetostand/ui/numbers'
 import { Check, Copy, ExternalLink, Loader2, Mail } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
-import { EmptyState } from '@pts/ui/empty-state'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { Badge } from '@placetostand/ui/badge'
+import { Button } from '@placetostand/ui/button'
+import { EmptyState } from '@placetostand/ui/empty-state'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import {
   RecordRowAction,
   RecordRowActions,
@@ -25,7 +25,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@pts/ui/table'
+} from '@placetostand/ui/table'
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'

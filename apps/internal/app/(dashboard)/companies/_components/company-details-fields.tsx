@@ -4,7 +4,7 @@ import { useId } from 'react'
 
 import type { Control } from 'react-hook-form'
 
-import { Input } from '@pts/ui/input'
+import { Input } from '@placetostand/ui/input'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import {
   FormControl,

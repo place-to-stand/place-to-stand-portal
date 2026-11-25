@@ -1,6 +1,6 @@
 # BrandLogo
 
-The Place To Stand lockup: the blueprint mark (a square frame holding a dot a third its size) beside "Place To Stand" in Space Grotesk bold, tracking-tight. It is the only logo in both portals for Place To Stand's own install. From `@pts/ui/brand` (`BrandLogo`, `BrandLogoMark`, `BrandLockup`, `BlueprintCorners`, `BRAND`).
+The Place To Stand lockup: the blueprint mark (a square frame holding a dot a third its size) beside "Place To Stand" in Space Grotesk bold, tracking-tight. It is the only logo in both portals for Place To Stand's own install. From `@pts/portal-ui/brand` (`BrandLogo`, `BrandLogoMark`, `BrandLockup`, `BlueprintCorners`, `BRAND`).
 
 **Sizes** (`size`): `sm` mark 16 / text 15px / gap-2 (client portal header) · `md` 20 / text-lg / gap-2.5 (internal sidebar, mobile share header) · `lg` 24 / text-xl / gap-3 (the marketing header's exact size).
 
@@ -19,4 +19,4 @@ The Place To Stand lockup: the blueprint mark (a square frame holding a dot a th
 - Put `brand-lime` on a light ground — use `tone="theme"`.
 - Recolor, outline, or re-set the wordmark in another face or case.
 
-**Favicon files.** `pts-favicon-192.png` and `pts-apple-icon-180.png` (white "PTS" on `brand-bg` with lime corner brackets) are embedded in `packages/ui/src/brand-icon-assets.ts`. Favicon and apple-touch icon only, never an in-app logo. There is no SVG logo file in the repo.
+**Favicon files.** `pts-favicon-192.png` and `pts-apple-icon-180.png` (white "PTS" on `brand-bg` with lime corner brackets) are embedded in `packages/portal-ui/src/brand-icon-assets.ts`. Favicon and apple-touch icon only, never an in-app logo. There is no SVG logo file in the repo.

@@ -1,5 +1,5 @@
-import { formatCalendarDate } from '@pts/ui/dates'
-import { formatCurrency, formatPercent } from '@pts/ui/numbers'
+import { formatCalendarDate } from '@placetostand/ui/dates'
+import { formatCurrency, formatPercent } from '@placetostand/ui/numbers'
 
 /** A deduction line: "−$14,572.50" (true minus sign). */
 export function formatDeduction(amount: number): string {

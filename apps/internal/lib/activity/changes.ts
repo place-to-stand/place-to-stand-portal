@@ -1,5 +1,5 @@
 import type { ActivityLogWithActor } from './types'
-import { formatHours } from '@pts/ui/numbers'
+import { formatHours } from '@placetostand/ui/numbers'
 
 /**
  * Normalised view of what an activity log actually changed.

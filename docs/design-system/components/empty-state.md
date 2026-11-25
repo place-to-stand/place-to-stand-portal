@@ -1,6 +1,6 @@
 # EmptyState
 
-The one "nothing here yet" placeholder, for list sections, sheet sections, boards and client-portal pages. From `@pts/ui/empty-state`.
+The one "nothing here yet" placeholder, for list sections, sheet sections, boards and client-portal pages. From `@placetostand/ui/empty-state`.
 
 **Look:** a dashed, rounded box: `text-muted-foreground rounded-lg border border-dashed px-4 py-6 text-center text-sm`.
 

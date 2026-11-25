@@ -1,6 +1,6 @@
 # Input
 
-The single-line text field, plus `Textarea`, `Label` and `FormLabel`. From `@pts/ui/input`, `@pts/ui/textarea`, `@pts/ui/label`, `components/ui/form.tsx`.
+The single-line text field, plus `Textarea`, `Label` and `FormLabel`. From `@placetostand/ui/input`, `@placetostand/ui/textarea`, `@placetostand/ui/label`, `components/ui/form.tsx`.
 
 **Look:** `h-9 rounded-md border border-input bg-transparent px-3 py-1 shadow-xs`, `text-base` below md and `md:text-sm` (keeps iOS from zooming); dark adds `bg-input/30`. Placeholder `muted-foreground`. Focus `border-ring` + 3px `ring-ring/50`. Invalid (`aria-invalid`) swaps to `border-destructive` + `ring-destructive/20` (dark /40). Disabled `opacity-50`. Textarea: `min-h-16 px-3 py-2 field-sizing-content`.
 

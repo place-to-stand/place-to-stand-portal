@@ -7,9 +7,9 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@pts/ui/collapsible'
-import { Badge } from '@pts/ui/badge'
-import { Skeleton } from '@pts/ui/skeleton'
+} from '@placetostand/ui/collapsible'
+import { Badge } from '@placetostand/ui/badge'
+import { Skeleton } from '@placetostand/ui/skeleton'
 import { EntityList } from '@/components/sheets/entity-list'
 import { cn } from '@/lib/utils'
 import { TaskCardStatic } from '@/app/(dashboard)/projects/task-card'

@@ -1,6 +1,6 @@
 'use client'
 
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 
 import { FilterSelect } from '@/components/table-toolbar/filter-select'

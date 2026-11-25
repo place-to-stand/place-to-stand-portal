@@ -1,6 +1,6 @@
 import { LinkIcon } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@placetostand/ui/avatar'
 
 import { getInitials, userAvatarSrc } from './format'
 

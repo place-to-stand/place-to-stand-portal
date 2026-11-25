@@ -1,7 +1,11 @@
 import type { ProfitShareData } from '@/lib/billing/profit-share'
 import type { MonthlyCloseReport } from '@/lib/data/reports/types'
 
-import { formatCurrency, formatHours, formatPercent } from '@pts/ui/numbers'
+import {
+  formatCurrency,
+  formatHours,
+  formatPercent,
+} from '@placetostand/ui/numbers'
 
 export type PayoutColumn = 'payroll' | 'origination' | 'closer' | 'profitShare'
 

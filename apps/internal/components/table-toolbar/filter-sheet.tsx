@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from 'react'
 import { SlidersHorizontal } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 // oxlint-disable-next-line no-restricted-imports -- filters apply as you pick; no save, so no undo or redo

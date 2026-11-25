@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 
 type ResetFiltersButtonProps = {
   /** Render only while some filter differs from its default (hasActiveFilters). */

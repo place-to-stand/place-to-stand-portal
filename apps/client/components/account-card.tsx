@@ -1,5 +1,5 @@
-import { Card } from '@pts/ui/card'
-import { formatCurrency } from '@pts/ui/numbers'
+import { Card } from '@placetostand/ui/card'
+import { formatCurrency } from '@placetostand/ui/numbers'
 
 import { HoursSummaryContent } from '@/components/hours/hours-summary-card'
 import { NavRow } from '@/components/ui/nav-row'

@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Eye, EyeOff, GripVertical } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 
 import { cn } from '@/lib/utils'
 import type { DashboardWidgetId } from '@/lib/dashboard/layout'

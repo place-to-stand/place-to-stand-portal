@@ -1,6 +1,6 @@
 import type { ActivityFact } from './changes'
-import { formatCalendarDate } from '@pts/ui/dates'
-import { formatCurrency, formatHours } from '@pts/ui/numbers'
+import { formatCalendarDate } from '@placetostand/ui/dates'
+import { formatCurrency, formatHours } from '@placetostand/ui/numbers'
 
 export function formatFact(fact: ActivityFact): string {
   switch (fact.kind) {

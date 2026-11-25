@@ -20,7 +20,7 @@ import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog
 import { archiveCompanyExtra } from '../_lib/archive-copy'
 import { ARCHIVE_BILLED_REFUSAL } from '@/lib/companies/archive-refusal'
 import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
-import { Skeleton } from '@pts/ui/skeleton'
+import { Skeleton } from '@placetostand/ui/skeleton'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetNoticeSlot } from '@/components/sheets/sheet-notice-slot'

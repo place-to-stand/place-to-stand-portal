@@ -2,9 +2,9 @@
 
 import { Loader2 } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import { taskCommentMentionOptionsUrl } from '@/lib/tiptap/mention-urls'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ConfirmDialog } from '@placetostand/ui/confirm-dialog'
 
 import { EntityList } from '@/components/sheets/entity-list'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'

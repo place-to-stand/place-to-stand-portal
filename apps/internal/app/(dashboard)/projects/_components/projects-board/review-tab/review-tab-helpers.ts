@@ -1,4 +1,4 @@
-import { formatCalendarDate, formatRelativeTime } from '@pts/ui/dates'
+import { formatCalendarDate, formatRelativeTime } from '@placetostand/ui/dates'
 
 import type { TaskWithRelations } from '@/lib/types'
 import type { RenderAssigneeFn } from '../../../../../../lib/projects/board/board-selectors'

@@ -3,8 +3,9 @@
  * Syncs docs/design-system/tokens.json with the code it describes.
  *
  * Reads the theme colors and radius scale from packages/ui/src/styles/theme.css
- * (the theme both portals import), the brand colors from
- * packages/ui/src/brand.tsx (BRAND) and the email colors from
+ * (the published theme) and packages/portal-ui/src/styles/portal.css (our
+ * portals' layer on top), the brand colors from
+ * packages/portal-ui/src/brand.tsx (BRAND) and the email colors from
  * packages/email/src/layout.ts (EMAIL_COLORS), and writes their values
  * into tokens.json. Usage notes and every hand-written family (type, spacing,
  * size, shadow, opacity) are kept as they are.
@@ -22,7 +23,11 @@ import { isDeepStrictEqual } from 'node:util'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const TOKENS_PATH = join(ROOT, 'docs/design-system/tokens.json')
-const THEME_PATH = 'packages/ui/src/styles/theme.css'
+/** Read in this order: portal.css layers on theme.css. */
+const THEME_PATHS = [
+  'packages/ui/src/styles/theme.css',
+  'packages/portal-ui/src/styles/portal.css',
+]
 const NEW_TOKEN_USAGE = 'TODO: say where this token is used.'
 /** Colors documented here that no source constant defines. */
 const HAND_KEPT_COLORS = new Set([
@@ -32,16 +37,22 @@ const HAND_KEPT_COLORS = new Set([
 
 const read = path => readFileSync(join(ROOT, path), 'utf8')
 
-/** `--name: value;` pairs of the first top-level block opened by `selector {`. */
+/**
+ * `--name: value;` pairs of every top-level block opened by `selector {`, in
+ * order, so a later file's block adds to an earlier one's.
+ */
 function cssBlock(css, selector) {
-  const start = css.indexOf(`\n${selector} {`)
-  if (start === -1) throw new Error(`theme.css: no "${selector}" block`)
-  const end = css.indexOf('\n}', start)
   const vars = new Map()
-  for (const match of css
-    .slice(start, end)
-    .matchAll(/--([\w-]+):\s*([^;]+);/g)) {
-    vars.set(match[1], match[2].trim())
+  let start = css.indexOf(`\n${selector} {`)
+  if (start === -1) throw new Error(`theme css: no "${selector}" block`)
+  while (start !== -1) {
+    const end = css.indexOf('\n}', start)
+    for (const match of css
+      .slice(start, end)
+      .matchAll(/--([\w-]+):\s*([^;]+);/g)) {
+      vars.set(match[1], match[2].trim())
+    }
+    start = css.indexOf(`\n${selector} {`, end)
   }
   return vars
 }
@@ -63,7 +74,7 @@ const kebab = key => key.replace(/[A-Z]/g, char => `-${char.toLowerCase()}`)
 const remToPx = value => `${parseFloat(value) * 16}px`
 
 function sourceColors() {
-  const css = read(THEME_PATH)
+  const css = THEME_PATHS.map(read).join('\n')
   const light = cssBlock(css, ':root')
   const dark = cssBlock(css, '.dark')
   const colors = new Map()
@@ -76,7 +87,7 @@ function sourceColors() {
   // BRAND.accent is the lime; gridDot is the same color as border.
   const brandNames = { accent: 'brand-lime', gridDot: null }
   const brand = tsColorConst(
-    read('packages/ui/src/brand.tsx'),
+    read('packages/portal-ui/src/brand.tsx'),
     'BRAND',
     'brand.tsx'
   )
@@ -96,7 +107,7 @@ function sourceColors() {
 }
 
 /**
- * theme.css registers the brand and email colors as Tailwind colors
+ * portal.css registers the brand and email colors as Tailwind colors
  * (`--color-brand-bg`, `--color-email-ink`, ...) by value, since @theme can't
  * read TypeScript. Every one of them must equal its BRAND / EMAIL_COLORS
  * source; returns the mismatches.
@@ -109,7 +120,7 @@ function staticColorMismatches(css, colors) {
     const expected = colors.get(name)
     if (expected !== undefined && expected !== value.trim()) {
       problems.push(
-        `${name}: theme.css has ${value.trim()}, source has ${expected}`
+        `${name}: portal.css has ${value.trim()}, source has ${expected}`
       )
     }
   }
@@ -155,7 +166,7 @@ function build(current) {
   const mismatches = staticColorMismatches(css, colors)
   if (mismatches.length) {
     console.error(
-      `${THEME_PATH} disagrees with BRAND / EMAIL_COLORS:\n  ${mismatches.join('\n  ')}`
+      `${THEME_PATHS.join(' + ')} disagrees with BRAND / EMAIL_COLORS:\n  ${mismatches.join('\n  ')}`
     )
     process.exit(1)
   }
@@ -177,7 +188,7 @@ const next = build(current)
 if (process.argv.includes('--check')) {
   if (!isDeepStrictEqual(current, next)) {
     console.error(
-      'docs/design-system/tokens.json is out of date with theme.css / brand.tsx / layout.ts.\nRun `npm run design-tokens` and commit the result.'
+      'docs/design-system/tokens.json is out of date with theme.css / portal.css / brand.tsx / layout.ts.\nRun `npm run design-tokens` and commit the result.'
     )
     process.exit(1)
   }

@@ -104,7 +104,7 @@ export const filterSelect = {
       ImportDeclaration(node) {
         if (!filterFile) return
         if (
-          /(^@pts\/ui\/select$|\/components\/ui\/select$)/.test(
+          /(^@placetostand\/ui\/select$|\/components\/ui\/select$)/.test(
             String(node.source.value)
           )
         ) {

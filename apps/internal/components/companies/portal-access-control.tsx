@@ -2,8 +2,8 @@
 
 import type { ReactNode } from 'react'
 
-import { Button } from '@pts/ui/button'
-import { Switch } from '@pts/ui/switch'
+import { Button } from '@placetostand/ui/button'
+import { Switch } from '@placetostand/ui/switch'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { canHavePortalAccess } from '@/lib/people/portal-eligibility'
 

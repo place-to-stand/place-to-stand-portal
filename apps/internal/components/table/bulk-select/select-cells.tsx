@@ -7,8 +7,8 @@ import {
   type ReactNode,
 } from 'react'
 
-import { Checkbox } from '@pts/ui/checkbox'
-import { TableCell, TableHead } from '@pts/ui/table'
+import { Checkbox } from '@placetostand/ui/checkbox'
+import { TableCell, TableHead } from '@placetostand/ui/table'
 import { cn } from '@/lib/utils'
 
 import {

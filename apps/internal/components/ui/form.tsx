@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Slot as SlotPrimitive } from '@pts/ui/slot'
+import { Slot as SlotPrimitive } from '@placetostand/ui/slot'
 
 import {
   Controller,
@@ -14,7 +14,7 @@ import {
 } from 'react-hook-form'
 
 import { cn } from '@/lib/utils'
-import { Label } from '@pts/ui/label'
+import { Label } from '@placetostand/ui/label'
 import { EntityLabelText } from '@/components/ui/entity-label-icon'
 import type { AccentEntity } from '@/lib/entity-accents'
 

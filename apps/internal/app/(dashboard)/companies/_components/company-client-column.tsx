@@ -1,6 +1,6 @@
 'use client'
 
-import { Separator } from '@pts/ui/separator'
+import { Separator } from '@placetostand/ui/separator'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SHEET_SIDE_COLUMN_CLASSES } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'

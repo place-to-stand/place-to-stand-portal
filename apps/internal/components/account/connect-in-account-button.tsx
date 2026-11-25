@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 
 import { openAccountSheet } from '@/lib/account/use-account-sheet'
 

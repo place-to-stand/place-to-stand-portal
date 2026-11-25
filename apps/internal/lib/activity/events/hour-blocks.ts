@@ -1,5 +1,5 @@
 import { ActivityVerbs, type ActivityEvent } from '@/lib/activity/types'
-import { formatHours } from '@pts/ui/numbers'
+import { formatHours } from '@placetostand/ui/numbers'
 
 import { joinWithCommas, toMetadata } from './shared'
 

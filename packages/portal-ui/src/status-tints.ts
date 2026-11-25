@@ -1,4 +1,4 @@
-import { BADGE_TINTS, type BadgeTint } from './badge-tints'
+import { BADGE_TINTS, type BadgeTint } from '@placetostand/ui/badge-tints'
 
 /**
  * The one map of status colours, shared by the internal and client portals so

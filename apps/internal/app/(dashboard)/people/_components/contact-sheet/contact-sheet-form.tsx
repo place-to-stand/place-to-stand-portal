@@ -8,7 +8,7 @@ import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetSection } from '@/components/sheets/sheet-section'
-import { Separator } from '@pts/ui/separator'
+import { Separator } from '@placetostand/ui/separator'
 import {
   Form,
   FormControl,
@@ -17,7 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@pts/ui/input'
+import { Input } from '@placetostand/ui/input'
 import { UrlInput } from '@/components/ui/url-input'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { AvatarUploadField } from '@/components/forms/avatar-upload-field'

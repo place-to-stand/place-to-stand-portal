@@ -1,6 +1,6 @@
 import { Check } from 'lucide-react'
 
-import { formatCurrency } from '@pts/ui/numbers'
+import { formatCurrency } from '@placetostand/ui/numbers'
 
 import { formatDate } from './format'
 import { DARK_LABEL, PANEL_TITLE } from './styles'

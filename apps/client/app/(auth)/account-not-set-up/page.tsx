@@ -8,7 +8,7 @@
  * The copy is intentionally identical for unknown emails and known-but-unprovisioned
  * ones, so this page can't be used to enumerate who does and doesn't have an account.
  */
-import { AuthShell, authLinkClass } from '@pts/ui/auth-shell'
+import { AuthShell, authLinkClass } from '@pts/portal-ui/auth-shell'
 
 export default function AccountNotSetUpPage() {
   return (

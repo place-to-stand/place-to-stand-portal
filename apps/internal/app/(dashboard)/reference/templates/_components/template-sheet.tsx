@@ -6,8 +6,8 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@pts/ui/collapsible'
-import { Tabs, TabsList, TabsTrigger } from '@pts/ui/tabs'
+} from '@placetostand/ui/collapsible'
+import { Tabs, TabsList, TabsTrigger } from '@placetostand/ui/tabs'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 

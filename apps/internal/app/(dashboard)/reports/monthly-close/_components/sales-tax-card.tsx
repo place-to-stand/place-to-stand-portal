@@ -1,7 +1,7 @@
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 import type { SalesTaxData } from '@/lib/data/reports/types'
 
-import { formatCurrency, formatPercent } from '@pts/ui/numbers'
+import { formatCurrency, formatPercent } from '@placetostand/ui/numbers'
 
 import { formatShortDay } from './format'
 import { TreeBranch } from './tree-branch'

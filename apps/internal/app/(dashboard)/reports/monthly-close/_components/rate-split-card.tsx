@@ -1,9 +1,13 @@
 import { Info } from 'lucide-react'
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 import type { MonthlyCloseReport } from '@/lib/data/reports/types'
 
-import { formatCurrency, formatHours } from '@pts/ui/numbers'
+import { formatCurrency, formatHours } from '@placetostand/ui/numbers'
 
 import { formatShare } from './format'
 import { PagePanel } from '@/components/layout/page-panel'

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 
-import { authSecondaryButtonClass } from '@pts/ui/auth-shell'
+import { authSecondaryButtonClass } from '@pts/portal-ui/auth-shell'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
 type Props = {

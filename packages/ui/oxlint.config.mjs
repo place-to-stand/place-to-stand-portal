@@ -12,7 +12,7 @@ export default toOxlint([
   ...reactLibrary({ dir: import.meta.dirname }),
   {
     // The primitives themselves: the tooltip and a submenu sit at their own
-    // elevation, and the logo has its own display sizes.
+    // elevation.
     rules: {
       'pts/class-names': [
         'error',
@@ -20,7 +20,6 @@ export default toOxlint([
           exceptions: {
             'raw-colour': RAW_COLOUR_EXCEPTIONS,
             'popover-shadow': ['src/tooltip.tsx', 'src/context-menu.tsx'],
-            'raw-type-size': ['src/brand.tsx'],
           },
           root: import.meta.dirname,
         },

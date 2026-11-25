@@ -1,10 +1,14 @@
 import { Download, ExternalLink, FileText } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
-import { buttonVariants } from '@pts/ui/button'
-import { formatCalendarDate } from '@pts/ui/dates'
-import { formatCurrency } from '@pts/ui/numbers'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { Badge } from '@placetostand/ui/badge'
+import { buttonVariants } from '@placetostand/ui/button'
+import { formatCalendarDate } from '@placetostand/ui/dates'
+import { formatCurrency } from '@placetostand/ui/numbers'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 import { cn } from '@/lib/utils'
 import {
   getInvoiceStatusLabel,

@@ -1,6 +1,6 @@
 # Select
 
-A single-choice dropdown on Base UI Select with a Radix-shaped API (`onValueChange(value: string)`). From `@pts/ui/select`.
+A single-choice dropdown on Base UI Select with a Radix-shaped API (`onValueChange(value: string)`). From `@placetostand/ui/select`.
 
 **Parts:** `Select`, `SelectTrigger` (`size="sm" | "default"`: h-8 / h-9), `SelectValue` (placeholder in `muted-foreground`), `SelectContent`, `SelectGroup`, `SelectLabel` (text-xs muted), `SelectItem`, `SelectSeparator`.
 

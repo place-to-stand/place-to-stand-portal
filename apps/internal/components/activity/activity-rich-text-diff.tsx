@@ -7,7 +7,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@pts/ui/collapsible'
+} from '@placetostand/ui/collapsible'
 
 import {
   diffWords,

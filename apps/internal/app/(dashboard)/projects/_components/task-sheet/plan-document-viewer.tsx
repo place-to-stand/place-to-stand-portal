@@ -5,7 +5,7 @@ import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { FileCode, Loader2 } from 'lucide-react'
 
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 
 type PlanDocumentViewerProps = {
   content: string

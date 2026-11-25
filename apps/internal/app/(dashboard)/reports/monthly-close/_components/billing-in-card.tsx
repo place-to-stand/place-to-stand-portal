@@ -1,8 +1,8 @@
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 import type { Net30Data, PrepaidBillingData } from '@/lib/data/reports/types'
 import { cn } from '@/lib/utils'
 
-import { formatCurrency, formatHours } from '@pts/ui/numbers'
+import { formatCurrency, formatHours } from '@placetostand/ui/numbers'
 import { TreeBranch } from './tree-branch'
 import { PagePanel } from '@/components/layout/page-panel'
 

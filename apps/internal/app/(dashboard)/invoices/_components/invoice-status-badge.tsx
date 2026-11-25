@@ -1,5 +1,5 @@
-import { Badge } from '@pts/ui/badge'
-import { INVOICE_STATUS_TINTS, statusTint } from '@pts/ui/status-tints'
+import { Badge } from '@placetostand/ui/badge'
+import { INVOICE_STATUS_TINTS, statusTint } from '@pts/portal-ui/status-tints'
 
 import { cn } from '@/lib/utils'
 

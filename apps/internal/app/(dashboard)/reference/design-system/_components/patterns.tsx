@@ -1,12 +1,12 @@
 import { Archive, Link2, Plus, Save } from 'lucide-react'
 
 import { ToastCard } from '@/components/ui/toast-card'
-import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { EmptyState } from '@pts/ui/empty-state'
-import { Input } from '@pts/ui/input'
-import { Switch } from '@pts/ui/switch'
+import { Badge } from '@placetostand/ui/badge'
+import { Button } from '@placetostand/ui/button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
+import { EmptyState } from '@placetostand/ui/empty-state'
+import { Input } from '@placetostand/ui/input'
+import { Switch } from '@placetostand/ui/switch'
 // oxlint-disable-next-line no-restricted-imports -- the style guide shows the bare chrome
 import { SheetFooterBar } from '@/components/sheets/sheet-form-footer'
 

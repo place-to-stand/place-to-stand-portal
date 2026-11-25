@@ -99,7 +99,7 @@ export const classNames = {
       'popover-shadow': `components/select.md: "Everything that floats over the page … is popover + border + radius-md + shadow-popover, one elevation token." Drop {{shadow}}; the panel already has shadow-popover.`,
       'size-override': `House rule 12 (${README}): "Pick a size, don't override it … No h-* or text-[9px] overrides." Drop "{{token}}" from this {{element}} and pass size (Button: xs, sm, default, lg; RowActionButton: icon-sm, icon; Avatar: xs–lg).`,
       'badge-override':
-        'components/badge.md: a badge takes its size, weight and case from @pts/ui/badge. Drop "{{token}}"; colour (a status tint or an entity accent) and layout (gap, margin, shrink) are fine.',
+        'components/badge.md: a badge takes its size, weight and case from @placetostand/ui/badge. Drop "{{token}}"; colour (a status tint or an entity accent) and layout (gap, margin, shrink) are fine.',
       'underline-clipped': `README → Text links (${README}): "When the link text truncates, use truncate-link, never truncate": truncate's overflow: hidden clips the underline, so the hover only changes colour. Use truncate-link here, or MetaLink (components/ui/meta-link.tsx) for a card or meta-line link.`,
     },
   },

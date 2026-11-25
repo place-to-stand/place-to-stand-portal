@@ -8,7 +8,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@pts/ui/accordion'
+} from '@placetostand/ui/accordion'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { cn } from '@/lib/utils'
 

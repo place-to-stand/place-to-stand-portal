@@ -4,7 +4,7 @@ import { forwardRef, useMemo, useRef, useState } from 'react'
 import { type Editor } from '@tiptap/react'
 
 import { useMenuNavigation } from '@/hooks/use-menu-navigation'
-import { useIsMobile } from '@pts/ui/hooks/use-mobile'
+import { useIsMobile } from '@placetostand/ui/hooks/use-mobile'
 import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
 import { BanIcon } from '@/components/tiptap-icons/ban-icon'

@@ -1,4 +1,4 @@
-import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 
 /**
  * Month starts ('yyyy-MM-01') and their labels, the way the server counts

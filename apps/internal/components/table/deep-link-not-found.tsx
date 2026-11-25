@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 
 /**
  * Shown above a list when a `?<entity>=<id>` link points at a record that no

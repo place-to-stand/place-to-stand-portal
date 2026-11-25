@@ -1,11 +1,11 @@
 'use client'
 
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 import { Loader2, User, Users } from 'lucide-react'
 
 import { LoadMoreButton } from '@/components/ui/load-more-button'
-import { formatCalendarDate } from '@pts/ui/dates'
-import { formatHours } from '@pts/ui/numbers'
+import { formatCalendarDate } from '@placetostand/ui/dates'
+import { formatHours } from '@placetostand/ui/numbers'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
 
 import { MetaLink } from '@/components/ui/meta-link'

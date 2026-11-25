@@ -1,5 +1,5 @@
-import { Badge } from '@pts/ui/badge'
-import { BADGE_TINTS } from '@pts/ui/badge-tints'
+import { Badge } from '@placetostand/ui/badge'
+import { BADGE_TINTS } from '@placetostand/ui/badge-tints'
 
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import { cn } from '@/lib/utils'

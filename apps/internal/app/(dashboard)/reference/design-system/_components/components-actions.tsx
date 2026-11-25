@@ -3,10 +3,10 @@
 import { useState } from 'react'
 import { Loader2, Plus, Send, Trash2 } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
-import { BADGE_TINTS, type BadgeTint } from '@pts/ui/badge-tints'
-import { Button } from '@pts/ui/button'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { Badge } from '@placetostand/ui/badge'
+import { BADGE_TINTS, type BadgeTint } from '@placetostand/ui/badge-tints'
+import { Button } from '@placetostand/ui/button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { AgentBadge } from '@/components/activity/agent-badge'
 import { RoleBadge } from '@/components/auth/role-badge'
 import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
@@ -220,7 +220,7 @@ export function ComponentsButtons() {
       </Specimen>
       <Specimen
         label='Right-click menu'
-        note='RecordContextMenu, on @pts/ui/context-menu'
+        note='RecordContextMenu, on @placetostand/ui/context-menu'
       >
         <Example caption='Right-click the card: Edit, Duplicate, Set assignee and Set due date (hover for the submenus), Mark as done, Send to top / bottom, Archive'>
           <RecordContextMenu
@@ -268,7 +268,7 @@ export function ComponentsBadges() {
       title='Badges'
       when='One badge, two looks. Status (a state that changes) is a soft tinted fill: an outline Badge with a BADGE_TINTS hue, mapped once per domain. Label (what something is: Client, a role) is an outline with no fill; an entity state carries its icon. Every badge is the same size and weight, in caps with a little letter-spacing (set by the component); lint fails on case, tracking, weight or size overrides.'
     >
-      <Specimen label='Variants' note='@pts/ui/badge'>
+      <Specimen label='Variants' note='@placetostand/ui/badge'>
         <Badge>Default</Badge>
         <Badge variant='secondary'>Secondary</Badge>
         <Badge variant='outline'>Outline</Badge>
@@ -277,7 +277,7 @@ export function ComponentsBadges() {
 
       <Specimen
         label='Tints'
-        note='BADGE_TINTS (@pts/ui/badge-tints): 100 fill + 800 ink in light, 900/40 + 200 in dark'
+        note='BADGE_TINTS (@placetostand/ui/badge-tints): 100 fill + 800 ink in light, 900/40 + 200 in dark'
       >
         {(Object.keys(BADGE_TINTS) as BadgeTint[]).map(tint => (
           <Badge key={tint} variant='outline' className={BADGE_TINTS[tint]}>

@@ -4,7 +4,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import { WIDGET_FRAME_CLASS } from '@/components/dashboard/widget-card'
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { TimeLogDialog } from '@/app/(dashboard)/projects/_components/project-time-log/project-time-log-dialog'
 import { cn } from '@/lib/utils'
@@ -14,7 +14,7 @@ import {
   type HoursSnapshot,
 } from '@/lib/dashboard/types'
 import { useTimeLogEditContext } from '@/lib/projects/time-log/use-time-log-edit-context'
-import { formatHours } from '@pts/ui/numbers'
+import { formatHours } from '@placetostand/ui/numbers'
 
 import {
   compareMonthCursor,

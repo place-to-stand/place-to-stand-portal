@@ -3,9 +3,9 @@
 import type { ReactNode } from 'react'
 import { ChevronLeft, ChevronRight, Loader2, Lock } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { Badge } from '@placetostand/ui/badge'
+import { Button } from '@placetostand/ui/button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import type { MonthCursor } from '@/lib/data/reports/types'
 import { cn } from '@/lib/utils'

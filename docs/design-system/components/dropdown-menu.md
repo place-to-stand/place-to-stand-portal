@@ -1,6 +1,6 @@
 # DropdownMenu
 
-The action menu behind "…" row buttons and toolbar triggers, on Base UI Menu. From `@pts/ui/dropdown-menu`.
+The action menu behind "…" row buttons and toolbar triggers, on Base UI Menu. From `@placetostand/ui/dropdown-menu`.
 
 **Parts:** `DropdownMenuTrigger` (usually an `outline` or `ghost` icon Button), `DropdownMenuContent` (`bg-popover border rounded-md p-1 shadow-popover`, min-w-32), `DropdownMenuLabel` (text-sm font-medium), `DropdownMenuItem` (`variant="destructive"` for text in `destructive` with a `destructive/10` hover), `DropdownMenuCheckboxItem`, `DropdownMenuRadioItem`, `DropdownMenuShortcut` (text-xs tracking-widest muted), `DropdownMenuSeparator`, `DropdownMenuSub*` (submenu content uses shadow-lg).
 

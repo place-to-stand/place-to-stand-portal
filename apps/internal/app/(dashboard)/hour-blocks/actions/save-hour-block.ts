@@ -2,7 +2,7 @@
 
 import { ensureClientCompany } from '@/lib/companies/billing/ensure-client-company'
 import { revalidatePath } from 'next/cache'
-import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 import { eq } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'

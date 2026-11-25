@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import { TriangleAlert, type LucideIcon } from 'lucide-react'
 
 import { entityIconAccent } from '@/lib/entity-accents'

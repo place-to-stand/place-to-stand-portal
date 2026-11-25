@@ -2,7 +2,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-import { AuthShell, authErrorClass, authLinkClass } from '@pts/ui/auth-shell'
+import {
+  AuthShell,
+  authErrorClass,
+  authLinkClass,
+} from '@pts/portal-ui/auth-shell'
 
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 

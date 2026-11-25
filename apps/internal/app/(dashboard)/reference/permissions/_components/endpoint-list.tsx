@@ -1,4 +1,4 @@
-import { Badge } from '@pts/ui/badge'
+import { Badge } from '@placetostand/ui/badge'
 import type { Endpoint } from '@/lib/auth/permissions-registry'
 
 const TYPE_LABELS: Record<Endpoint['type'], string> = {

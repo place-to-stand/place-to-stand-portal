@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import { ExternalLinkIcon } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
-import { Card } from '@pts/ui/card'
-import { EmptyState } from '@pts/ui/empty-state'
+import { Button } from '@placetostand/ui/button'
+import { Card } from '@placetostand/ui/card'
+import { EmptyState } from '@placetostand/ui/empty-state'
 import { GitHubMark } from '@/components/icons/github-mark'
 import { useGitHubCallbackNotice } from '@/lib/hooks/use-github-callback-notice'
 import { StaffAuthorizationModal } from '@/components/projects/staff-authorization-modal'

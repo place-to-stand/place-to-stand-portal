@@ -13,7 +13,7 @@ import {
   UserPlus,
 } from 'lucide-react'
 
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 
 /**

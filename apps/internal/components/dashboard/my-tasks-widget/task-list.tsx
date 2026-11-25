@@ -1,6 +1,6 @@
 import { CalendarDays, ChevronRight, User, Users } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
+import { Badge } from '@placetostand/ui/badge'
 import { LoadMoreButton } from '@/components/ui/load-more-button'
 import { MY_TASKS_WIDGET_PAGE_SIZE } from '@/lib/dashboard/types'
 import type { AssignedTaskSummary } from '@/lib/data/tasks'

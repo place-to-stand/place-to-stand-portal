@@ -19,7 +19,7 @@ import {
   leadDisplayFields,
 } from '@/lib/leads/lead-display'
 import { LEAD_STATUS_LABELS, type LeadStatusValue } from '@/lib/leads/constants'
-import { companyCalendarDate } from '@pts/ui/dates'
+import { companyCalendarDate } from '@placetostand/ui/dates'
 
 import { getBusinessIdentity } from '@/lib/business/identity'
 

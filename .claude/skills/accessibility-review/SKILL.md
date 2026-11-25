@@ -60,7 +60,7 @@ Review the specified files for:
 
 ### 7. Component-Specific (shadcn/Base UI)
 
-- Base UI primitives (through `@pts/ui`) used correctly (they handle a11y)
+- Base UI primitives (through `@placetostand/ui`) used correctly (they handle a11y)
 - Custom overrides don't break accessibility
 - Tooltips accessible to keyboard users
 - Dropdown menus with proper ARIA
@@ -80,7 +80,7 @@ Fix: Code example or recommendation
 ## Actions
 
 1. Read component files in scope
-2. Check for `@pts/ui` (Base UI) primitive usage
+2. Check for `@placetostand/ui` (Base UI) primitive usage
 3. Verify keyboard interaction patterns
 4. Analyze color usage and contrast
 5. Review form patterns

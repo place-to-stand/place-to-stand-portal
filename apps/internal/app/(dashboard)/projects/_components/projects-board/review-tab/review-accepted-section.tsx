@@ -1,7 +1,7 @@
 import { Loader2 } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
+import { Badge } from '@placetostand/ui/badge'
+import { Button } from '@placetostand/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Table,
@@ -10,7 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@pts/ui/table'
+} from '@placetostand/ui/table'
 import type { TaskWithRelations } from '@/lib/types'
 import {
   getTaskStatusLabel,

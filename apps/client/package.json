@@ -10,13 +10,14 @@
     "type-check": "next typegen && tsc7 --noEmit"
   },
   "dependencies": {
+    "@placetostand/ui": "*",
     "@posthog/nextjs-config": "^1.12.1",
     "@pts/db": "*",
     "@pts/email": "*",
     "@pts/github": "*",
     "@pts/pdf": "^0.1.0",
+    "@pts/portal-ui": "*",
     "@pts/server": "^0.1.0",
-    "@pts/ui": "*",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.0",
     "drizzle-orm": "^0.45.4",

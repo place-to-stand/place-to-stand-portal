@@ -1,6 +1,6 @@
 import { X } from 'lucide-react'
 
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import type { PendingRemovalRow } from '@/components/sheets/use-pending-removals'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'

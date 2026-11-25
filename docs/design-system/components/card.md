@@ -1,6 +1,6 @@
 # Card
 
-Surfaces: `Card` for grouped content on the muted app shell, plus the floating `Popover` and `Tooltip`. From `@pts/ui/card`, `@pts/ui/popover`, `@pts/ui/tooltip`.
+Surfaces: `Card` for grouped content on the muted app shell, plus the floating `Popover` and `Tooltip`. From `@placetostand/ui/card`, `@placetostand/ui/popover`, `@placetostand/ui/tooltip`.
 
 **Card:** `bg-card text-card-foreground rounded-xl border py-6 shadow-sm gap-6`; `CardHeader` px-6 grid with an optional `CardAction` top-right; `CardTitle` `leading-none font-semibold`; `CardDescription` text-sm muted; `CardContent`/`CardFooter` px-6.
 

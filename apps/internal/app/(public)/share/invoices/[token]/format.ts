@@ -1,4 +1,4 @@
-import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 
 /** `long` → "September 3, 2026"; `short` → "Sep 3, 2026" (the paid stamp). */
 export const formatDate = (

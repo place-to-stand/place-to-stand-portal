@@ -1,4 +1,4 @@
-import { Skeleton } from '@pts/ui/skeleton'
+import { Skeleton } from '@placetostand/ui/skeleton'
 
 import type { CloseDrift } from '@/lib/data/reports/close'
 import type { StripeFeesState } from '@/lib/stripe/fees'

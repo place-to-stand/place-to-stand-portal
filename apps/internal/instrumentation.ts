@@ -78,7 +78,7 @@ export async function register() {
       await Promise.all([
         import('@pts/db/client'),
         import('@pts/db/business'),
-        import('@pts/ui/dates'),
+        import('@placetostand/ui/dates'),
       ])
     const db = createDb(databaseUrl)
     try {

@@ -2,7 +2,7 @@
 
 import { Mail, Phone } from 'lucide-react'
 
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 import {
   RecordRowAction,
   RecordRowActions,
@@ -19,7 +19,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@pts/ui/table'
+} from '@placetostand/ui/table'
 
 import type { ContactsTableContact } from '@/lib/people/use-contacts-table-state'
 

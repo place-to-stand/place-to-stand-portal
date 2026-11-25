@@ -1,9 +1,9 @@
-import { BlueprintCorners } from '@pts/ui/brand'
+import { BlueprintCorners } from '@pts/portal-ui/brand'
 
 import type { InvoiceWithLineItems } from '@/lib/invoices/invoice-form'
 import { cn } from '@/lib/utils'
 
-import { formatCurrency, formatPercent } from '@pts/ui/numbers'
+import { formatCurrency, formatPercent } from '@placetostand/ui/numbers'
 
 import { formatDate } from './format'
 import { InvoiceLineItems } from './invoice-line-items'

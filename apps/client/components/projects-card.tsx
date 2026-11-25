@@ -1,6 +1,6 @@
 import { CircleAlertIcon } from 'lucide-react'
 
-import { Card } from '@pts/ui/card'
+import { Card } from '@placetostand/ui/card'
 
 import { NavRow } from '@/components/ui/nav-row'
 import { SummaryHeader } from '@/components/ui/summary-header'

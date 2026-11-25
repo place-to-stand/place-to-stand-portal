@@ -1,6 +1,6 @@
-import { Card } from '@pts/ui/card'
-import { formatCalendarDate } from '@pts/ui/dates'
-import { formatHours } from '@pts/ui/numbers'
+import { Card } from '@placetostand/ui/card'
+import { formatCalendarDate } from '@placetostand/ui/dates'
+import { formatHours } from '@placetostand/ui/numbers'
 
 import { SummaryHeader } from '@/components/ui/summary-header'
 import type { Net30MonthlyHours } from '@/lib/data/hours'

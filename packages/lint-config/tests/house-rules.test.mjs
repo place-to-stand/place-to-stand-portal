@@ -42,14 +42,14 @@ run('filter-select', {
   valid: [
     '<FilterBar><FilterSelect /></FilterBar>',
     {
-      code: "import { Select } from '@pts/ui/select'",
+      code: "import { Select } from '@placetostand/ui/select'",
       filename: '/x/page-size-select.tsx',
     },
   ],
   invalid: [
     { code: '<FilterBar><div><Select /></div></FilterBar>', errors: 1 },
     {
-      code: "import { Select } from '@pts/ui/select'",
+      code: "import { Select } from '@placetostand/ui/select'",
       filename: '/x/lead-filters.tsx',
       errors: 1,
     },

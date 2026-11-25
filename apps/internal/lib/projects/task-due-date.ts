@@ -1,6 +1,6 @@
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 
-import { companyCalendarDate, formatCalendarDate } from '@pts/ui/dates'
+import { companyCalendarDate, formatCalendarDate } from '@placetostand/ui/dates'
 
 const SHORT_DAY = { month: 'short', day: 'numeric' } as const
 

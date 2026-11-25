@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import { Plus } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 
 import { Code, DesignSection, Specimen } from './specimen'
 import {

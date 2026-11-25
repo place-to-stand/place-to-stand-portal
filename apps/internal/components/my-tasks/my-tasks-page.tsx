@@ -12,7 +12,7 @@ import { SearchInput } from '@/components/table-toolbar/search-input'
 import { useListParams } from '@/hooks/use-list-params'
 import { matchesSearch } from '@/lib/search/text-match'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import type { AppUser } from '@/lib/auth/session'
 import type {
   DbUser,

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { BRAND, BRAND_DOT_GRID } from '@pts/ui/brand'
+import { BRAND, BRAND_DOT_GRID } from '@pts/portal-ui/brand'
 
 import { PublicFooter } from './_components/public-footer'
 

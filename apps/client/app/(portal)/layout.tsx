@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
-import { BrandLogo } from '@pts/ui/brand'
+import { BrandLogo } from '@pts/portal-ui/brand'
 
 import { requireClientUser } from '@/lib/auth/session'
 import { brandPropsFor, getBusiness } from '@/lib/business'

@@ -3,9 +3,13 @@
 import { useCallback } from 'react'
 import { WIDGET_FRAME_CLASS } from '@/components/dashboard/widget-card'
 
-import { Badge } from '@pts/ui/badge'
-import { Tabs } from '@pts/ui/tabs'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { Badge } from '@placetostand/ui/badge'
+import { Tabs } from '@placetostand/ui/tabs'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 import { SummaryContent } from '@/components/dashboard/recent-activity-overview/summary-content'

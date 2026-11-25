@@ -3,8 +3,8 @@
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { formatRelativeTime } from '@pts/ui/dates'
-import { EmptyState } from '@pts/ui/empty-state'
+import { formatRelativeTime } from '@placetostand/ui/dates'
+import { EmptyState } from '@placetostand/ui/empty-state'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { EmptyValue } from '@/components/table/empty-value'
@@ -24,7 +24,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@pts/ui/table'
+} from '@placetostand/ui/table'
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useListParams } from '@/hooks/use-list-params'
 import {

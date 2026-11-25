@@ -10,14 +10,14 @@ import {
   useTransition,
 } from 'react'
 
-import { Label } from '@pts/ui/label'
+import { Label } from '@placetostand/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@pts/ui/select'
+} from '@placetostand/ui/select'
 import { DatePicker } from '@/components/ui/date-picker'
 import { InlineReveal } from '@/components/ui/inline-reveal'
 import { InlineFormActions } from '@/components/sheets/inline-form-actions'

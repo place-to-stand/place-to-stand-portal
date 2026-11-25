@@ -1,4 +1,4 @@
-import { Badge } from '@pts/ui/badge'
+import { Badge } from '@placetostand/ui/badge'
 
 import type { LeadUpdateTypeValue } from '@/lib/leads/updates'
 import {

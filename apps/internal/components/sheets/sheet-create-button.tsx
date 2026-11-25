@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react'
 import { Plus } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import { ToolbarActionLabel } from '@/components/layout/toolbar-action'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import type { SheetEntityKey } from '@/lib/sheets/entities'

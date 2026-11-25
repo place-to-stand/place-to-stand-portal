@@ -34,10 +34,10 @@ export const NO_RLS_IMPORT = {
 }
 
 const DATES_MESSAGE =
-  'House rule 10 (docs/design-system/README.md): "Dates go through @pts/ui/dates … Never toLocaleDateString, a bare Intl.DateTimeFormat, or date-fns format() in the UI." It formats in the ambient timezone (hydration errors, off-by-one dates). Use formatCalendarDate / formatRelativeTime, or add a helper to packages/ui/src/dates.ts.'
+  'House rule 10 (docs/design-system/README.md): "Dates go through @placetostand/ui/dates … Never toLocaleDateString, a bare Intl.DateTimeFormat, or date-fns format() in the UI." It formats in the ambient timezone (hydration errors, off-by-one dates). Use formatCalendarDate / formatRelativeTime, or add a helper to packages/ui/src/dates.ts.'
 
 const NUMBERS_MESSAGE =
-  'Content fundamentals (docs/design-system/README.md): hours, money and percentages are formatted only by @pts/ui/numbers (formatHours, formatCurrency, formatPercent). Need a variant? Add an option to packages/ui/src/numbers.ts.'
+  'Content fundamentals (docs/design-system/README.md): hours, money and percentages are formatted only by @placetostand/ui/numbers (formatHours, formatCurrency, formatPercent). Need a variant? Add an option to packages/ui/src/numbers.ts.'
 
 /**
  * Imports banned everywhere. The apps add their own (next.mjs); a config
@@ -47,7 +47,7 @@ const NUMBERS_MESSAGE =
 export const RESTRICTED_IMPORTS = {
   paths: [
     NO_RLS_IMPORT,
-    // House rule 10: dates go through @pts/ui/dates.
+    // House rule 10: dates go through @placetostand/ui/dates.
     { name: 'date-fns/format', message: DATES_MESSAGE },
     {
       name: 'date-fns',
@@ -70,12 +70,12 @@ export const RESTRICTED_IMPORTS = {
       // House rule 1: every primitive is @base-ui/react.
       regex: '^(@radix-ui/|radix-ui$)',
       message:
-        'House rule 1 (docs/design-system/README.md): "Every primitive is @base-ui/react. Radix is gone." Import the @pts/ui wrapper instead.',
+        'House rule 1 (docs/design-system/README.md): "Every primitive is @base-ui/react. Radix is gone." Import the @placetostand/ui wrapper instead.',
     },
   ],
 }
 
-/** Date and number formatters only @pts/ui/dates and numbers may build. */
+/** Date and number formatters only @placetostand/ui/dates and numbers may build. */
 export const RESTRICTED_PROPERTIES = [
   { property: 'toLocaleDateString', message: DATES_MESSAGE },
   { property: 'toLocaleTimeString', message: DATES_MESSAGE },

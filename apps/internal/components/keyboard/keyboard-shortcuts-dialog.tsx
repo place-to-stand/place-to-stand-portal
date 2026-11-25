@@ -15,7 +15,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@pts/ui/dialog'
+} from '@placetostand/ui/dialog'
 
 import { isEditableTarget, matchesShortcut } from '@/lib/keyboard/match'
 import { SHORTCUTS, shortcutsByGroup } from '@/lib/keyboard/shortcuts'

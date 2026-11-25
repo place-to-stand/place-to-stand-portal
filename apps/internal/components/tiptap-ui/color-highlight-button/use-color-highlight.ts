@@ -5,7 +5,7 @@ import { type Editor } from '@tiptap/react'
 import { useHotkeys } from 'react-hotkeys-hook'
 
 import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
-import { useIsMobile } from '@pts/ui/hooks/use-mobile'
+import { useIsMobile } from '@placetostand/ui/hooks/use-mobile'
 
 import {
   isMarkInSchema,

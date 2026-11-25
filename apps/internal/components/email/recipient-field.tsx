@@ -3,9 +3,13 @@
 import { useState } from 'react'
 import { Check, Plus, X } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
+import { Badge } from '@placetostand/ui/badge'
+import { Button } from '@placetostand/ui/button'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@placetostand/ui/popover'
 import {
   Command,
   CommandEmpty,

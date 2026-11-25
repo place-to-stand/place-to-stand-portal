@@ -17,16 +17,16 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@pts/ui/input'
+import { Input } from '@placetostand/ui/input'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@pts/ui/select'
+} from '@placetostand/ui/select'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
-import { Badge } from '@pts/ui/badge'
+import { Badge } from '@placetostand/ui/badge'
 import {
   PROJECT_STATUS_OPTIONS,
   getProjectStatusLabel,

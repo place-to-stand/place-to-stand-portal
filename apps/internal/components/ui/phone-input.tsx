@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Input } from '@pts/ui/input'
+import { Input } from '@placetostand/ui/input'
 import { formatPhoneUS, unformatPhone } from '@/lib/utils/phone-format'
 import { cn } from '@/lib/utils'
 

@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 
-import { Calendar } from '@pts/ui/calendar'
-import { formatCalendarDate, formatRelativeTime } from '@pts/ui/dates'
-import { formatCurrency, formatHours } from '@pts/ui/numbers'
+import { Calendar } from '@placetostand/ui/calendar'
+import { formatCalendarDate, formatRelativeTime } from '@placetostand/ui/dates'
+import { formatCurrency, formatHours } from '@placetostand/ui/numbers'
 import { DatePicker } from '@/components/ui/date-picker'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
@@ -32,7 +32,7 @@ export function ComponentsDates() {
     <DesignSection
       id='dates'
       title='Dates and numbers'
-      when='DatePicker for one calendar date, DateRangePicker for list filters. Format every date with formatCalendarDate ("Sep 23, 2026") and relative time with formatRelativeTime; never toLocaleDateString. Hours and money go through formatHours and formatCurrency (@pts/ui/numbers) in pages, emails, PDFs and notifications alike; the lint fails on a hand-rolled copy.'
+      when='DatePicker for one calendar date, DateRangePicker for list filters. Format every date with formatCalendarDate ("Sep 23, 2026") and relative time with formatRelativeTime; never toLocaleDateString. Hours and money go through formatHours and formatCurrency (@placetostand/ui/numbers) in pages, emails, PDFs and notifications alike; the lint fails on a hand-rolled copy.'
     >
       <Specimen
         label='Pickers'
@@ -92,7 +92,7 @@ export function ComponentsDates() {
 
       <Specimen
         label='Hours and money'
-        note='@pts/ui/numbers'
+        note='@placetostand/ui/numbers'
         className='block'
       >
         <dl className='grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4'>

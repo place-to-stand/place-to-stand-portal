@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 
-import { cn } from './cn'
+import { cn } from '@placetostand/ui/cn'
 
 /**
  * Place To Stand brand marks, matching the marketing site.

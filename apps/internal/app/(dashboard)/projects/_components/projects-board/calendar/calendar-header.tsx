@@ -2,17 +2,17 @@
 
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { formatCalendarDate } from '@pts/ui/dates'
+import { Button } from '@placetostand/ui/button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@pts/ui/select'
-import { Input } from '@pts/ui/input'
+} from '@placetostand/ui/select'
+import { Input } from '@placetostand/ui/input'
 
 type CalendarHeaderProps = {
   headerRef: React.Ref<HTMLDivElement | null>

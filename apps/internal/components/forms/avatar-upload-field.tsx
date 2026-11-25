@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@placetostand/ui/avatar'
 import { ImageUploadControls } from '@/components/forms/image-upload-controls'
 import { useToast } from '@/components/ui/use-toast'
 

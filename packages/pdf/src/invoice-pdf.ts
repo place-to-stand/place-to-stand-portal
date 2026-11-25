@@ -8,8 +8,8 @@
  * VOID shown as a stamp beside the number rather than a watermark.
  */
 
-import { formatCalendarDate } from '@pts/ui/dates'
-import { formatCurrency, formatPercent } from '@pts/ui/numbers'
+import { formatCalendarDate } from '@placetostand/ui/dates'
+import { formatCurrency, formatPercent } from '@placetostand/ui/numbers'
 import { jsPDF } from 'jspdf'
 
 import {

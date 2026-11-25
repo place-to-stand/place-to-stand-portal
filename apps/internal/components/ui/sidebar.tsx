@@ -3,14 +3,14 @@
 import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { PanelLeftIcon } from 'lucide-react'
-import { SlotNamespace as Slot } from '@pts/ui/slot'
+import { SlotNamespace as Slot } from '@placetostand/ui/slot'
 
-import { useIsMobile } from '@pts/ui/hooks/use-mobile'
+import { useIsMobile } from '@placetostand/ui/hooks/use-mobile'
 import { cn } from '@/lib/utils'
 import { isEditableTarget, matchesShortcut } from '@/lib/keyboard/match'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
-import { Input } from '@pts/ui/input'
-import { Separator } from '@pts/ui/separator'
+import { Input } from '@placetostand/ui/input'
+import { Separator } from '@placetostand/ui/separator'
 import {
   Sheet,
   SheetContent,
@@ -18,14 +18,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from './sheet'
-import { Skeleton } from '@pts/ui/skeleton'
+import { Skeleton } from '@placetostand/ui/skeleton'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@pts/ui/tooltip'
-import { RowActionButton } from '@pts/ui/row-action-button'
+} from '@placetostand/ui/tooltip'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state'
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7

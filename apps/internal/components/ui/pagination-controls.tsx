@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { PageSizeSelect } from '@/components/table-toolbar/page-size-select'
 import { cn } from '@/lib/utils'
 

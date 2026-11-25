@@ -2,7 +2,11 @@
 
 import { XIcon } from 'lucide-react'
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 /**

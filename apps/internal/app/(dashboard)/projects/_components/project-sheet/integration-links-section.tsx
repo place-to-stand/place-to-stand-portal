@@ -5,21 +5,21 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ExternalLink, Loader2, Trash2 } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@pts/ui/dialog'
+} from '@placetostand/ui/dialog'
 import { IntegrationProviderIcon } from '@/components/integrations/provider-icon'
 import { integrationStatusQueryKey } from '@/components/integrations/token-integration-card'
 import {
   SearchableCombobox,
   type SearchableComboboxGroup,
 } from '@/components/ui/searchable-combobox'
-import { EmptyState } from '@pts/ui/empty-state'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { EmptyState } from '@placetostand/ui/empty-state'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import {

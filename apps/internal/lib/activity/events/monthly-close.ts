@@ -1,5 +1,5 @@
 import { ActivityVerbs, type ActivityEvent } from '@/lib/activity/types'
-import { formatCurrency } from '@pts/ui/numbers'
+import { formatCurrency } from '@placetostand/ui/numbers'
 
 import { toMetadata } from './shared'
 

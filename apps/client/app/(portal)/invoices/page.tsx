@@ -3,8 +3,8 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { ArrowLeftIcon } from 'lucide-react'
 
-import { Card } from '@pts/ui/card'
-import { EmptyState } from '@pts/ui/empty-state'
+import { Card } from '@placetostand/ui/card'
+import { EmptyState } from '@placetostand/ui/empty-state'
 
 import { requireClientUser } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/permissions'

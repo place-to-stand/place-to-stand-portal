@@ -24,6 +24,8 @@ place-to-stand-portal/
 ├── packages/
 │   ├── db/                # Shared database schema and migrations (@pts/db)
 │   ├── github/            # GitHub App auth and API utilities (@pts/github)
+│   ├── ui/                # Components + Tailwind theme, published to npm as @placetostand/ui
+│   ├── portal-ui/         # Our portals' own UI layer: brand, sign-in shell, status/entity colours (@pts/portal-ui)
 │   └── cli/               # `pts` admin CLI, consumes /api/cli/v1 (@pts/cli, not published)
 ├── supabase/              # Supabase config (stays at root)
 ├── turbo.json             # Build orchestration
@@ -44,12 +46,13 @@ The two main apps are `apps/internal/` (internal portal) and `apps/client/` (cli
 - `npm run cli:link` - Build the `pts` CLI and link it onto your PATH (see `packages/cli/README.md`)
 - `npm run knip` - Find unused files, exports and dependencies (config in `knip.json`)
 - `npm run test:e2e:seed` - Wipe the LOCAL database and load made-up data (`e2e/seed/`); the browser tests (`E2E_WRITES=1 npm run test:e2e`) run on it
+- `npx changeset` - Describe a change to a published package (`@placetostand/*`); releases go out through `.github/workflows/release.yml` (see `docs/packages.md`)
 - `npm run design-tokens` - Regenerate `docs/design-system/tokens.json` from the theme sources (`npm run lint` checks it)
 
 ### CI and pre-commit
 
 - **CI** (`.github/workflows/ci.yml`) runs three jobs side by side on every pull request and on pushes to `main`, on the Node version in `.nvmrc`: **lint** (`npm run format:check`, oxfmt on the whole repo in under a second, `npm run format` fixes it; then `npm run lint`), **types** (`npm run type-check`, `npm run test`) and **build** (`npm run build`). Each restores `node_modules` from the cache (`.github/actions/setup`, keyed on `package-lock.json` and `.nvmrc`; `npm ci` only on a miss) and Turborepo's cache, so a workspace whose files haven't changed replays its last result; the build job restores Next's `.next/cache`, and skips Next's own type-check pass (`CI_SKIP_BUILD_TYPECHECK`) because the types job runs it. Turborepo's remote cache switches on once the repo has a `TURBO_TOKEN` secret and `TURBO_TEAM` variable. CI needs no other secrets: the build gets placeholder env that satisfies both apps' `lib/env.server.ts` schemas. A new required env var must get a placeholder there too.
-- **PR checks** (`.github/workflows/pr-checks.yml`, scripts in `scripts/pr-checks/`; their own workflow so editing a PR description re-runs only them): **Changelog**, a PR that changes `apps/` or `packages/ui` adds a new `- **Area:** change` line to `apps/internal/CHANGELOG.md` or has a line `Changelog: none` in its description; **Prod migration**, a PR that adds or changes a migration fails until its description has a line `Prod migration: done`, added after `db:migrate:prod` exits 0; **Made-up data**, every tracked text file is checked against the `REAL_NAMES` repo secret (one real client, person, email or domain per line, kept out of the repo so it isn't published), printing only the file, line and entry number. Use full names on that list: a bare first name also matches an old migration comment, and migrations are never edited.
+- **PR checks** (`.github/workflows/pr-checks.yml`, scripts in `scripts/pr-checks/`; their own workflow so editing a PR description re-runs only them): **Changelog**, a PR that changes `apps/`, `packages/ui` or `packages/portal-ui` adds a new `- **Area:** change` line to `apps/internal/CHANGELOG.md` or has a line `Changelog: none` in its description; **Prod migration**, a PR that adds or changes a migration fails until its description has a line `Prod migration: done`, added after `db:migrate:prod` exits 0; **Made-up data**, every tracked text file is checked against the `REAL_NAMES` repo secret (one real client, person, email or domain per line, kept out of the repo so it isn't published), printing only the file, line and entry number. Use full names on that list: a bare first name also matches an old migration comment, and migrations are never edited.
 - **Pre-commit** (husky → `lint-staged.config.mjs`, installed by `npm install` through the `prepare` script) runs `pts-lint --fix` and `oxfmt` on the staged files only, so it stays fast; type-check and build are left to CI.
 - **Lint is Oxlint**, configured in one shared place: `packages/lint-config` (`base.mjs` for packages, `next.mjs` for both apps, custom `pts/*` rules in `rules/`). Change rules there, not in an app. The configs are written in ESLint's flat format and `to-oxlint.mjs` turns them into each workspace's `oxlint.config.mjs`. Rules Oxlint implements identically run natively (type-aware ones on TypeScript 7 through `oxlint-tsgolint`); the rest run from their original ESLint plugins as Oxlint JS plugins under an alias: `ts-js/` (typescript-eslint), `react-compiler/` (eslint-plugin-react-hooks' React Compiler rules), `react-js/`, `next-js/`, `jsx-a11y-js/`. A disable comment names the rule as lint prints it: `// oxlint-disable-next-line ts-js/no-explicit-any -- why`. A stale or misnamed one fails lint. ESLint itself is not run.
 - **Lint fails on any problem** (`pts-lint` in every workspace; warnings count as errors). Existing problems are grandfathered in each workspace's `lint-suppressions.json` (ESLint's bulk suppression format, by Oxlint rule id): files already over 300 lines, and old hits of the type-aware rules (`typed()` in `base.mjs`: unawaited or misused promises, deprecated APIs, a switch missing a union member). A new problem fails, and so does a suppression that no longer occurs: after fixing one, run `npm run lint -- --prune-suppressions` in that workspace. Pre-commit runs pts-lint per workspace (`scripts/lint-staged-lint.mjs`) so those lists apply.
@@ -99,7 +102,7 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 - **Auth**: Supabase Auth with session-based authentication
 - **Storage**: Supabase Storage (buckets: `user-avatars`, `task-attachments`)
 - **State**: React Server Components + TanStack React Query
-- **Styling**: Tailwind CSS v4, Base UI (`@base-ui/react`) wrapped in `@pts/ui`, shadcn-style components
+- **Styling**: Tailwind CSS v4, Base UI (`@base-ui/react`) wrapped in `@placetostand/ui`, shadcn-style components
 - **Analytics**: PostHog (client and server-side)
 - **Email**: Resend
 - **GitHub Integration**: GitHub App for repo linking (`packages/github`)
@@ -296,7 +299,7 @@ API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 
 ### UI Components
 
-**Design system:** `docs/design-system/` (README, `tokens.json`, `components/*.md`) documents colors, type, components, copy voice and house UI rules; the `design-system` skill loads it for UI work. Read it before any visual change, and update it when you change what it describes. `tokens.json` values are generated: run `npm run design-tokens` after changing `packages/ui/src/styles/theme.css`, `BRAND` or `EMAIL_COLORS`.
+**Design system:** `docs/design-system/` (README, `tokens.json`, `components/*.md`) documents colors, type, components, copy voice and house UI rules; the `design-system` skill loads it for UI work. Read it before any visual change, and update it when you change what it describes. `tokens.json` values are generated: run `npm run design-tokens` after changing `packages/ui/src/styles/theme.css`, `packages/portal-ui/src/styles/portal.css`, `BRAND` or `EMAIL_COLORS`.
 
 **Design system rule:** before any UI work, read `docs/design-system/` and open Reference → Design system (`/reference/design-system`) in the internal portal. Any change to a shared component, a token or an entity updates `docs/design-system/` and that page in the same commit. Entities (each record type's name, icon and colour) live only in the registry, `apps/internal/lib/entity-accents.ts`: use `ENTITY_ICONS` / `ENTITY_ACCENTS`, never import an entity icon from `lucide-react` or write an `*-entity-*` class elsewhere. `npm run lint` enforces it (lint, plus `scripts/check-entities.mjs` for missing icons or colours, shared icons and 3:1 contrast in both themes). A sheet's list of related records (heading, +, clickable empty state, preview cards) is always `EntityList` (`apps/internal/components/sheets/entity-list.tsx`); lint blocks importing `SectionAddButton` anywhere else.
 
@@ -306,7 +309,7 @@ API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 
 **Component library:**
 
-- Base UI primitives wrapped in `packages/ui` (`@pts/ui/*`); app-only ones in `apps/internal/components/ui/`
+- Base UI primitives wrapped in `packages/ui` (`@placetostand/ui/*`, published to npm for client products: nothing about Place To Stand or the portals goes in it, see `docs/packages.md`); our brand, sign-in shell and status tints in `packages/portal-ui` (`@pts/portal-ui/*`); app-only ones in `apps/internal/components/ui/`
 - Custom business components in `apps/internal/components/` organized by feature
 - Rich text editor: TipTap with extensions (highlight, link, image, typography, etc.)
 - Drag-and-drop: `@dnd-kit` for kanban boards and task ordering

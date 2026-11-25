@@ -2,8 +2,12 @@
 
 import { Info } from 'lucide-react'
 
-import { EmptyState } from '@pts/ui/empty-state'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { EmptyState } from '@placetostand/ui/empty-state'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 import {
   RecordRowAction,
   RecordRowActions,
@@ -12,8 +16,8 @@ import { RecordContextMenu } from '@/components/table/record-context-menu'
 import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
-import { formatCalendarDate } from '@pts/ui/dates'
-import { formatHours } from '@pts/ui/numbers'
+import { formatCalendarDate } from '@placetostand/ui/dates'
+import { formatHours } from '@placetostand/ui/numbers'
 import { isHourBlockSortValue } from '@/lib/hour-blocks/filters'
 import {
   Table,
@@ -22,7 +26,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@pts/ui/table'
+} from '@placetostand/ui/table'
 import type { HourBlockWithClient } from '@/lib/hour-blocks/hour-block-form'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'

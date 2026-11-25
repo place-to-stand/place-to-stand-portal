@@ -7,7 +7,7 @@
  * (`scripts/test-google-chat.ts`). Keep it pure — payload construction only.
  */
 
-import { formatCurrency } from '@pts/ui/numbers'
+import { formatCurrency } from '@placetostand/ui/numbers'
 
 export type InvoicePaidNotice = {
   invoiceNumber?: string | null

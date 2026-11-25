@@ -2,7 +2,7 @@
 
 import { Moon, Sun } from 'lucide-react'
 
-import { Tabs, TabsList, TabsTrigger } from '@pts/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@placetostand/ui/tabs'
 import { useTheme } from '@/components/providers/theme-provider'
 
 /**

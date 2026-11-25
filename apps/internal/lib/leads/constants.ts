@@ -1,6 +1,6 @@
 import { leadSourceType, leadStatus } from '@/lib/db/schema'
-import { BADGE_TINTS, type BadgeTint } from '@pts/ui/badge-tints'
-import { TASK_STATUS_HUES } from '@pts/ui/status-tints'
+import { BADGE_TINTS, type BadgeTint } from '@placetostand/ui/badge-tints'
+import { TASK_STATUS_HUES } from '@pts/portal-ui/status-tints'
 
 export const LEAD_STATUS_VALUES = leadStatus.enumValues
 

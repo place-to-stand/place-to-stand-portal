@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 
-import { TooltipProvider } from '@pts/ui/tooltip'
+import { TooltipProvider } from '@placetostand/ui/tooltip'
 
 import { Toaster } from '@/components/ui/toaster'
 

@@ -9,9 +9,9 @@ import {
   IntegrationCard,
   IntegrationStatus,
 } from './integration-card'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
-import { formatCalendarDate } from '@pts/ui/dates'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { ConfirmDialog } from '@placetostand/ui/confirm-dialog'
+import { formatCalendarDate } from '@placetostand/ui/dates'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { toast } from '@/components/ui/use-toast'
 import type { ConnectedApp } from '@/lib/mcp/grants'
 

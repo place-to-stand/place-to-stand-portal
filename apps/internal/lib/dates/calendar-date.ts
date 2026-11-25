@@ -20,7 +20,7 @@ import {
  * A calendar date is a day on the wall calendar, not an instant: it is parsed
  * to local midnight and formatted back from local fields, so no timezone
  * conversion can shift it by a day. Display formatting stays with
- * `formatCalendarDate` (`@pts/ui/dates`).
+ * `formatCalendarDate` (`@placetostand/ui/dates`).
  */
 
 export type CalendarDate = string

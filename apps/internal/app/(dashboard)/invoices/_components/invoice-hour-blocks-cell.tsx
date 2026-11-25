@@ -1,6 +1,6 @@
 'use client'
 
-import { formatHours } from '@pts/ui/numbers'
+import { formatHours } from '@placetostand/ui/numbers'
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 import { SheetLink } from '@/components/ui/sheet-link'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'

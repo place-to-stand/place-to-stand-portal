@@ -22,7 +22,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
-import { BADGE_TINTS } from '@pts/ui/badge-tints'
+import { BADGE_TINTS } from '@placetostand/ui/badge-tints'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
 /**

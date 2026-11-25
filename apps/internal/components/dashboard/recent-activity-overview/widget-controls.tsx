@@ -2,9 +2,13 @@
 
 import { RefreshCw } from 'lucide-react'
 
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { TabsList, TabsTrigger } from '@pts/ui/tabs'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
+import { TabsList, TabsTrigger } from '@placetostand/ui/tabs'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 import { TIMEFRAME_OPTIONS, type TimeframeOption } from './constants'

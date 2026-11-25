@@ -4,8 +4,8 @@ import { useId, useMemo, useState } from 'react'
 import type { Control } from 'react-hook-form'
 import { X } from 'lucide-react'
 
-import { Input } from '@pts/ui/input'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { Input } from '@placetostand/ui/input'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 
 import {
   EffectiveMonthPicker,

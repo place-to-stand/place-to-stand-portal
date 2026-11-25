@@ -2,7 +2,11 @@
 
 import { User } from 'lucide-react'
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { PersonAvatar } from '@/components/ui/user-avatar'
 

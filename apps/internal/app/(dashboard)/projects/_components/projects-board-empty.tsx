@@ -1,4 +1,4 @@
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 
 type ProjectsBoardEmptyProps = {
   /** One plain sentence, per the EmptyState rules. */

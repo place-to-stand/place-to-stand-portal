@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react'
 
-import { Button } from '@pts/ui/button'
-import { Input } from '@pts/ui/input'
-import { Label } from '@pts/ui/label'
+import { Button } from '@placetostand/ui/button'
+import { Input } from '@placetostand/ui/input'
+import { Label } from '@placetostand/ui/label'
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { notifyPasswordChanged } from '@/app/(auth)/_actions/auth-emails'

@@ -8,7 +8,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@pts/ui/select'
+} from '@placetostand/ui/select'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 
 export type EffectiveMonthOption<T extends string> = {

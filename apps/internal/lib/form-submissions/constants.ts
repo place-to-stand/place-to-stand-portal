@@ -1,5 +1,5 @@
 import { formSubmissionKind, formSubmissionStatus } from '@/lib/db/schema'
-import { BADGE_TINTS } from '@pts/ui/badge-tints'
+import { BADGE_TINTS } from '@placetostand/ui/badge-tints'
 
 import type { AttributionChannel } from './attribution'
 

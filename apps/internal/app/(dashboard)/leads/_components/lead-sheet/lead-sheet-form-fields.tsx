@@ -18,7 +18,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@pts/ui/input'
+import { Input } from '@placetostand/ui/input'
 import { LazyRichTextEditor as RichTextEditor } from '@/components/ui/rich-text-editor/lazy'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import {
@@ -27,7 +27,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@pts/ui/select'
+} from '@placetostand/ui/select'
 import { LEAD_MENTION_OPTIONS_URL } from '@/lib/tiptap/mention-urls'
 import { isSelectableUser } from '@/lib/users/selectable'
 import {
