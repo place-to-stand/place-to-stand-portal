@@ -1,5 +1,11 @@
 # @placetostand/ui
 
+## 0.1.1
+
+### Patch Changes
+
+- efed3eb: Export `./package.json`, so tools and bundlers can read the package's version.
+
 ## 0.1.0
 
 ### Minor Changes
