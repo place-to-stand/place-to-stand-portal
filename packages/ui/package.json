@@ -1,6 +1,6 @@
 {
   "name": "@placetostand/ui",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "React components and a Tailwind CSS theme from Place To Stand Agency: buttons, dialogs, menus, tables, a date picker and more, on Base UI.",
   "license": "MIT",
   "author": "Place To Stand Agency LLC",
