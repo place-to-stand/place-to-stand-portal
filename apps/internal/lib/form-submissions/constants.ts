@@ -36,6 +36,9 @@ export const FORM_SUBMISSION_STATUS_TOKENS: Record<
   captured: BADGE_TINTS.emerald,
 }
 
+/** The Spam badge, shown in place of the status badge on a spam row. */
+export const SPAM_BADGE_TOKEN = BADGE_TINTS.rose
+
 /** Source column badges. Always paired with the text label. */
 export const ATTRIBUTION_CHANNEL_TOKENS: Record<AttributionChannel, string> = {
   paid: BADGE_TINTS.rose,
@@ -55,7 +58,7 @@ export const FORM_SUBMISSION_KIND_TOKENS: Record<FormSubmissionKind, string> = {
 
 /**
  * Only rows that warrant attention count as unacknowledged: contact
- * submissions (any status) and audits that reached `completed`/`captured`. Subscribe signups always arrive `captured`, so they
+ * submissions (any status, unless flagged as spam) and audits that reached `completed`/`captured`. Subscribe signups always arrive `captured`, so they
  * flag through the status arm. In-progress and abandoned audits are noise at ad
  * volume and never flag.
  *
@@ -75,12 +78,15 @@ const ATTENTION_AUDIT_STATUSES = [
 /**
  * Whether acknowledgement is meaningful for this row at all. In-progress and
  * abandoned audits never flag, so they get no acknowledge/unacknowledge
- * affordances anywhere in the UI.
+ * affordances anywhere in the UI. Neither does spam (`spam_reason` set):
+ * it stays listed with a Spam badge, and "Not spam" makes it flag again.
  */
 export function submissionWarrantsAttention(submission: {
   kind: FormSubmissionKind
   status: FormSubmissionStatus
+  spamReason: string | null
 }): boolean {
+  if (submission.spamReason !== null) return false
   return (
     submission.kind === 'contact' ||
     (ATTENTION_AUDIT_STATUSES as readonly string[]).includes(submission.status)
@@ -90,6 +96,7 @@ export function submissionWarrantsAttention(submission: {
 export function isUnacknowledgedSubmission(submission: {
   kind: FormSubmissionKind
   status: FormSubmissionStatus
+  spamReason: string | null
   acknowledgedAt: string | null
   deletedAt: string | null
 }): boolean {

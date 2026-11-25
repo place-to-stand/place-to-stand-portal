@@ -46,6 +46,8 @@ type FetchOptions = {
   search?: string
   /** `?contact=`: true for identified rows, false for anonymous ones. */
   hasContact?: boolean
+  /** `?spam=`: true for spam only, false for everything but spam. */
+  spam?: boolean
   /** Validated `?sort=`; defaults to received desc. */
   sort?: ParsedSort<SubmissionSortField>
 }
@@ -71,6 +73,7 @@ export const fetchFormSubmissions = cache(
       archived,
       search,
       hasContact,
+      spam,
       sort,
     }: FetchOptions
   ): Promise<FormSubmissionsPage> => {
@@ -88,6 +91,7 @@ export const fetchFormSubmissions = cache(
         archived,
         search,
         hasContact,
+        spam,
         sort,
       }),
       countFormSubmissions({
@@ -98,6 +102,7 @@ export const fetchFormSubmissions = cache(
         archived,
         search,
         hasContact,
+        spam,
       }),
       // Tab-scoped only: same active/archive slice, filters stripped.
       countFormSubmissions({ archived }),

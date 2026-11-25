@@ -799,6 +799,20 @@
   },
   {
     "type": "action",
+    "name": "markSubmissionSpam",
+    "file": "apps/internal/app/(dashboard)/submissions/actions/set-submission-spam.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "markSubmissionNotSpam",
+    "file": "apps/internal/app/(dashboard)/submissions/actions/set-submission-spam.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
     "name": "unacknowledgeSubmission",
     "file": "apps/internal/app/(dashboard)/submissions/actions/unacknowledge-submission.ts",
     "kind": "admin",

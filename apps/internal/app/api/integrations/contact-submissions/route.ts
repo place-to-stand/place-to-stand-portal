@@ -8,6 +8,7 @@ import {
 } from '@/lib/form-submissions/contact-payload'
 import { recordSubmission } from '@/lib/form-submissions/delivery/intake'
 import { resolveDeliveryRequest } from '@/lib/form-submissions/delivery/request'
+import { detectContactSpam } from '@/lib/form-submissions/spam'
 
 /**
  * Contact form intake from the marketing site.
@@ -54,9 +55,25 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  // Spam is still recorded (and listed, with a Spam badge), but never
+  // emailed: no team notification, no confirmation to the address it gave.
+  const spamReason = detectContactSpam({
+    subject: parsed.data.contact.subject,
+    message: parsed.data.contact.message,
+    bot: parsed.data.bot,
+  })
+  const deliver = parsed.data.deliver && spamReason === null
+
+  if (spamReason) {
+    console.warn('Contact submission flagged as spam', {
+      submissionId: parsed.data.submissionId,
+      spamReason,
+    })
+  }
+
   try {
     const deliveryRequestedAt = await resolveDeliveryRequest({
-      deliver: parsed.data.deliver,
+      deliver,
       email: parsed.data.contact.email,
       sessionKey: parsed.data.submissionId,
     })
@@ -65,9 +82,10 @@ export async function POST(request: NextRequest) {
       toContactSubmissionRow(
         parsed.data,
         request.headers.get('user-agent'),
-        deliveryRequestedAt
+        deliveryRequestedAt,
+        spamReason
       ),
-      { deliver: parsed.data.deliver }
+      { deliver }
     )
 
     return NextResponse.json({ ok: true, data: recorded }, { status: 200 })

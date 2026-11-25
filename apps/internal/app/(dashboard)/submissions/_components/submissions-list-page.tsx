@@ -53,6 +53,7 @@ export async function SubmissionsListPage({
     acknowledgedOnly,
     search,
     hasContact,
+    spam,
     sort,
   } = parseSubmissionsListParams(params, mode)
 
@@ -75,6 +76,7 @@ export async function SubmissionsListPage({
       archived: mode === 'archive',
       search,
       hasContact,
+      spam,
       sort,
     })
 
@@ -95,6 +97,7 @@ export async function SubmissionsListPage({
           activeKind={kind}
           activeStatus={status}
           activeContact={hasContact}
+          activeSpam={spam}
           activeAcknowledgement={
             unacknowledgedOnly
               ? 'unacknowledged'

@@ -25,6 +25,8 @@ type CliSubmission = {
   percentComplete: number | null
   lastActivityAt: string | null
   acknowledgedAt: string | null
+  /** Why it looks like spam (honeypot, too_fast, sales_pitch, marked), or null. */
+  spamReason: string | null
   archivedAt: string | null
 }
 
@@ -53,6 +55,7 @@ export function serializeSubmission(row: FormSubmissionRecord): CliSubmission {
     percentComplete: row.percentComplete,
     lastActivityAt: isoTimestamp(row.lastActivityAt),
     acknowledgedAt: isoTimestamp(row.acknowledgedAt),
+    spamReason: row.spamReason,
     archivedAt: isoTimestamp(row.deletedAt),
   }
 }

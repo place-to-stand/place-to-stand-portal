@@ -8,6 +8,8 @@ import {
   CalendarClock,
   ExternalLink,
   RefreshCw,
+  ShieldAlert,
+  ShieldCheck,
   ThumbsDown,
   ThumbsUp,
   Timer,
@@ -40,12 +42,16 @@ import {
   FORM_SUBMISSION_KIND_LABELS,
   FORM_SUBMISSION_STATUS_LABELS,
   FORM_SUBMISSION_STATUS_TOKENS,
+  SPAM_BADGE_TOKEN,
   submissionWarrantsAttention,
 } from '@/lib/form-submissions/constants'
+import { isSpamReason, SPAM_REASON_LABELS } from '@/lib/form-submissions/spam'
 import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
 import {
   acknowledgeSubmission,
   archiveSubmission,
+  markSubmissionNotSpam,
+  markSubmissionSpam,
   restoreSubmission,
   unacknowledgeSubmission,
 } from '../actions'
@@ -169,6 +175,11 @@ export function SubmissionDetailSheet({
     id: string
     acknowledged: boolean
   } | null>(null)
+  // Same optimistic pattern for Mark as spam / Not spam.
+  const [spamOverride, setSpamOverride] = useState<{
+    id: string
+    spam: boolean
+  } | null>(null)
   const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false)
   const [retainedSubmission, setRetainedSubmission] = useState(submission)
   const [isPending, startTransition] = useTransition()
@@ -186,6 +197,14 @@ export function SubmissionDetailSheet({
       (submission.acknowledgedAt !== null) === ackOverride.acknowledged)
   ) {
     setAckOverride(null)
+  }
+  if (
+    spamOverride &&
+    (!submission ||
+      submission.id !== spamOverride.id ||
+      (submission.spamReason !== null) === spamOverride.spam)
+  ) {
+    setSpamOverride(null)
   }
 
   // Keep-open actions: run, then refresh underneath the open sheet.
@@ -245,6 +264,32 @@ export function SubmissionDetailSheet({
       () => unacknowledgeSubmission({ id: submission.id }),
       'Unable to unacknowledge submission',
       () => setAckOverride({ id: submission.id, acknowledged: false })
+    )
+  }, [runInlineAction, submission])
+
+  const handleMarkSpam = useCallback(() => {
+    if (!submission) {
+      return
+    }
+    runInlineAction(
+      () => markSubmissionSpam({ id: submission.id }),
+      'Unable to mark submission as spam',
+      () => setSpamOverride({ id: submission.id, spam: true })
+    )
+  }, [runInlineAction, submission])
+
+  const handleMarkNotSpam = useCallback(() => {
+    if (!submission) {
+      return
+    }
+    runInlineAction(
+      () => markSubmissionNotSpam({ id: submission.id }),
+      'Unable to mark submission as not spam',
+      () => {
+        setSpamOverride({ id: submission.id, spam: false })
+        // Not spam re-flags the row as unacknowledged.
+        setAckOverride({ id: submission.id, acknowledged: false })
+      }
     )
   }, [runInlineAction, submission])
 
@@ -311,9 +356,23 @@ export function SubmissionDetailSheet({
   const acknowledged = override
     ? override.acknowledged
     : displaySubmission.acknowledgedAt !== null
+  const spamOverrideHere =
+    spamOverride?.id === displaySubmission.id ? spamOverride : null
+  const spamReason = spamOverrideHere
+    ? spamOverrideHere.spam
+      ? (displaySubmission.spamReason ?? 'marked')
+      : null
+    : displaySubmission.spamReason
+  const isSpam = spamReason !== null
   // Acknowledgement only exists as a concept for rows that can flag —
-  // in-progress/abandoned audits get no acknowledge-family UI at all.
-  const warrantsAttention = submissionWarrantsAttention(displaySubmission)
+  // in-progress/abandoned audits and spam get no acknowledge-family UI.
+  const warrantsAttention = submissionWarrantsAttention({
+    ...displaySubmission,
+    spamReason,
+  })
+  // Only the contact form is checked for spam, so only it can be marked.
+  const canMarkSpam =
+    mode === 'active' && displaySubmission.kind === 'contact' && !isSpam
   const unacknowledged = mode === 'active' && warrantsAttention && !acknowledged
   const acknowledgedAt = displaySubmission.acknowledgedAt
 
@@ -584,10 +643,23 @@ export function SubmissionDetailSheet({
             </div>
             {/* Only the submission's own step lives here, on the right like
                 a save; Archive is in the header's Actions menu. */}
-            {mode !== 'active' || warrantsAttention ? (
+            {mode !== 'active' || warrantsAttention || isSpam ? (
               <div className='max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:order-last'>
                 <SheetFooterBar>
-                  <span />
+                  {canMarkSpam ? (
+                    <Button
+                      type='button'
+                      variant='ghost'
+                      size='sm'
+                      disabled={isPending}
+                      onClick={handleMarkSpam}
+                    >
+                      <ShieldAlert />
+                      Mark as spam
+                    </Button>
+                  ) : (
+                    <span />
+                  )}
                   {mode !== 'active' ? (
                     <Button
                       type='button'
@@ -598,6 +670,17 @@ export function SubmissionDetailSheet({
                     >
                       <RefreshCw className='h-4 w-4' />
                       Restore
+                    </Button>
+                  ) : isSpam ? (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='sm'
+                      disabled={isPending}
+                      onClick={handleMarkNotSpam}
+                    >
+                      <ShieldCheck />
+                      Not spam
                     </Button>
                   ) : unacknowledged ? (
                     <Button
@@ -638,14 +721,20 @@ export function SubmissionDetailSheet({
                 at sheet width. */}
               <div className='flex flex-col gap-3'>
                 <div className='flex flex-wrap items-center gap-2'>
-                  <Badge
-                    variant='outline'
-                    className={cn(
-                      FORM_SUBMISSION_STATUS_TOKENS[displaySubmission.status]
-                    )}
-                  >
-                    {FORM_SUBMISSION_STATUS_LABELS[displaySubmission.status]}
-                  </Badge>
+                  {isSpam ? (
+                    <Badge variant='outline' className={SPAM_BADGE_TOKEN}>
+                      Spam
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant='outline'
+                      className={cn(
+                        FORM_SUBMISSION_STATUS_TOKENS[displaySubmission.status]
+                      )}
+                    >
+                      {FORM_SUBMISSION_STATUS_LABELS[displaySubmission.status]}
+                    </Badge>
+                  )}
                   {unacknowledged ? (
                     <Badge variant='secondary'>Unacknowledged</Badge>
                   ) : null}
@@ -688,6 +777,22 @@ export function SubmissionDetailSheet({
                       <Timer className='size-3.5 shrink-0' aria-hidden='true' />
                       <span>
                         {formatDuration(displaySubmission.durationMs)} on page
+                      </span>
+                    </li>
+                  ) : null}
+                  {isSpam ? (
+                    <li className='flex items-center gap-1.5 whitespace-nowrap'>
+                      <ShieldAlert
+                        className='size-3.5 shrink-0'
+                        aria-hidden='true'
+                      />
+                      <span>
+                        {isSpamReason(spamReason)
+                          ? SPAM_REASON_LABELS[spamReason]
+                          : SPAM_REASON_LABELS.marked}
+                        {displaySubmission.deliveryRequestedAt
+                          ? ''
+                          : ' · no emails sent'}
                       </span>
                     </li>
                   ) : null}

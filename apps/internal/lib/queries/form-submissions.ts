@@ -23,6 +23,7 @@ import {
   ATTRIBUTION_CHANNEL_LABELS,
   describeAttribution,
 } from '@/lib/form-submissions/attribution'
+import { RETRY_MAX_AGE_HOURS } from '@/lib/form-submissions/delivery/constants'
 import { createSearchPattern } from '@/lib/pagination/cursor'
 import { sortRows } from '@/lib/table/sort-rows'
 import type { ParsedSort } from '@/lib/pagination/sort'
@@ -49,6 +50,8 @@ type FormSubmissionFilters = {
    * most of the list at ad volume, so this is the "show me people" switch.
    */
   hasContact?: boolean
+  /** true: spam only. false: everything but spam. */
+  spam?: boolean
 }
 
 function buildFilters({
@@ -59,6 +62,7 @@ function buildFilters({
   archived,
   search,
   hasContact,
+  spam,
 }: FormSubmissionFilters) {
   const searchQuery = search?.trim() ?? ''
   const searchPattern = searchQuery ? createSearchPattern(searchQuery) : null
@@ -74,6 +78,7 @@ function buildFilters({
     unacknowledgedOnly
       ? and(
           isNull(formSubmissions.acknowledgedAt),
+          isNull(formSubmissions.spamReason),
           or(
             eq(formSubmissions.kind, 'contact'),
             inArray(formSubmissions.status, ['completed', 'captured'])
@@ -81,6 +86,11 @@ function buildFilters({
         )
       : undefined,
     acknowledgedOnly ? isNotNull(formSubmissions.acknowledgedAt) : undefined,
+    spam === true
+      ? isNotNull(formSubmissions.spamReason)
+      : spam === false
+        ? isNull(formSubmissions.spamReason)
+        : undefined,
     hasContact === true
       ? or(
           isNotNull(formSubmissions.contactName),
@@ -281,6 +291,12 @@ export async function upsertFormSubmission(
         language: sql`COALESCE(excluded.language, ${formSubmissions.language})`,
         userAgent: sql`COALESCE(excluded.user_agent, ${formSubmissions.userAgent})`,
 
+        // The latest push decides. Only a contact submission carries a
+        // verdict, and a replay of one is the visitor resending it (often
+        // edited), so the flag follows the message that is now stored. The
+        // email claim refuses a flagged row, so the two always agree.
+        spamReason: sql`excluded.spam_reason`,
+
         // First request wins and is never cleared: a later beacon without
         // `deliver` must not cancel an email the retry sweep still owes.
         deliveryRequestedAt: sql`COALESCE(${formSubmissions.deliveryRequestedAt}, excluded.delivery_requested_at)`,
@@ -434,6 +450,7 @@ export async function countUnacknowledgedFormSubmissions() {
       and(
         isNull(formSubmissions.deletedAt),
         isNull(formSubmissions.acknowledgedAt),
+        isNull(formSubmissions.spamReason),
         or(
           eq(formSubmissions.kind, 'contact'),
           inArray(formSubmissions.status, ['completed', 'captured'])
@@ -596,6 +613,48 @@ export async function getFormSubmissionById(
       )
     )
     .limit(1)
+
+  return row ?? null
+}
+
+/**
+ * Mark an active row as spam by hand, or clear the flag ("Not spam").
+ * Direction-guarded like `setFormSubmissionArchived`: marking only touches a
+ * row that isn't spam, clearing only one that is, so double-clicks change
+ * state once. Clearing also clears acknowledgement, so a real lead the
+ * checks caught flags as unacknowledged like any new submission, and asks
+ * for the emails it never got (contact rows still inside the retry window
+ * only: a notification days late is not worth sending, the same rule as the
+ * retry sweep). Returns the updated row, or null when nothing changed.
+ */
+export async function setFormSubmissionSpam(id: string, spam: boolean) {
+  const [row] = await db
+    .update(formSubmissions)
+    .set(
+      spam
+        ? {
+            spamReason: 'marked',
+            updatedAt: sql`timezone('utc'::text, now())`,
+          }
+        : {
+            spamReason: null,
+            acknowledgedAt: null,
+            acknowledgedBy: null,
+            deliveryRequestedAt: sql`COALESCE(${formSubmissions.deliveryRequestedAt}, CASE WHEN ${formSubmissions.kind} = 'contact' AND ${formSubmissions.createdAt} > timezone('utc'::text, now()) - make_interval(hours => ${RETRY_MAX_AGE_HOURS}) THEN timezone('utc'::text, now()) END)`,
+            updatedAt: sql`timezone('utc'::text, now())`,
+          }
+    )
+    .where(
+      and(
+        eq(formSubmissions.id, id),
+        isNull(formSubmissions.deletedAt),
+        isNull(formSubmissions.destroyedAt),
+        spam
+          ? isNull(formSubmissions.spamReason)
+          : isNotNull(formSubmissions.spamReason)
+      )
+    )
+    .returning()
 
   return row ?? null
 }

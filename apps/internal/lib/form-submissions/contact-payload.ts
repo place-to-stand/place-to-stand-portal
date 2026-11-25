@@ -9,6 +9,7 @@ import {
   clientSchema,
   isoDateTime,
 } from './envelope'
+import { botSignalsSchema, type SpamReason } from './spam'
 
 /**
  * Validation for `POST /api/integrations/contact-submissions`.
@@ -48,6 +49,10 @@ export const contactPayloadSchema = z.object({
 
   // Opt-in email delivery. Absent or false means record only.
   deliver: z.boolean().optional().default(false),
+
+  // What the visitor's browser saw (hidden trap field, time to send). Optional
+  // so a marketing deploy that predates it still lands; see spam.ts.
+  bot: botSignalsSchema.optional(),
 })
 
 type ContactPayload = z.infer<typeof contactPayloadSchema>
@@ -56,7 +61,9 @@ export function toContactSubmissionRow(
   payload: ContactPayload,
   requestUserAgent: string | null,
   /** From `resolveDeliveryRequest`; null records the row without emailing. */
-  deliveryRequestedAt: string | null = null
+  deliveryRequestedAt: string | null = null,
+  /** From `detectContactSpam`; null for a submission that looks real. */
+  spamReason: SpamReason | null = null
 ): NewFormSubmission {
   const { contact, analytics, attribution, client } = payload
 
@@ -117,5 +124,6 @@ export function toContactSubmissionRow(
     userAgent: client.userAgent ?? requestUserAgent,
 
     deliveryRequestedAt,
+    spamReason,
   }
 }

@@ -16,7 +16,10 @@ import {
   type FormSubmissionKind,
   type FormSubmissionStatus,
 } from '@/lib/form-submissions/constants'
-import { isContactFilterValue } from '@/lib/form-submissions/filters'
+import {
+  isContactFilterValue,
+  isSpamFilterValue,
+} from '@/lib/form-submissions/filters'
 
 type AcknowledgementFilter = 'unacknowledged' | 'acknowledged'
 
@@ -38,6 +41,11 @@ const CONTACT_OPTIONS = [
   { value: '0', label: 'Anonymous only' },
 ]
 
+const SPAM_OPTIONS = [
+  { value: '0', label: 'Hide spam' },
+  { value: '1', label: 'Spam only' },
+]
+
 const KIND_OPTIONS = FORM_SUBMISSION_KIND_VALUES.map(kind => ({
   value: kind,
   label: FORM_SUBMISSION_KIND_LABELS[kind],
@@ -56,6 +64,8 @@ type SubmissionsFiltersProps = {
   activeStatus?: FormSubmissionStatus
   /** `?contact=` — true: identified rows only, false: anonymous only. */
   activeContact?: boolean
+  /** `?spam=` — true: spam only, false: everything but spam. */
+  activeSpam?: boolean
   /**
    * Acknowledgement quick filter, List tab only (archived rows never count
    * as unread, so the archive page leaves it off).
@@ -71,6 +81,7 @@ export function SubmissionsFilters({
   activeKind,
   activeStatus,
   activeContact,
+  activeSpam,
   activeAcknowledgement,
   showUnacknowledgedFilter = false,
   basePath,
@@ -86,6 +97,7 @@ export function SubmissionsFilters({
       kind: { isValid: value => isFormSubmissionKind(value) },
       status: { isValid: value => isFormSubmissionStatus(value) },
       contact: { isValid: isContactFilterValue },
+      spam: { isValid: isSpamFilterValue },
     },
   })
 
@@ -99,9 +111,13 @@ export function SubmissionsFilters({
         />
       }
       activeFilterCount={
-        [activeAcknowledgement, activeKind, activeStatus, activeContact].filter(
-          value => value !== undefined
-        ).length
+        [
+          activeAcknowledgement,
+          activeKind,
+          activeStatus,
+          activeContact,
+          activeSpam,
+        ].filter(value => value !== undefined).length
       }
       showReset={hasActiveFilters}
       onReset={reset}
@@ -139,6 +155,12 @@ export function SubmissionsFilters({
         onChange={value => update({ contact: value })}
         placeholder='All visitors'
         options={CONTACT_OPTIONS}
+      />
+      <FilterSelect
+        value={activeSpam === undefined ? undefined : activeSpam ? '1' : '0'}
+        onChange={value => update({ spam: value })}
+        placeholder='Spam included'
+        options={SPAM_OPTIONS}
       />
     </FilterBar>
   )

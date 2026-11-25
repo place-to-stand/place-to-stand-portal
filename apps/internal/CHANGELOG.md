@@ -11,6 +11,10 @@ Markdown (the dialog shows it as plain text). The tests check this, and the
 Changelog check fails a pull request that changes the apps without a new line
 here, unless its description says `Changelog: none`.
 
+## Week of November 23, 2026
+
+- **Submissions:** contact form messages that look like spam (sales pitches, bots) get a Spam badge, send no emails and don't count as unacknowledged. Not spam on the submission sends the emails it missed; Mark as spam and the new Spam filter are there too.
+
 ## Week of November 16, 2026
 
 - **What's new:** this list, in the user menu and Ctrl K. A dot on your photo means there's something you haven't seen.

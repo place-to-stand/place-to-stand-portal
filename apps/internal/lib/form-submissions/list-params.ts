@@ -4,6 +4,7 @@ import {
 } from '@/lib/form-submissions/constants'
 import {
   parseContactFilter,
+  parseSpamFilter,
   parseSubmissionsSort,
 } from '@/lib/form-submissions/filters'
 import { firstParam, type RawSearchParams } from '@/lib/pagination/params'
@@ -33,6 +34,7 @@ export function parseSubmissionsListParams(
     search: firstParam(params.q)?.trim() || undefined,
     // oxlint-disable-next-line pts/sheets -- the has-contact filter (yes/no), not a person sheet
     hasContact: parseContactFilter(firstParam(params.contact)),
+    spam: parseSpamFilter(firstParam(params.spam)),
     sort: parseSubmissionsSort(firstParam(params.sort)),
   }
 }

@@ -75,7 +75,10 @@ export async function claimSubmissionEmail(
         isNotNull(formSubmissions.deliveryRequestedAt),
         eq(formSubmissions.status, 'captured'),
         isNotNull(formSubmissions.contactEmail),
-        isNull(formSubmissions.destroyedAt)
+        isNull(formSubmissions.destroyedAt),
+        // Spam is never emailed, even when a person marks it after the
+        // request ("Not spam" clears the flag, and the email can go).
+        isNull(formSubmissions.spamReason)
       )
     )
     .returning({ id: formSubmissions.id })
@@ -272,7 +275,10 @@ export async function listSubmissionsAwaitingEmail({
         ),
         eq(formSubmissions.status, 'captured'),
         isNotNull(formSubmissions.contactEmail),
-        isNull(formSubmissions.destroyedAt)
+        isNull(formSubmissions.destroyedAt),
+        // Spam is never emailed, even when a person marks it after the
+        // request ("Not spam" clears the flag, and the email can go).
+        isNull(formSubmissions.spamReason)
       )
     )
     .orderBy(asc(formSubmissions.deliveryRequestedAt))
@@ -316,7 +322,10 @@ export async function listSubmissionsStuckAtThreshold(): Promise<
         ),
         eq(formSubmissions.status, 'captured'),
         isNotNull(formSubmissions.contactEmail),
-        isNull(formSubmissions.destroyedAt)
+        isNull(formSubmissions.destroyedAt),
+        // Spam is never emailed, even when a person marks it after the
+        // request ("Not spam" clears the flag, and the email can go).
+        isNull(formSubmissions.spamReason)
       )
     )
     .orderBy(asc(formSubmissions.deliveryRequestedAt))
