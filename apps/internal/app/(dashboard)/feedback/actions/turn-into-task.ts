@@ -3,6 +3,9 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
+import { feedbackTurnedIntoTaskEvent } from '@/lib/activity/events'
+import { logFeedbackActivity } from '@/lib/activity/feedback-log'
+
 import { requirePage } from '@/lib/auth/session'
 import { feedbackTaskDraft } from '@/lib/feedback/task-draft'
 import {
@@ -119,6 +122,14 @@ export async function turnFeedbackIntoTask(input: {
     )
     return { error: 'This report has changed. Reload and try again.' }
   }
+
+  await logFeedbackActivity(user, report, args =>
+    feedbackTurnedIntoTaskEvent({
+      ...args,
+      taskId: result.taskId,
+      taskTitle: draft.title,
+    })
+  )
 
   revalidateTaskViews()
   revalidatePath('/', 'layout')

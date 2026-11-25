@@ -19,7 +19,7 @@ test('normalizeOrigin keeps only scheme, host and port', () => {
     normalizeOrigin('http://localhost:3000/'),
     'http://localhost:3000'
   )
-  assert.equal(normalizeOrigin('localhost:3000'), 'https://localhost:3000')
+  assert.equal(normalizeOrigin('localhost:3000'), 'http://localhost:3000')
   assert.equal(normalizeOrigin(''), null)
   assert.equal(normalizeOrigin('javascript:alert(1)'), null)
   assert.equal(normalizeOrigin('ftp://example.com'), null)
@@ -82,7 +82,7 @@ test('words that are not websites are refused, not saved as hosts', () => {
     parseFeedbackOriginsInput('localhost:3000\n127.0.0.1:8080'),
     {
       ok: true,
-      origins: ['https://localhost:3000', 'https://127.0.0.1:8080'],
+      origins: ['http://localhost:3000', 'http://127.0.0.1:8080'],
     }
   )
 })

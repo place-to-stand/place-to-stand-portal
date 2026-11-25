@@ -9,6 +9,7 @@ import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { toastLink, useToast } from '@/components/ui/use-toast'
+import { emitSheetRecordSaved } from '@/lib/sheets/record-saved'
 import { FEEDBACK_TYPE_LABELS } from '@/lib/feedback/constants'
 import {
   FEEDBACK_STATE_LABELS,
@@ -82,6 +83,9 @@ export function FeedbackSheet({
             onRowRemoved()
             return
           }
+        } else {
+          // A sheet the SheetHost serves holds its own copy: reload it.
+          emitSheetRecordSaved('feedback', shown.id)
         }
         router.refresh()
       })
@@ -108,6 +112,7 @@ export function FeedbackSheet({
         description: 'It is on deck in the project, with nobody assigned.',
         link: toastLink('task', result.taskId),
       })
+      emitSheetRecordSaved('feedback', shown.id)
       router.refresh()
     })
   }, [router, shown, toast])

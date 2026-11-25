@@ -34,6 +34,7 @@ export type FeedbackReportRecord = {
   projectName: string
   projectSlug: string | null
   projectType: string
+  companyId: string | null
   clientName: string | null
   clientSlug: string | null
 }

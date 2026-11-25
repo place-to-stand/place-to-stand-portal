@@ -15,7 +15,12 @@ import { takeFeedbackReport } from '@/lib/feedback/intake'
 
 // permission: public — the project id is the key; origin, rate limits and spam checks in takeFeedbackReport
 export async function POST(request: NextRequest) {
-  const result = await takeFeedbackReport(request, request.nextUrl.origin)
+  const result = await takeFeedbackReport(
+    request,
+    request.headers.get('x-forwarded-host') ??
+      request.headers.get('host') ??
+      request.nextUrl.host
+  )
   const headers = corsHeaders(result.allowOrigin)
 
   if (!result.ok) {

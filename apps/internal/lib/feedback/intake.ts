@@ -2,7 +2,7 @@ import 'server-only'
 
 import { randomUUID } from 'node:crypto'
 
-import { clientIpFromHeaders, consumeAttemptLimits } from '@pts/db/rate-limit'
+import { clientIpFromHeaders, consumeRateLimit } from '@pts/db/rate-limit'
 
 import { getCurrentStaff } from '@/lib/auth/session'
 import { db } from '@/lib/db'
@@ -41,6 +41,16 @@ export type IntakeResult =
       allowOrigin: string | null
     }
 
+/** The host of an Origin header or URL, or null. */
+function originHost(value: string | null): string | null {
+  if (!value || value === 'null') return null
+  try {
+    return new URL(value).host.toLowerCase()
+  } catch {
+    return null
+  }
+}
+
 const refuse = (
   status: number,
   error: string,
@@ -65,9 +75,14 @@ const refuse = (
  */
 export async function takeFeedbackReport(
   request: Request,
-  portalOrigin: string
+  portalHost: string
 ): Promise<IntakeResult> {
-  const declared = Number(request.headers.get('content-length') ?? 0)
+  // Browsers always send a length with form data. A body without one could
+  // be any size, and would be read whole before any other check.
+  const declared = Number(request.headers.get('content-length'))
+  if (!request.headers.has('content-length') || !Number.isFinite(declared)) {
+    return refuse(411, 'Send the report with its length.')
+  }
   if (declared > FEEDBACK_LIMITS.requestBytes) {
     return refuse(413, 'The report is too large.')
   }
@@ -94,7 +109,10 @@ export async function takeFeedbackReport(
   // Our own portal, with a portal session: the report carries who sent it.
   // Cookies only ride along on a same-site request, and the Origin check
   // keeps another site from borrowing them.
-  const staff = origin === portalOrigin ? await getCurrentStaff() : null
+  // Hosts, not full origins: TLS ends before the app, so the scheme the
+  // browser saw and the one this request carries can differ.
+  const staff =
+    originHost(origin) === portalHost ? await getCurrentStaff() : null
 
   let allowOrigin: string | null = null
   if (!staff) {
@@ -104,19 +122,36 @@ export async function takeFeedbackReport(
     }
     allowOrigin = origin
 
-    const limits = await consumeAttemptLimits(db, {
-      kind: 'feedback',
-      subject: project.id,
-      ip: clientIpFromHeaders(request.headers),
-      perSubjectLimit: FEEDBACK_RATE_LIMITS.perProject,
-      perIpLimit: FEEDBACK_RATE_LIMITS.perIp,
+    // The page must be on the website sending the report, so a report can't
+    // carry a link to somewhere else dressed up as the page.
+    if (payload.pageUrl && originHost(payload.pageUrl) !== originHost(origin)) {
+      return refuse(
+        400,
+        'The page must be on the website sending the report.',
+        allowOrigin
+      )
+    }
+
+    // The caller's own limit first, and only a report it may send counts
+    // toward the project's: one address can't use up a project's hour.
+    const ip = clientIpFromHeaders(request.headers)
+    const byIp = await consumeRateLimit(db, {
+      key: `feedback-ip:${ip}`,
+      limit: FEEDBACK_RATE_LIMITS.perIp,
       windowSeconds: FEEDBACK_RATE_LIMITS.windowSeconds,
     })
-    if (!limits.allowed) {
+    const byProject = byIp.allowed
+      ? await consumeRateLimit(db, {
+          key: `feedback:${project.id}`,
+          limit: FEEDBACK_RATE_LIMITS.perProject,
+          windowSeconds: FEEDBACK_RATE_LIMITS.windowSeconds,
+        })
+      : null
+    if (!byIp.allowed || !byProject?.allowed) {
       console.warn('Feedback report throttled', {
         projectId: project.id,
-        ipHits: limits.ipHits,
-        projectHits: limits.subjectHits,
+        ipHits: byIp.count,
+        projectHits: byProject?.count ?? null,
       })
       return refuse(429, 'Too many reports. Try again later.', allowOrigin)
     }

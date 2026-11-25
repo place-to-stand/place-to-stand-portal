@@ -2420,7 +2420,7 @@ export const feedbackType = pgEnum('feedback_type', [
  *
  * The intake endpoint (`/api/feedback`) is public, so every row is checked
  * for spam like the contact form (`spam_reason`, see
- * apps/internal/lib/feedback/spam.ts) and flagged, never dropped.
+ * apps/internal/lib/form-submissions/spam.ts) and flagged, never dropped.
  */
 export const feedbackReports = pgTable(
   'feedback_reports',

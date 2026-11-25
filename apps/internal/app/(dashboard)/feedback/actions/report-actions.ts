@@ -3,8 +3,20 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
+import {
+  feedbackAcknowledgedEvent,
+  feedbackArchivedEvent,
+  feedbackMarkedNotSpamEvent,
+  feedbackMarkedSpamEvent,
+  feedbackRestoredEvent,
+  feedbackUnacknowledgedEvent,
+} from '@/lib/activity/events'
+import { logFeedbackActivity } from '@/lib/activity/feedback-log'
 import { requirePage } from '@/lib/auth/session'
-import { updateFeedbackReport } from '@/lib/queries/feedback'
+import {
+  getFeedbackReportById,
+  updateFeedbackReport,
+} from '@/lib/queries/feedback'
 
 import type { FeedbackActionResult } from './types'
 
@@ -19,7 +31,8 @@ async function change(
   input: unknown,
   patch: (userId: string) => Parameters<typeof updateFeedbackReport>[1],
   expect: Parameters<typeof updateFeedbackReport>[2],
-  failure: string
+  failure: string,
+  eventFor: Parameters<typeof logFeedbackActivity>[2]
 ): Promise<FeedbackActionResult> {
   const user = await requirePage('feedback.manage')
   const parsed = idSchema.safeParse(input)
@@ -38,6 +51,9 @@ async function change(
     return { error: failure }
   }
 
+  const report = await getFeedbackReportById(parsed.data.id)
+  if (report) await logFeedbackActivity(user, report, eventFor)
+
   // The sidebar's count of new reports.
   revalidatePath('/', 'layout')
   return {}
@@ -51,7 +67,8 @@ export async function acknowledgeFeedback(input: { id: string }) {
       acknowledgedBy: userId,
     }),
     { archived: false },
-    'Unable to mark the report as seen.'
+    'Unable to mark the report as seen.',
+    feedbackAcknowledgedEvent
   )
 }
 
@@ -60,7 +77,8 @@ export async function unacknowledgeFeedback(input: { id: string }) {
     input,
     () => ({ acknowledgedAt: null, acknowledgedBy: null }),
     { archived: false },
-    'Unable to mark the report as new.'
+    'Unable to mark the report as new.',
+    feedbackUnacknowledgedEvent
   )
 }
 
@@ -69,7 +87,8 @@ export async function markFeedbackSpam(input: { id: string }) {
     input,
     () => ({ spamReason: 'marked' }),
     { archived: false },
-    'Unable to mark the report as spam.'
+    'Unable to mark the report as spam.',
+    feedbackMarkedSpamEvent
   )
 }
 
@@ -79,7 +98,8 @@ export async function markFeedbackNotSpam(input: { id: string }) {
     input,
     () => ({ spamReason: null, acknowledgedAt: null, acknowledgedBy: null }),
     { archived: false },
-    'Unable to mark the report as not spam.'
+    'Unable to mark the report as not spam.',
+    feedbackMarkedNotSpamEvent
   )
 }
 
@@ -88,7 +108,8 @@ export async function archiveFeedback(input: { id: string }) {
     input,
     () => ({ deletedAt: new Date().toISOString() }),
     { archived: false },
-    'Unable to archive the report.'
+    'Unable to archive the report.',
+    feedbackArchivedEvent
   )
 }
 
@@ -97,6 +118,7 @@ export async function restoreFeedback(input: { id: string }) {
     input,
     () => ({ deletedAt: null }),
     { archived: true },
-    'Unable to restore the report.'
+    'Unable to restore the report.',
+    feedbackRestoredEvent
   )
 }

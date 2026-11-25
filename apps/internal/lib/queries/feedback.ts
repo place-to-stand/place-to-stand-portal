@@ -46,6 +46,21 @@ const reporterNameSql = sql<string | null>`coalesce(${personNameOf(
   'feedback_reporter'
 )}, ${feedbackReports.reporterName})`
 
+/** The reporter's email: their sign-in's when signed in, else what they typed. */
+const reporterEmailSql = sql<
+  string | null
+>`coalesce(${reporter.email}, ${feedbackReports.reporterEmail})`
+
+/**
+ * New: nobody has looked at it. Not seen, not spam, not already a task (the
+ * list shows those as Spam and Task, so they never count as new).
+ */
+const newReportSql = and(
+  isNull(feedbackReports.acknowledgedAt),
+  isNull(feedbackReports.spamReason),
+  isNull(feedbackReports.taskId)
+)
+
 function buildFilters({
   archived,
   projectId,
@@ -61,20 +76,20 @@ function buildFilters({
       : isNull(feedbackReports.deletedAt),
     projectId ? eq(feedbackReports.projectId, projectId) : undefined,
     type ? eq(feedbackReports.type, type) : undefined,
-    state === 'new'
+    state === 'new' ? newReportSql : undefined,
+    state === 'task'
       ? and(
-          isNull(feedbackReports.acknowledgedAt),
+          isNotNull(feedbackReports.taskId),
           isNull(feedbackReports.spamReason)
         )
       : undefined,
-    state === 'task' ? isNotNull(feedbackReports.taskId) : undefined,
     state === 'spam' ? isNotNull(feedbackReports.spamReason) : undefined,
     state === 'not_spam' ? isNull(feedbackReports.spamReason) : undefined,
     pattern
       ? or(
           ilike(feedbackReports.message, pattern),
           ilike(feedbackReports.pageUrl, pattern),
-          ilike(feedbackReports.reporterEmail, pattern),
+          ilike(reporterEmailSql, pattern),
           ilike(reporterNameSql, pattern),
           ilike(projects.name, pattern)
         )
@@ -93,9 +108,7 @@ const recordColumns = {
   screenshotSize: feedbackReports.screenshotSize,
   reporterUserId: feedbackReports.reporterUserId,
   reporterName: reporterNameSql,
-  reporterEmail: sql<
-    string | null
-  >`coalesce(${reporter.email}, ${feedbackReports.reporterEmail})`,
+  reporterEmail: reporterEmailSql,
   origin: feedbackReports.origin,
   userAgent: feedbackReports.userAgent,
   viewport: feedbackReports.viewport,
@@ -113,6 +126,7 @@ const recordColumns = {
   projectName: projects.name,
   projectSlug: projects.slug,
   projectType: projects.type,
+  companyId: projects.companyId,
   clientName: companies.name,
   clientSlug: companies.slug,
 }
@@ -154,18 +168,12 @@ export async function countFeedbackReports(
   return Number(row?.value ?? 0)
 }
 
-/** New reports: not acknowledged, not spam, not archived (the nav pill). */
+/** New reports, not archived (the nav pill). */
 export async function countNewFeedbackReports(): Promise<number> {
   const [row] = await db
     .select({ value: count() })
     .from(feedbackReports)
-    .where(
-      and(
-        isNull(feedbackReports.deletedAt),
-        isNull(feedbackReports.acknowledgedAt),
-        isNull(feedbackReports.spamReason)
-      )
-    )
+    .where(and(isNull(feedbackReports.deletedAt), newReportSql))
   return Number(row?.value ?? 0)
 }
 
@@ -227,7 +235,7 @@ export async function getProjectFeedbackSettings(projectId: string) {
 export async function updateProjectFeedbackSettings(
   projectId: string,
   { enabled, origins }: { enabled: boolean; origins: string[] }
-): Promise<boolean> {
+): Promise<{ id: string; name: string; companyId: string | null } | null> {
   const rows = await db
     .update(projects)
     .set({
@@ -236,8 +244,12 @@ export async function updateProjectFeedbackSettings(
       updatedAt: sql`now()`,
     })
     .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
-    .returning({ id: projects.id })
-  return rows.length > 0
+    .returning({
+      id: projects.id,
+      name: projects.name,
+      companyId: projects.companyId,
+    })
+  return rows[0] ?? null
 }
 
 export async function insertFeedbackReport(

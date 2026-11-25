@@ -9,16 +9,18 @@
 /**
  * `shop.example.com`, `https://shop.example.com/` and
  * `https://Shop.Example.com/any/path` all become `https://shop.example.com`.
- * A bare host is taken as https. Anything that isn't an http(s) address
+ * A bare host is taken as https (http for localhost). Anything that isn't an http(s) address
  * with a real host name (one with a dot, `localhost` or an IP address) is
  * null, so a stray word like `staging` is refused, not saved as a site.
  */
 export function normalizeOrigin(value: string): string | null {
   const trimmed = value.trim()
   if (!trimmed || /\s/.test(trimmed)) return null
+  // A bare host is https, except a local one, which dev servers serve on http.
+  const local = /^(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(trimmed)
   const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)
     ? trimmed
-    : `https://${trimmed}`
+    : `${local ? 'http' : 'https'}://${trimmed}`
   let url: URL
   try {
     url = new URL(withScheme)
