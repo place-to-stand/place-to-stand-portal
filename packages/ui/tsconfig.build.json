@@ -4,6 +4,7 @@
     "noEmit": false,
     "incremental": false,
     "declaration": true,
+    "removeComments": true,
     "jsx": "react-jsx",
     "target": "ES2022",
     "rootDir": "src",

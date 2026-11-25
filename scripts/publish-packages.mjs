@@ -3,9 +3,10 @@
  * Publishes every package we share outside this repo (`@placetostand/*`)
  * whose version isn't on npm yet. The release workflow
  * (.github/workflows/release.yml) runs it after the "Release packages" pull
- * request merges; anyone can run it by hand the same way:
+ * request merges. Publishing needs GitHub Actions (packages carry npm
+ * provenance), so by hand only the dry run works:
  *
- *   node scripts/publish-packages.mjs            publish what's new
+ *   node scripts/publish-packages.mjs            publish what's new (CI only)
  *   node scripts/publish-packages.mjs --dry-run  build and pack, publish nothing
  *
  * Each package builds into its dist/ folder (scripts/build-package.mjs) and

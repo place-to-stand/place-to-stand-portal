@@ -3,7 +3,6 @@
  * styles. A project's globals.css imports Tailwind, `@source`s the package,
  * then imports this file. To use your own brand, redefine any token after the
  * import (in `:root` for light, `.dark` for dark); every component reads them.
- * Our portals layer their own colors on top (packages/portal-ui).
  *
  * Plain CSS: this file is read by Tailwind's own parser, so use block
  * comments only.
@@ -178,8 +177,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Every underline sits where the task card's links put it. Inherited, so
-       links match without each one repeating underline-offset-4. */
+    /* One underline offset for every link. Inherited, so links match without each one repeating underline-offset-4. */
     text-underline-offset: 4px;
   }
   /* Tailwind v4 resets buttons to the default cursor. Everything clickable

@@ -11,7 +11,7 @@ MIT licensed. Your project owns what it builds with them.
 ## Install
 
 ```sh
-npm install @placetostand/ui
+npm install @placetostand/ui tw-animate-css
 ```
 
 You need React 19 and Tailwind CSS 4.
@@ -22,6 +22,8 @@ In your global stylesheet, after Tailwind:
 
 ```css
 @import 'tailwindcss';
+/* Enter and exit animations for dialogs, menus and popovers. */
+@import 'tw-animate-css';
 /* Let Tailwind see the classes the components use. Adjust the path to your
    node_modules from this file. */
 @source '../node_modules/@placetostand/ui';
