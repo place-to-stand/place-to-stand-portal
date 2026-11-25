@@ -227,6 +227,10 @@ export const buildBoardPath = (
     return withQuery(`${rootPath}/${BOARD_VIEW_SEGMENTS.timeLogs}`)
   }
 
+  if (view === 'feedback') {
+    return withQuery(`${rootPath}/${BOARD_VIEW_SEGMENTS.feedback}`)
+  }
+
   if (view === 'review') {
     return withQuery(`${rootPath}/${BOARD_VIEW_SEGMENTS.review}`)
   }

@@ -17,6 +17,7 @@
   --entity-lead: oklch(62% 0.175 55);
   --entity-project: oklch(54.6% 0.245 262.9);
   --entity-time-log: oklch(50% 0.134 242.7);
+  --entity-feedback: oklch(52% 0.2 335);
   --entity-company: oklch(55.3% 0.195 38.4);
   --entity-person: oklch(58.6% 0.253 17.6);
   --entity-sign-in: oklch(52% 0.22 305);
@@ -33,6 +34,7 @@
   --entity-lead: oklch(87.9% 0.169 91.6);
   --entity-project: oklch(70.7% 0.165 254.6);
   --entity-time-log: oklch(82.8% 0.111 230.3);
+  --entity-feedback: oklch(76% 0.15 335);
   --entity-company: oklch(75% 0.183 55.9);
   --entity-person: oklch(71.2% 0.194 13.4);
   --entity-sign-in: oklch(76% 0.15 305);
@@ -78,6 +80,7 @@
   --entity-lead: oklch(62% 0.175 55);
   --entity-project: oklch(54.6% 0.245 262.9);
   --entity-time-log: oklch(50% 0.134 242.7);
+  --entity-feedback: oklch(52% 0.2 335);
   --entity-company: oklch(55.3% 0.195 38.4);
   --entity-person: oklch(58.6% 0.253 17.6);
   --entity-sign-in: oklch(52% 0.22 305);
@@ -94,6 +97,7 @@
   --color-entity-lead: var(--entity-lead);
   --color-entity-project: var(--entity-project);
   --color-entity-time-log: var(--entity-time-log);
+  --color-entity-feedback: var(--entity-feedback);
   --color-entity-company: var(--entity-company);
   --color-entity-person: var(--entity-person);
   --color-entity-sign-in: var(--entity-sign-in);

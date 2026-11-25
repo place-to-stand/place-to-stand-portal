@@ -27,14 +27,16 @@ export type ProjectActionControls = {
 } | null
 
 export type ProjectsBoardTabsProps = {
-  initialTab: 'board' | 'activity' | 'review' | 'timeLogs'
+  initialTab: 'board' | 'activity' | 'review' | 'timeLogs' | 'feedback'
   boardHref: string
   activityHref: string
   reviewHref: string
   timeLogsHref: string
+  feedbackReportsHref: string
   activityDisabled: boolean
   reviewDisabled: boolean
   timeLogsDisabled: boolean
+  feedbackReportsDisabled: boolean
   feedback: string | null
   activeProject: ProjectsBoardActiveProject
   canManageTasks: boolean
@@ -73,6 +75,8 @@ export type ProjectsBoardTabsProps = {
   recentlyMovedTaskId: string | null
   /** The Time logs tab's list, rendered on the server for its route. */
   timeLogsList?: ReactNode
+  /** The Feedback tab's list and settings, rendered on the server. */
+  feedbackReportsList?: ReactNode
   /** Project members see the Tasks tab only. */
   tasksOnly?: boolean
   projectActions: ProjectActionControls
@@ -89,9 +93,11 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     activityHref,
     reviewHref,
     timeLogsHref,
+    feedbackReportsHref,
     activityDisabled,
     reviewDisabled,
     timeLogsDisabled,
+    feedbackReportsDisabled,
     feedback,
     activeProject,
     canManageTasks,
@@ -126,6 +132,7 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     isReviewActionPending,
     recentlyMovedTaskId,
     timeLogsList,
+    feedbackReportsList,
     tasksOnly = false,
     projectActions,
     onProjectStatusChange,
@@ -146,9 +153,11 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         activityHref={activityHref}
         reviewHref={reviewHref}
         timeLogsHref={timeLogsHref}
+        feedbackReportsHref={feedbackReportsHref}
         activityDisabled={activityDisabled}
         reviewDisabled={reviewDisabled}
         timeLogsDisabled={timeLogsDisabled}
+        feedbackReportsDisabled={feedbackReportsDisabled}
         tasksOnly={tasksOnly}
         projectActions={projectActions}
         activeProjectId={activeProject?.id ?? null}
@@ -204,6 +213,13 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         isActive={initialTab === 'timeLogs'}
         activeProject={activeProject}
         list={timeLogsList}
+      />
+      <TimeLogsTabContent
+        key={`feedback-${activeProject?.id ?? 'no-project'}`}
+        value='feedback'
+        isActive={initialTab === 'feedback'}
+        activeProject={activeProject}
+        list={feedbackReportsList}
       />
       <ActivityTabContent
         isActive={initialTab === 'activity'}

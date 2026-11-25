@@ -55,6 +55,10 @@ export const leadTaskHref = (leadId: string, taskId: string) =>
 export const submissionHref = (id: string, options?: ArchiveOption) =>
   `${listPath('/submissions', options)}?submission=${id}`
 
+/** A feedback report's sheet over the Feedback list (or its archive). */
+export const feedbackHref = (id: string, options?: ArchiveOption) =>
+  `${listPath('/feedback', options)}?feedback=${id}`
+
 /**
  * Rebuilds a page's query string for a server-side `redirect()`. Redirects
  * must carry the whole query across — the sheet stack and any filters live

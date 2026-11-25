@@ -22,6 +22,8 @@ interface Props {
   user: AppUser
   children: ReactNode
   unacknowledgedSubmissionsCount?: number
+  /** Feedback reports nobody has looked at yet. */
+  newFeedbackCount?: number
   /** Server-read `sidebar_state` cookie value. */
   sidebarDefaultOpen?: boolean
   /** Names sheet presence channels (`presenceRoomKey`). */
@@ -43,6 +45,7 @@ export function AppShell({
   user,
   children,
   unacknowledgedSubmissionsCount,
+  newFeedbackCount,
   sidebarDefaultOpen = true,
   presenceKey,
   brand,
@@ -50,13 +53,14 @@ export function AppShell({
   changelog,
 }: Props) {
   // Keyed by nav href so future counts (e.g. leads) reuse the same channel.
-  const navBadges = useMemo(
-    () =>
-      unacknowledgedSubmissionsCount
-        ? { '/submissions': unacknowledgedSubmissionsCount }
-        : undefined,
-    [unacknowledgedSubmissionsCount]
-  )
+  const navBadges = useMemo(() => {
+    const badges: Record<string, number> = {}
+    if (unacknowledgedSubmissionsCount) {
+      badges['/submissions'] = unacknowledgedSubmissionsCount
+    }
+    if (newFeedbackCount) badges['/feedback'] = newFeedbackCount
+    return Object.keys(badges).length > 0 ? badges : undefined
+  }, [unacknowledgedSubmissionsCount, newFeedbackCount])
 
   return (
     // Palette provider wraps the sidebar too: the search box lives there.

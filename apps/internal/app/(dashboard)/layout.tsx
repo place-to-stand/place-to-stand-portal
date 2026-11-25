@@ -8,6 +8,7 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { requirePage } from '@/lib/auth/session'
 import { brandPropsFor, getBusinessIdentity } from '@/lib/business/identity'
 import { fetchUnacknowledgedSubmissionCount } from '@/lib/data/form-submissions'
+import { fetchNewFeedbackCount } from '@/lib/data/feedback'
 import { getChangelog } from '@/lib/help/changelog'
 import { listStaffWithPhotos } from '@/lib/queries/users'
 import { presenceRoomKey } from '@/lib/sheets/presence/room-key'
@@ -33,6 +34,10 @@ export default async function DashboardLayout({
   )
     ? await fetchUnacknowledgedSubmissionCount(user)
     : 0
+  // New feedback reports (not yet looked at, not spam), admin-only too.
+  const newFeedbackCount = roleCan(user.role, 'feedback.manage')
+    ? await fetchNewFeedbackCount(user)
+    : 0
   // SSR-read collapse state so the sidebar renders in the right
   // mode on first paint (the ui/sidebar primitive writes this cookie on toggle).
   const cookieStore = await cookies()
@@ -47,6 +52,7 @@ export default async function DashboardLayout({
     <AppShell
       user={user}
       unacknowledgedSubmissionsCount={unacknowledgedSubmissionsCount}
+      newFeedbackCount={newFeedbackCount}
       sidebarDefaultOpen={sidebarDefaultOpen}
       presenceKey={presenceRoomKey()}
       brand={brandPropsFor(business)}

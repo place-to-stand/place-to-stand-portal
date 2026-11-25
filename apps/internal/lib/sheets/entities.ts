@@ -18,6 +18,7 @@ const SHEET_ENTITY_KEYS = [
   'contact',
   'invoice',
   'submission',
+  'feedback',
   'hour-block',
   'project',
   'company',
@@ -66,7 +67,7 @@ export const isValidSheetParamValue = (value: string, entity: string) =>
 /**
  * The entities whose create sheet can start from a copy of an existing
  * record. Companies and people are one-of-a-kind (a second "Acme" is a
- * mistake, not a copy), submissions arrive from the website, and a project's
+ * mistake, not a copy), submissions and feedback arrive from websites, and a project's
  * worth is its tasks, which a copy of its details wouldn't carry, so those
  * have no Duplicate.
  */
@@ -133,6 +134,11 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
   submission: {
     auxParams: [],
     claimsPathname: exactPaths('/submissions', '/submissions/archive'),
+  },
+  feedback: {
+    auxParams: [],
+    // A project's Feedback tab leaves its sheet to the host.
+    claimsPathname: exactPaths('/feedback', '/feedback/archive'),
   },
   'hour-block': {
     auxParams: [],

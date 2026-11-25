@@ -17,6 +17,7 @@ import { getTaskHome } from '@/lib/data/tasks'
 import { normalizeRawTask } from '@/lib/data/projects/normalize-task'
 import { loadTaskWithRelations } from '@/lib/queries/tasks/relations'
 import { fetchFormSubmissionById } from '@/lib/data/form-submissions'
+import { fetchFeedbackReportById } from '@/lib/data/feedback'
 import {
   fetchArchivedLeads,
   fetchLeadAssignees,
@@ -107,6 +108,15 @@ const resolveSubmissionInit: SheetInitResolver<'submission'> = async (
 
   const submission = await fetchFormSubmissionById(user, id, true)
   return { submission }
+}
+
+const resolveFeedbackInit: SheetInitResolver<'feedback'> = async (user, id) => {
+  if (id === NEW_SHEET_VALUE) {
+    throw new NotFoundError('Feedback arrives from the widget, not the portal')
+  }
+
+  const report = await fetchFeedbackReportById(user, id)
+  return { report }
 }
 
 const resolveContactInit: SheetInitResolver<'contact'> = async (user, id) => {
@@ -323,6 +333,7 @@ const RESOLVERS: {
   task: resolveTaskInit,
   client: resolveClientInit,
   submission: resolveSubmissionInit,
+  feedback: resolveFeedbackInit,
   contact: resolveContactInit,
   'hour-block': resolveHourBlockInit,
   invoice: resolveInvoiceInit,

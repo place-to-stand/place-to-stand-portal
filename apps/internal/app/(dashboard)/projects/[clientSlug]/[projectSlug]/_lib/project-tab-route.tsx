@@ -22,6 +22,7 @@ import type { ClientPickerRow } from '@/lib/projects/sheet/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-state'
 import { roleCan } from '@/lib/auth/capabilities'
 
+import { ProjectFeedbackPanel } from './project-feedback-panel'
 import { ProjectTimeLogsList } from './project-time-logs-list'
 
 export const projectTabMetadata: Metadata = {
@@ -34,6 +35,7 @@ const TABS = {
   review: { segment: 'review' },
   activity: { segment: 'activity' },
   timeLogs: { segment: 'time-logs' },
+  feedback: { segment: 'feedback' },
 } as const
 
 type ProjectTab = keyof typeof TABS
@@ -160,6 +162,16 @@ export async function renderProjectTabRoute({
           <ProjectTimeLogsList
             projectId={project.id}
             basePath={`/projects/${canonicalClientSlug}/${project.slug}/${TABS.timeLogs.segment}`}
+            searchParams={query}
+          />
+        ) : undefined
+      }
+      feedbackReportsList={
+        tab === 'feedback' ? (
+          <ProjectFeedbackPanel
+            user={user}
+            projectId={project.id}
+            basePath={`/projects/${canonicalClientSlug}/${project.slug}/${TABS.feedback.segment}`}
             searchParams={query}
           />
         ) : undefined

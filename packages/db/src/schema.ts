@@ -431,6 +431,12 @@ export const projects = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
     slug: text(),
     type: projectType('type').default('CLIENT').notNull(),
+    // Feedback widget (see feedback_reports). Off until an admin turns it on
+    // for the project; the project id is the widget's key. Reports are only
+    // taken from these websites (origins like `https://shop.example.com`)
+    // plus the linked Vercel project's production domain.
+    feedbackEnabled: boolean('feedback_enabled').default(false).notNull(),
+    feedbackOrigins: text('feedback_origins').array().default([]).notNull(),
   },
   table => [
     index('idx_projects_company')
@@ -2398,6 +2404,104 @@ export const formSubmissions = pgTable(
     index('idx_form_submissions_contact_email')
       .using('btree', table.contactEmail.asc().nullsLast().op('text_ops'))
       .where(sql`(deleted_at IS NULL AND contact_email IS NOT NULL)`),
+  ]
+)
+
+export const feedbackType = pgEnum('feedback_type', [
+  'bug',
+  'request',
+  'question',
+])
+
+/**
+ * Reports sent from the feedback widget on a project's website or app. They
+ * land in the Feedback triage list, never straight on the project's board:
+ * someone reads each one and turns it into a task (`task_id`) or archives it.
+ *
+ * The intake endpoint (`/api/feedback`) is public, so every row is checked
+ * for spam like the contact form (`spam_reason`, see
+ * apps/internal/lib/feedback/spam.ts) and flagged, never dropped.
+ */
+export const feedbackReports = pgTable(
+  'feedback_reports',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    projectId: uuid('project_id').notNull(),
+    type: feedbackType().notNull(),
+    message: text().notNull(),
+    // Where the reporter was: the page's address and title.
+    pageUrl: text('page_url'),
+    pageTitle: text('page_title'),
+    // Path in the task-attachments bucket (`feedback/<id>.<ext>`).
+    screenshotPath: text('screenshot_path'),
+    screenshotMimeType: text('screenshot_mime_type'),
+    screenshotSize: integer('screenshot_size'),
+    // A signed-in portal user, when the report came from one of our portals.
+    // Otherwise the name and email the reporter typed, if any.
+    reporterUserId: uuid('reporter_user_id'),
+    reporterName: text('reporter_name'),
+    reporterEmail: text('reporter_email'),
+    // The website the report was sent from (the request's Origin).
+    origin: text(),
+    userAgent: text('user_agent'),
+    viewport: text(),
+    language: text(),
+    timezone: text(),
+    posthogSessionId: text('posthog_session_id'),
+    posthogReplayUrl: text('posthog_replay_url'),
+    // NULL = not spam; otherwise why (`honeypot`, `too_fast`, `sales_pitch`,
+    // `marked`).
+    spamReason: text('spam_reason'),
+    // The task this report became.
+    taskId: uuid('task_id'),
+    // NULL = new: nobody has looked at it yet.
+    acknowledgedAt: timestamp('acknowledged_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    acknowledgedBy: uuid('acknowledged_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`now()`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`now()`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_feedback_reports_created_at')
+      .using('btree', table.createdAt.desc().nullsLast())
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_feedback_reports_project')
+      .using(
+        'btree',
+        table.projectId.asc().nullsLast().op('uuid_ops'),
+        table.createdAt.desc().nullsLast()
+      )
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_feedback_reports_task')
+      .using('btree', table.taskId.asc().nullsLast().op('uuid_ops'))
+      .where(sql`(task_id IS NOT NULL)`),
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'feedback_reports_project_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.taskId],
+      foreignColumns: [tasks.id],
+      name: 'feedback_reports_task_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.reporterUserId],
+      foreignColumns: [users.id],
+      name: 'feedback_reports_reporter_user_id_fkey',
+    }).onDelete('set null'),
+    foreignKey({
+      columns: [table.acknowledgedBy],
+      foreignColumns: [users.id],
+      name: 'feedback_reports_acknowledged_by_fkey',
+    }).onDelete('set null'),
   ]
 )
 

@@ -29,6 +29,7 @@ export const BOARD_VIEW_SEGMENTS = {
   activity: 'activity',
   review: 'review',
   timeLogs: 'time-logs',
+  feedback: 'feedback',
 } as const
 
 export type BoardView = keyof typeof BOARD_VIEW_SEGMENTS

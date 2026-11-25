@@ -20,6 +20,9 @@ const PUBLIC_PATHS = new Set([
   '/api/integrations/contact-submissions',
   '/api/integrations/subscribe-submissions',
   '/api/integrations/stripe',
+  // Feedback widget intake: public by design; the route checks the project,
+  // the website it came from, rate limits and spam itself.
+  '/api/feedback',
   '/api/cron/',
   '/api/public/',
   // Machine surface for the `pts` CLI. Authenticates by bearer token rather

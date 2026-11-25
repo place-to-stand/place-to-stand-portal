@@ -190,6 +190,76 @@
   },
   {
     "type": "action",
+    "name": "saveProjectFeedbackSettings",
+    "file": "apps/internal/app/(dashboard)/feedback/actions/project-settings.ts",
+    "kind": "capability",
+    "capability": "feedback.manage"
+  },
+  {
+    "type": "action",
+    "name": "acknowledgeFeedback",
+    "file": "apps/internal/app/(dashboard)/feedback/actions/report-actions.ts",
+    "kind": "capability",
+    "capability": "feedback.manage"
+  },
+  {
+    "type": "action",
+    "name": "unacknowledgeFeedback",
+    "file": "apps/internal/app/(dashboard)/feedback/actions/report-actions.ts",
+    "kind": "capability",
+    "capability": "feedback.manage"
+  },
+  {
+    "type": "action",
+    "name": "markFeedbackSpam",
+    "file": "apps/internal/app/(dashboard)/feedback/actions/report-actions.ts",
+    "kind": "capability",
+    "capability": "feedback.manage"
+  },
+  {
+    "type": "action",
+    "name": "markFeedbackNotSpam",
+    "file": "apps/internal/app/(dashboard)/feedback/actions/report-actions.ts",
+    "kind": "capability",
+    "capability": "feedback.manage"
+  },
+  {
+    "type": "action",
+    "name": "archiveFeedback",
+    "file": "apps/internal/app/(dashboard)/feedback/actions/report-actions.ts",
+    "kind": "capability",
+    "capability": "feedback.manage"
+  },
+  {
+    "type": "action",
+    "name": "restoreFeedback",
+    "file": "apps/internal/app/(dashboard)/feedback/actions/report-actions.ts",
+    "kind": "capability",
+    "capability": "feedback.manage"
+  },
+  {
+    "type": "action",
+    "name": "turnFeedbackIntoTask",
+    "file": "apps/internal/app/(dashboard)/feedback/actions/turn-into-task.ts",
+    "kind": "capability",
+    "capability": "feedback.manage"
+  },
+  {
+    "type": "page",
+    "name": "/feedback/archive",
+    "file": "apps/internal/app/(dashboard)/feedback/archive/page.tsx",
+    "kind": "capability",
+    "capability": "feedback.manage"
+  },
+  {
+    "type": "page",
+    "name": "/feedback",
+    "file": "apps/internal/app/(dashboard)/feedback/page.tsx",
+    "kind": "capability",
+    "capability": "feedback.manage"
+  },
+  {
+    "type": "action",
     "name": "softDeleteHourBlock",
     "file": "apps/internal/app/(dashboard)/hour-blocks/actions/archive-hour-block.ts",
     "kind": "admin",
@@ -481,6 +551,13 @@
     "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/activity/page.tsx",
     "kind": "capability",
     "capability": "projects.admin_tabs"
+  },
+  {
+    "type": "page",
+    "name": "/projects/[clientSlug]/[projectSlug]/feedback",
+    "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/feedback/page.tsx",
+    "kind": "capability",
+    "capability": "feedback.manage"
   },
   {
     "type": "page",
@@ -1191,6 +1268,13 @@
   },
   {
     "type": "route",
+    "name": "POST /api/feedback",
+    "file": "apps/internal/app/api/feedback/route.ts",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "route",
     "name": "GET /api/github/repos/[owner]/[repo]/branches",
     "file": "apps/internal/app/api/github/repos/[owner]/[repo]/branches/route.ts",
     "kind": "capability",
@@ -1559,6 +1643,13 @@
     "file": "apps/internal/app/api/sheets/init/route.ts",
     "kind": "capability",
     "capability": "portal.sign_in"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/storage/feedback-screenshot/[reportId]",
+    "file": "apps/internal/app/api/storage/feedback-screenshot/[reportId]/route.ts",
+    "kind": "capability",
+    "capability": "feedback.manage"
   },
   {
     "type": "route",

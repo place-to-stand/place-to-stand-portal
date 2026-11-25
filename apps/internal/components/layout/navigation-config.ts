@@ -100,6 +100,13 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: ENTITY_ICONS.project,
       },
       {
+        href: '/feedback',
+        capability: 'feedback.manage',
+        label: 'Feedback',
+        icon: ENTITY_ICONS.feedback,
+        matchHrefs: ['/feedback'],
+      },
+      {
         href: '/time-logs',
         capability: 'billing.manage',
         label: 'Time logs',

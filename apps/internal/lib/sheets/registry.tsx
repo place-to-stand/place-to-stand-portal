@@ -50,6 +50,13 @@ const WRAPPERS: Record<SheetEntityKey, ComponentType<SheetWrapperProps>> = {
       ),
     { ssr: false }
   ),
+  feedback: dynamic(
+    () =>
+      import('./wrappers/feedback-sheet-wrapper').then(
+        module => module.FeedbackSheetWrapper
+      ),
+    { ssr: false }
+  ),
   'hour-block': dynamic(
     () =>
       import('./wrappers/hour-block-sheet-wrapper').then(

@@ -23,9 +23,11 @@ const NO_PROJECTS_MESSAGE = 'No projects assigned yet.'
 type BaseProps = Omit<UseProjectsBoardCoreStateArgs, 'currentView'>
 
 export type ProjectsBoardProps = BaseProps & {
-  initialTab?: 'board' | 'activity' | 'review' | 'timeLogs'
+  initialTab?: 'board' | 'activity' | 'review' | 'timeLogs' | 'feedback'
   /** The Time logs tab's list, rendered on the server for its route. */
   timeLogsList?: ReactNode
+  /** The Feedback tab's list and settings, rendered on the server. */
+  feedbackReportsList?: ReactNode
 }
 
 export type ProjectsBoardHeaderProps = {
@@ -51,7 +53,10 @@ export function useProjectsBoardViewModel({
   initialTab = 'board',
   ...props
 }: ProjectsBoardProps): ProjectsBoardViewModel {
-  const currentBoardView = initialTab === 'timeLogs' ? 'board' : initialTab
+  const currentBoardView =
+    initialTab === 'timeLogs' || initialTab === 'feedback'
+      ? 'board'
+      : initialTab
   const { sensors } = useProjectsBoardSensors()
   const {
     boardState,
@@ -156,7 +161,10 @@ export function useProjectsBoardViewModel({
     drop: {
       recentlyMovedTaskId: boardState.recentlyMovedTaskId,
     },
-    timeLogs: { timeLogsList: props.timeLogsList },
+    timeLogs: {
+      timeLogsList: props.timeLogsList,
+      feedbackReportsList: props.feedbackReportsList,
+    },
   })
 
   const dialogs = buildProjectsBoardDialogs({

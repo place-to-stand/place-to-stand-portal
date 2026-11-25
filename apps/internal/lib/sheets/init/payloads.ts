@@ -15,6 +15,7 @@ import type {
   TaskWithRelations,
 } from '@/lib/types'
 import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
+import type { FeedbackReportRecord } from '@/lib/feedback/types'
 import type {
   InvoiceClient,
   InvoiceWithLineItems,
@@ -42,6 +43,7 @@ export type SheetInitPayloads = {
    */
   client: { client: ClientWithClosers | null }
   submission: { submission: FormSubmissionRecord }
+  feedback: { report: FeedbackReportRecord }
   /** The contact sheet self-fetches its client links; it only needs the row. */
   contact: { contact: ContactSheetInput | null }
   'hour-block': {

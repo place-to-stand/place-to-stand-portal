@@ -23,11 +23,18 @@ import {
   Inbox,
   LayoutTemplate,
   ListTodo,
+  MessageSquareMore,
   Receipt,
   type LucideIcon,
 } from 'lucide-react'
 /* oxlint-enable no-restricted-imports -- closes the registry-owned icon import above */
 
+import type {
+  AccentEntity,
+  EntityAccent,
+  EntityDefinition,
+  EntityGroup,
+} from './entity-accents-types'
 import { withStateMark } from './entity-state-icon'
 
 /*
@@ -50,69 +57,13 @@ export const STATE_DOT_CLASS = {
   user: 'bg-entity-sign-in',
 } as const
 
-export type AccentEntity =
-  | 'lead'
-  | 'company'
-  | 'contact'
-  | 'user'
-  | 'project'
-  | 'task'
-  | 'timeLog'
-  | 'client'
-  | 'invoice'
-  | 'hourBlock'
-  | 'submission'
-  | 'template'
-
-export type EntityGroup = 'sales' | 'work' | 'money' | 'admin'
+export type { AccentEntity, EntityGroup } from './entity-accents-types'
 
 export const ENTITY_GROUP_LABELS: Record<EntityGroup, string> = {
   sales: 'Sales',
   work: 'Work',
   money: 'Money',
   admin: 'Admin',
-}
-
-type EntityAccent = {
-  /** 2px bottom border used by sheet form headers. */
-  sheetHeader: string
-  /** Interactive card: tinted border at rest, stronger border + tint on hover. */
-  card: string
-  /** Static card (drag previews, non-interactive): tinted border only. */
-  cardStatic: string
-  /** The entity's icon tinted with its accent (list cells). */
-  icon: string
-  /** A soft fill behind the icon or a row. */
-  tint: string
-  /** A quiet band behind a group row (a list's client header): half the tint. */
-  band: string
-  /** A filled badge (activity verbs): soft fill, accent text. */
-  badge: string
-}
-
-type EntityDefinition = {
-  /** UI name. The person record is a "Person", a user is a "Sign-in". */
-  label: string
-  /**
-   * A state of another entity (client of company, sign-in of person): its
-   * icon is that entity's icon with a dot in this entity's colour, and the
-   * icon keeps that entity's colour.
-   */
-  stateOf?: AccentEntity
-  group: EntityGroup
-  icon: LucideIcon
-  /** The icon's lucide name, for docs and the design system page. */
-  iconName: string
-  /**
-   * A glyph this entity used to have, still banned outside the registry so
-   * it can't come back as a second icon for the same record.
-   */
-  retiredIcon?: string
-  /** Its colour token: `--entity-<token>` in theme.css. */
-  token: string
-  /** A sample record name for the design system page. */
-  example: string
-  accent: EntityAccent
 }
 
 export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
@@ -235,6 +186,23 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
       tint: 'bg-entity-time-log/10',
       band: 'bg-entity-time-log/5',
       badge: 'border-transparent bg-entity-time-log/15 text-entity-time-log',
+    },
+  },
+  feedback: {
+    label: 'Feedback',
+    group: 'work',
+    icon: MessageSquareMore,
+    iconName: 'MessageSquareMore',
+    token: 'feedback',
+    example: 'Bug: cart total is wrong',
+    accent: {
+      sheetHeader: 'border-b-2 border-b-entity-feedback/60',
+      card: 'border-entity-feedback/35 hover:border-entity-feedback/60 hover:bg-entity-feedback/5 hover:shadow-md',
+      cardStatic: 'border-entity-feedback/35',
+      icon: 'text-entity-feedback',
+      tint: 'bg-entity-feedback/10',
+      band: 'bg-entity-feedback/5',
+      badge: 'border-transparent bg-entity-feedback/15 text-entity-feedback',
     },
   },
   client: {

@@ -22,14 +22,16 @@ import { cn } from '@/lib/utils'
 import type { ProjectActionControls } from './projects-board-tabs'
 
 type ProjectsBoardTabsHeaderProps = {
-  initialTab: 'board' | 'activity' | 'review' | 'timeLogs'
+  initialTab: 'board' | 'activity' | 'review' | 'timeLogs' | 'feedback'
   boardHref: string
   activityHref: string
   reviewHref: string
   timeLogsHref: string
+  feedbackReportsHref: string
   activityDisabled: boolean
   reviewDisabled: boolean
   timeLogsDisabled: boolean
+  feedbackReportsDisabled: boolean
   /** Project members see the Tasks tab only. */
   tasksOnly?: boolean
   projectActions: ProjectActionControls
@@ -48,9 +50,11 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
     activityHref,
     reviewHref,
     timeLogsHref,
+    feedbackReportsHref,
     activityDisabled,
     reviewDisabled,
     timeLogsDisabled,
+    feedbackReportsDisabled,
     tasksOnly = false,
     projectActions,
     activeProjectId,
@@ -75,6 +79,12 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
             label: 'Time logs',
             href: timeLogsHref,
             disabled: timeLogsDisabled,
+          },
+          {
+            value: 'feedback',
+            label: 'Feedback',
+            href: feedbackReportsHref,
+            disabled: feedbackReportsDisabled,
           },
           {
             value: 'activity',
@@ -162,6 +172,33 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
                 }
               >
                 Time logs
+              </Link>
+            </TabsTrigger>
+            <TabsTrigger
+              value='feedback'
+              className={TOOLBAR_TAB_CLASS}
+              asChild
+              disabled={feedbackReportsDisabled}
+            >
+              <Link
+                href={feedbackReportsHref}
+                prefetch={false}
+                aria-disabled={feedbackReportsDisabled}
+                tabIndex={feedbackReportsDisabled ? -1 : undefined}
+                onClick={event => {
+                  if (feedbackReportsDisabled) {
+                    event.preventDefault()
+                    return
+                  }
+                  startBoardTabInteraction(initialTab, 'feedback')
+                }}
+                className={
+                  feedbackReportsDisabled
+                    ? 'pointer-events-none opacity-50'
+                    : undefined
+                }
+              >
+                Feedback
               </Link>
             </TabsTrigger>
             <TabsTrigger
