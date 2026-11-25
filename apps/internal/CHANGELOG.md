@@ -13,7 +13,7 @@ here, unless its description says `Changelog: none`.
 
 ## Week of November 23, 2026
 
-- **Submissions:** contact form messages that look like spam (sales pitches, bots) get a Spam badge, send no emails and don't count as unacknowledged. Use Not spam or Mark as spam on the submission, or the new Spam filter.
+- **Submissions:** contact form messages that look like spam (sales pitches, bots) get a Spam badge, send no emails and don't count as unacknowledged. Not spam on the submission sends the emails it missed; Mark as spam and the new Spam filter are there too.
 
 ## Week of November 16, 2026
 

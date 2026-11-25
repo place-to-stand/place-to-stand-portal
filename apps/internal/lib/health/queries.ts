@@ -30,7 +30,9 @@ const deliverable = and(
   isNotNull(formSubmissions.deliveryRequestedAt),
   eq(formSubmissions.status, 'captured'),
   isNotNull(formSubmissions.contactEmail),
-  isNull(formSubmissions.destroyedAt)
+  isNull(formSubmissions.destroyedAt),
+  // Spam is never sent, so it is not waiting in the queue.
+  isNull(formSubmissions.spamReason)
 )
 
 const age = sql`now() - ${formSubmissions.deliveryRequestedAt}`

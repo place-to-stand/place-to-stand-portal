@@ -51,6 +51,7 @@ import {
 } from '@/lib/form-submissions/constants'
 import {
   isContactFilterValue,
+  isSpamFilterValue,
   isSubmissionSortValue,
 } from '@/lib/form-submissions/filters'
 import { describeSubmissionOutcome } from '@/lib/form-submissions/outcome'
@@ -240,6 +241,7 @@ export function SubmissionsTable({
     isFormSubmissionStatus(searchParams.get('status') ?? undefined) ||
     // oxlint-disable-next-line pts/sheets -- the has-contact filter (yes/no), not a person sheet
     isContactFilterValue(searchParams.get('contact') ?? '') ||
+    isSpamFilterValue(searchParams.get('spam') ?? '') ||
     (mode === 'active' && searchParams.get('unacknowledged') === '1')
 
   const emptyMessage = hasActiveFilter

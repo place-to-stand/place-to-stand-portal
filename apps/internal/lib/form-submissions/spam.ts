@@ -57,80 +57,53 @@ export const botSignalsSchema = z.object({
 })
 export type BotSignals = z.infer<typeof botSignalsSchema>
 
-type PitchSignal = { pattern: RegExp; weight: 1 | 2 }
-
 /**
- * Wording that people selling to us use and people hiring us don't.
+ * Wording that people selling to us use and people hiring us almost never
+ * do. A message needs TWO different ones to flag: one alone is too easy for
+ * a real enquiry to hit ("our budget is $5,000 for the package", "reply STOP
+ * to opt out" in an app brief, an agency that offers SEO services and needs
+ * a developer). Cold-email politeness ("I'm reaching out", "would you be
+ * open to a call") is not on the list at all: real clients write it too.
  *
- * Weight 2 is wording aimed at selling to us (lead lists, "reply stop",
- * a priced package). Weight 1 is cold-email wording a real client could
- * also write ("I'm reaching out", "we help clinics").
+ * Patterns run on lowercased text with line breaks kept, so a match never
+ * spans two lines of a pasted brief.
  */
-const PITCH_SIGNALS: PitchSignal[] = [
-  // "Would this list be relevant to your team?"
-  {
-    pattern:
-      /\b(be|is this|sound) (of )?(relevant|of interest|interesting|useful|helpful|valuable) (to|for) (you and )?your (team|business|company|agency|organization)\b/,
-    weight: 2,
-  },
-  // Lead-list sellers.
-  {
-    pattern:
-      /\bsample (records|data|lists?|contacts)\b|\b(happy|glad) to (share|provide|send) (you )?(a few |some )?(examples|samples)\b/,
-    weight: 2,
-  },
+const PITCH_SIGNALS: RegExp[] = [
+  // "Would information on companies using X be relevant to your team?"
+  // Data offered TO us. A client asking "would this be of interest to your
+  // team?" about their own project doesn't match: it needs data or a list.
+  /\b(information|data|lists?|records|contacts) (on|of|about) [^.?\n]{0,60}\b(be|is) (relevant|useful|of interest|valuable) (to|for) your\b/,
+  // Lead-list sellers: "sample records", "connect with companies using X".
+  /\bsample (records|contacts|leads)\b|\b(connect|reach) (you )?with (companies|businesses|decision[- ]makers)\b|\b(contact|email|lead) (lists?|database)\b/,
+  // "Happy to provide a few examples." (A client says "examples OF sites
+  // we like", so a trailing "of" doesn't count.)
+  /\b(happy|glad) to (share|provide|send) (you )?(a few |some )?(examples|samples)\b(?! of)/,
   // "We also offer SEO and marketing services".
-  {
-    pattern:
-      /\b(we|our team) (also )?(offer|provide)s? [^.\n]{0,60}\b(seo|marketing|lead generation|link building|outsourcing|staffing|billing|credentialing|bookkeeping|virtual assistant)\b[^.\n]{0,30}\bservices\b/,
-    weight: 2,
-  },
-  // A priced product: "the $49 package", "our $199 report".
-  {
-    pattern: /\$\s?\d[\d,]*[^\n]{0,40}\b(package|report|bundle)\b/,
-    weight: 2,
-  },
-  // Opt-out lines: "reply STOP", "email us with stop", "not at this time".
-  {
-    pattern:
-      /\b(reply|respond|email [^\n]{0,40}) (with )?["“']?(stop|unsubscribe)\b|["“']not (interested|at this time)["”']|\badvertisement\b/,
-    weight: 2,
-  },
-  { pattern: /\b(first page|top) of google\b/, weight: 2 },
-
-  { pattern: /\b(i'?m|i am) reaching out\b|\breaching out to\b/, weight: 1 },
-  {
-    pattern:
-      /\bi hope (you'?re|you are|this (email|message|note) finds you) (doing )?well\b/,
-    weight: 1,
-  },
-  {
-    pattern:
-      /\bwe help [a-z ]{0,30}(businesses|companies|brands|agencies|organizations|providers|practices|teams)\b/,
-    weight: 1,
-  },
-  { pattern: /\b(companies|businesses) (using|that use)\b/, weight: 1 },
-  { pattern: /\bwould you be (open|interested)\b/, weight: 1 },
-  { pattern: /\b(hi|hello) dear\b/, weight: 1 },
-  {
-    pattern:
-      /\bour [^.\n]{0,60}\b(report|platform|software|product|tool) (provides|helps|offers)\b/,
-    weight: 1,
-  },
+  /\b(we|our team) (also )?(offer|provide)s? [^.\n]{0,60}\b(seo|marketing|lead generation|link building|outsourcing|staffing|billing|credentialing|bookkeeping|virtual assistant)\b[^.\n]{0,30}\bservices\b/,
+  // A cheap product for sale: "the $49 package". Under $1,000 only, so a
+  // client's budget ("$5,000 for the website package") never matches.
+  /(?<!budget[^\n]{0,20})\$\s?\d{1,3}(\.\d\d)?(?![\d,])\b[^\n]{0,40}\b(package|report|bundle)\b/,
+  // Marketing-mail footers: "Advertisement.", "To stop marketing from…".
+  /(^|\n)advertisement\b|\bto stop (marketing|receiving|these)\b|\bunsubscribe from (these|our|future)\b/,
+  // Canned reply prompts: 'A quick reply with "Yes, interested" or "Not at
+  // this time" works'.
+  /["“']yes,? (i'?m |we'?re )?interested["”']|["“']not (interested|at this time|right now)["”']/,
+  /\b(first page|top) of google\b/,
 ]
 
-/** At least this much in total, and at least one weight-2 signal. */
-const PITCH_THRESHOLD = 3
+/** How many different signals a message needs before it counts. */
+const PITCH_THRESHOLD = 2
 
 function normalize(text: string): string {
-  return text.toLowerCase().replace(/[’‘]/g, "'").replace(/\s+/g, ' ').trim()
+  return text
+    .toLowerCase()
+    .replace(/[’‘]/g, "'")
+    .replace(/[ \t\r\f\v]+/g, ' ')
+    .replace(/ ?\n ?/g, '\n')
+    .trim()
 }
 
-/**
- * True when the subject and message read like a pitch. Needs a weight-2
- * signal, so cold-email politeness on its own ("I hope you're well, I'm
- * reaching out, we help clinics...") never flags a real enquiry.
- */
+/** True when the subject and message read like a pitch (see PITCH_SIGNALS). */
 export function looksLikeSalesPitch({
   subject,
   message,
@@ -141,16 +114,12 @@ export function looksLikeSalesPitch({
   const text = normalize(`${subject ?? ''}\n${message ?? ''}`)
   if (!text) return false
 
-  let score = 0
-  let strong = false
-  for (const { pattern, weight } of PITCH_SIGNALS) {
-    if (pattern.test(text)) {
-      score += weight
-      if (weight === 2) strong = true
-    }
+  let hits = 0
+  for (const pattern of PITCH_SIGNALS) {
+    if (pattern.test(text)) hits += 1
+    if (hits >= PITCH_THRESHOLD) return true
   }
-
-  return strong && score >= PITCH_THRESHOLD
+  return false
 }
 
 /** The reason to store on a new contact submission, or null for none. */

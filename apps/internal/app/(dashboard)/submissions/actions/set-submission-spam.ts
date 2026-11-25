@@ -9,6 +9,7 @@ import {
   submissionMarkedNotSpamEvent,
   submissionMarkedSpamEvent,
 } from '@/lib/activity/events'
+import { deliverSubmissionEmails } from '@/lib/form-submissions/delivery/deliver'
 import {
   getFormSubmissionById,
   setFormSubmissionSpam,
@@ -72,6 +73,20 @@ async function setSpam(
       targetCompanyId: null,
       metadata: event.metadata,
     })
+
+    // A rescued lead gets the team notification and the visitor's
+    // confirmation it missed. Best effort: the retry sweep picks up a
+    // failure, and the flag is already cleared either way.
+    if (!spam && updated.deliveryRequestedAt) {
+      try {
+        await deliverSubmissionEmails(updated.id)
+      } catch (error) {
+        console.error('Emails after Not spam failed; the sweep will retry', {
+          id: updated.id,
+          error,
+        })
+      }
+    }
   }
 
   // Spam leaves the unacknowledged count; "Not spam" puts it back.
@@ -87,7 +102,10 @@ export async function markSubmissionSpam(
   return setSpam(input, true)
 }
 
-/** Clears the flag and re-flags the row as unacknowledged. Sends no email. */
+/**
+ * Clears the flag, re-flags the row as unacknowledged and sends the emails it
+ * missed (when it is under three days old).
+ */
 export async function markSubmissionNotSpam(
   input: SubmissionActionInput
 ): Promise<ActionResult> {

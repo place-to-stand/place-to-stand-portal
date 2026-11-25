@@ -23,6 +23,7 @@ import {
   ATTRIBUTION_CHANNEL_LABELS,
   describeAttribution,
 } from '@/lib/form-submissions/attribution'
+import { RETRY_MAX_AGE_HOURS } from '@/lib/form-submissions/delivery/constants'
 import { createSearchPattern } from '@/lib/pagination/cursor'
 import { sortRows } from '@/lib/table/sort-rows'
 import type { ParsedSort } from '@/lib/pagination/sort'
@@ -289,6 +290,12 @@ export async function upsertFormSubmission(
         timezone: sql`COALESCE(excluded.timezone, ${formSubmissions.timezone})`,
         language: sql`COALESCE(excluded.language, ${formSubmissions.language})`,
         userAgent: sql`COALESCE(excluded.user_agent, ${formSubmissions.userAgent})`,
+
+        // The latest push decides. Only a contact submission carries a
+        // verdict, and a replay of one is the visitor resending it (often
+        // edited), so the flag follows the message that is now stored. The
+        // email claim refuses a flagged row, so the two always agree.
+        spamReason: sql`excluded.spam_reason`,
 
         // First request wins and is never cleared: a later beacon without
         // `deliver` must not cancel an email the retry sweep still owes.
@@ -615,8 +622,10 @@ export async function getFormSubmissionById(
  * Direction-guarded like `setFormSubmissionArchived`: marking only touches a
  * row that isn't spam, clearing only one that is, so double-clicks change
  * state once. Clearing also clears acknowledgement, so a real lead the
- * checks caught flags as unacknowledged like any new submission. Returns the
- * updated row, or null when nothing changed.
+ * checks caught flags as unacknowledged like any new submission, and asks
+ * for the emails it never got (contact rows still inside the retry window
+ * only: a notification days late is not worth sending, the same rule as the
+ * retry sweep). Returns the updated row, or null when nothing changed.
  */
 export async function setFormSubmissionSpam(id: string, spam: boolean) {
   const [row] = await db
@@ -631,6 +640,7 @@ export async function setFormSubmissionSpam(id: string, spam: boolean) {
             spamReason: null,
             acknowledgedAt: null,
             acknowledgedBy: null,
+            deliveryRequestedAt: sql`COALESCE(${formSubmissions.deliveryRequestedAt}, CASE WHEN ${formSubmissions.kind} = 'contact' AND ${formSubmissions.createdAt} > timezone('utc'::text, now()) - make_interval(hours => ${RETRY_MAX_AGE_HOURS}) THEN timezone('utc'::text, now()) END)`,
             updatedAt: sql`timezone('utc'::text, now())`,
           }
     )

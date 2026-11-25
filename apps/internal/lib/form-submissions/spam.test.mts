@@ -38,7 +38,7 @@ We help healthcare providers streamline their paperwork.
 We also offer website development and SEO/marketing services to help strengthen your presence.
 
 A quick reply with “Yes, interested” or “Not at this time” works perfectly.`,
-  seo: `Hello dear, I noticed your website is not on the first page of Google. Would you be interested in a free audit?`,
+  seo: `Hello dear, I noticed your website is not on the first page of Google. We offer SEO and link building services at low prices.`,
 }
 
 // Made-up messages shaped like real enquiries, including cold-email
@@ -80,7 +80,8 @@ test('the subject counts too', () => {
   assert.equal(
     looksLikeSalesPitch({
       subject: 'Report offer: the $49 package',
-      message: 'Our Example report provides a checklist for your team.',
+      message:
+        'Our Example report provides a checklist for your team.\n\nAdvertisement. To stop marketing from us, reply stop.',
     }),
     true
   )

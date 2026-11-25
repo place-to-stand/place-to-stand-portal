@@ -1,5 +1,6 @@
 'use server'
 
+import { submissionWarrantsAttention } from '@/lib/form-submissions/constants'
 import { z } from 'zod'
 
 import { requirePage } from '@/lib/auth/session'
@@ -59,7 +60,10 @@ export async function bulkAcknowledgeSubmissions(input: {
   return runBulk(resolved.ids, async id => {
     const row = await getFormSubmissionById(id)
     if (!row) return { error: 'Submission not found.' }
-    if (row.acknowledgedAt !== null) return {}
+    // Spam and unfinished audits have nothing to acknowledge.
+    if (row.acknowledgedAt !== null || !submissionWarrantsAttention(row)) {
+      return {}
+    }
     return acknowledgeSubmission({
       id,
       expectedLastActivityAt: versions[id] ?? row.lastActivityAt,
