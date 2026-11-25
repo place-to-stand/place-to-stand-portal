@@ -82,7 +82,7 @@ lockfile; an admin merges it past the checks.
 1. Make it publishable: no `"private": true`, a `description`, `license`,
    `repository` (with `directory`), React as a peer dependency, and exports
    that all point into `src/`.
-2. Add a `tsconfig.build.json` like `packages/ui`'s, a `build` script running
+2. Add a `tsconfig.build.json` like `packages/ui`'s, a `build:package` script (not `build`, so app builds skip it) running
    `node ../../scripts/build-package.mjs`, and the `prepublishOnly` guard.
 3. Add its folder to `PUBLISHED` in `scripts/publish-packages.mjs`.
 4. Add a README written for someone outside this repo.
