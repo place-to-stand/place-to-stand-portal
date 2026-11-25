@@ -2,7 +2,7 @@
 
 import { Fragment, useSyncExternalStore } from 'react'
 
-import { Kbd } from '@pts/ui/kbd'
+import { Kbd } from '@placetostand/ui/kbd'
 
 import { detectMac, formatShortcutKeys } from '@/lib/keyboard/format'
 import type { Shortcut } from '@/lib/keyboard/shortcuts'

@@ -8,8 +8,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@pts/ui/dialog'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+} from '@placetostand/ui/dialog'
+import { ConfirmDialog } from '@placetostand/ui/confirm-dialog'
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { ProjectTimeLogForm } from './project-time-log-form'
 import { InfoPanelDivider } from '@/components/ui/info-panel'

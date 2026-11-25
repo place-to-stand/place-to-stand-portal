@@ -6,7 +6,7 @@ import { connection } from 'next/server'
 import { readBusinessIdentity, type BusinessIdentity } from '@pts/db/business'
 import { emailBrandFor } from '@pts/email'
 import { invoiceIssuerFor } from '@pts/pdf'
-import { setCompanyTimeZone } from '@pts/ui/dates'
+import { setCompanyTimeZone } from '@placetostand/ui/dates'
 
 import { db } from '@/lib/db'
 import { getEnv } from '@/lib/env.server'

@@ -12,7 +12,7 @@ import {
   Sun,
 } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@placetostand/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +21,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@pts/ui/dropdown-menu'
+} from '@placetostand/ui/dropdown-menu'
 
 import { cn } from '@/lib/utils'
 import type { AppUser } from '@/lib/auth/session'

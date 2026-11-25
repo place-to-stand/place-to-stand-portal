@@ -6,9 +6,9 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, Trash2, TriangleAlert } from 'lucide-react'
 
-import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
-import { Button } from '@pts/ui/button'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { Alert, AlertContent, AlertDescription } from '@placetostand/ui/alert'
+import { Button } from '@placetostand/ui/button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import {
   FormControl,
   FormField,
@@ -17,9 +17,9 @@ import {
   FormMessage,
   FIELD_STACK_CLASS,
 } from '@/components/ui/form'
-import { Input } from '@pts/ui/input'
-import { Label } from '@pts/ui/label'
-import { formatCurrency } from '@pts/ui/numbers'
+import { Input } from '@placetostand/ui/input'
+import { Label } from '@placetostand/ui/label'
+import { formatCurrency } from '@placetostand/ui/numbers'
 import {
   SearchableCombobox,
   type SearchableComboboxGroup,

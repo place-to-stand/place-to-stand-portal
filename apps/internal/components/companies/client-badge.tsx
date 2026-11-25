@@ -1,4 +1,4 @@
-import { Badge } from '@pts/ui/badge'
+import { Badge } from '@placetostand/ui/badge'
 import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 

@@ -17,8 +17,13 @@
 import { bodyHasLine, changedFiles, git, isMain, readRange } from './shared.mjs'
 
 const CHANGELOG = 'apps/internal/CHANGELOG.md'
-// Code people see: both apps and the shared UI package.
-const VISIBLE = [/^apps\/internal\//, /^apps\/client\//, /^packages\/ui\//]
+// Code people see: both apps and the shared UI packages.
+const VISIBLE = [
+  /^apps\/internal\//,
+  /^apps\/client\//,
+  /^packages\/ui\//,
+  /^packages\/portal-ui\//,
+]
 // Inside those, files no one sees.
 const HIDDEN = [
   /\.(test|spec)\.[cm]?[jt]sx?$/,

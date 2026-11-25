@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { parseISO, startOfMonth } from 'date-fns'
 
-import { companyCalendarDate } from '@pts/ui/dates'
+import { companyCalendarDate } from '@placetostand/ui/dates'
 import {
   DndContext,
   type DragEndEvent,

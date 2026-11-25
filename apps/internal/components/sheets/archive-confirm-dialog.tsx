@@ -1,6 +1,6 @@
 'use client'
 
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ConfirmDialog } from '@placetostand/ui/confirm-dialog'
 
 type ArchiveConfirmDialogProps = {
   open: boolean

@@ -4,8 +4,8 @@ import { useId } from 'react'
 
 import { useQuery } from '@tanstack/react-query'
 
-import { EmptyState } from '@pts/ui/empty-state'
-import { Skeleton } from '@pts/ui/skeleton'
+import { EmptyState } from '@placetostand/ui/empty-state'
+import { Skeleton } from '@placetostand/ui/skeleton'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { SheetSection } from '@/components/sheets/sheet-section'
@@ -18,17 +18,17 @@ import type { CompanyLeadSummary } from '@/lib/companies/types'
 import { projectBoardHref } from '@/lib/sheets/hrefs'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { TriangleAlert } from 'lucide-react'
-import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
+import { Alert, AlertContent, AlertDescription } from '@placetostand/ui/alert'
 
 import { fetchCompanyClientWork } from '@/lib/companies/sheet-fetch'
 import {
   CompanyBillingFields,
   useCompanyBilling,
 } from './company-billing-section'
-import { Label } from '@pts/ui/label'
-import { Switch } from '@pts/ui/switch'
-import { formatCalendarDate } from '@pts/ui/dates'
-import { formatHours } from '@pts/ui/numbers'
+import { Label } from '@placetostand/ui/label'
+import { Switch } from '@placetostand/ui/switch'
+import { formatCalendarDate } from '@placetostand/ui/dates'
+import { formatHours } from '@placetostand/ui/numbers'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 import { balanceTone } from '@/lib/billing/balance-tone'
 import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'

@@ -2,8 +2,8 @@
 
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { Button } from '@placetostand/ui/button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { cn } from '@/lib/utils'
 
 export type VersionDeployStatus = 'none' | 'dispatched' | 'pr_created'

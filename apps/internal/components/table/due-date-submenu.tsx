@@ -5,15 +5,15 @@ import { useRouter } from 'next/navigation'
 import { parseISO } from 'date-fns'
 import { CalendarDays, CalendarX2 } from 'lucide-react'
 
-import { Calendar } from '@pts/ui/calendar'
+import { Calendar } from '@placetostand/ui/calendar'
 import {
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuSub,
   ContextMenuSubContent,
   ContextMenuSubTrigger,
-} from '@pts/ui/context-menu'
-import { companyCalendarDate, formatCalendarDate } from '@pts/ui/dates'
+} from '@placetostand/ui/context-menu'
+import { companyCalendarDate, formatCalendarDate } from '@placetostand/ui/dates'
 
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import {

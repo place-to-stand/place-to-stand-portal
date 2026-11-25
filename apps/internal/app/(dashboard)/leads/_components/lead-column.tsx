@@ -7,7 +7,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 
 import type { LeadRecord } from '@/lib/leads/types'
 import { getLeadStatusHue, type LeadStatusValue } from '@/lib/leads/constants'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 

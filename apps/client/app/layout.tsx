@@ -3,9 +3,9 @@ import { Geist, Geist_Mono, Space_Grotesk } from 'next/font/google'
 import '@/styles/globals.css'
 
 import { DEFAULT_BUSINESS_NAME } from '@pts/db/business'
-import { BusinessBrandProvider } from '@pts/ui/business-brand'
-import { CompanyTimeZone } from '@pts/ui/company-time-zone'
-import { TooltipProvider } from '@pts/ui/tooltip'
+import { BusinessBrandProvider } from '@pts/portal-ui/business-brand'
+import { CompanyTimeZone } from '@placetostand/ui/company-time-zone'
+import { TooltipProvider } from '@placetostand/ui/tooltip'
 
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { brandPropsFor, getBusinessOrNull } from '@/lib/business'

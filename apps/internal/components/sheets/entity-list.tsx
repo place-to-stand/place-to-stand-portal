@@ -3,7 +3,7 @@
 import type { ReactElement, ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 
 import { InlineReveal } from '@/components/ui/inline-reveal'
 import { cn } from '@/lib/utils'

@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Popover as PopoverPrimitive } from '@base-ui/react/popover'
 
-import type { PopupAlign } from '@pts/ui/popup-align'
+import type { PopupAlign } from '@placetostand/ui/popup-align'
 
 import { cn } from '@/lib/utils'
 

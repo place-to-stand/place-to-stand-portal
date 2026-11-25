@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 
 import { requireClientUser } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/permissions'

@@ -3,9 +3,13 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
+import { Button } from '@placetostand/ui/button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@placetostand/ui/popover'
 import { cn } from '@/lib/utils'
 import type { MonthCursor } from '@/lib/data/reports/types'
 import { compareMonthCursor } from '@/lib/reports/use-report-navigation'

@@ -2,14 +2,14 @@
 
 import { ChevronDownIcon } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@pts/ui/dropdown-menu'
+} from '@placetostand/ui/dropdown-menu'
 import type { PortalClientOption } from '@/lib/auth/view-as'
 import { SignOutMenuItem } from './sign-out-button'
 import { ThemeToggleMenuItem } from './theme-toggle'

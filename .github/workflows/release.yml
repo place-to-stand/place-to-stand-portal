@@ -1,0 +1,54 @@
+name: Release packages
+
+# Publishes the packages we share outside this repo (@placetostand/*) to npm.
+# See docs/packages.md.
+#
+# On every push to main, the Changesets action either:
+#   - opens or updates the "Release packages" pull request when changesets
+#     are waiting (new versions and changelogs), or
+#   - publishes, once that pull request has merged and no changesets are left:
+#     scripts/publish-packages.mjs publishes each package whose version isn't
+#     on npm yet, so an ordinary merge publishes nothing.
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  # npm trusted publishing: npm proves who we are with GitHub's OIDC token,
+  # so no npm token is stored once the package's trusted publisher is set.
+  id-token: write
+
+env:
+  HUSKY: '0'
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          registry-url: https://registry.npmjs.org
+      - uses: changesets/action@v1
+        with:
+          title: Release packages
+          commit: Release packages
+          # Also refreshes the lockfile, which records each workspace's version.
+          version: npm run version-packages
+          publish: node scripts/publish-packages.mjs
+          createGithubReleases: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Only for a package's first publish, before its trusted publisher
+          # can be set on npmjs.com; delete the secret afterwards.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

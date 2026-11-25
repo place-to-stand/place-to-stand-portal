@@ -4,7 +4,7 @@ import {
   PASSWORD_MIN_LENGTH,
   PASSWORD_TOO_SHORT,
   PASSWORDS_DIFFER,
-} from '@pts/ui/auth-shell'
+} from '@pts/portal-ui/auth-shell'
 
 /** A new password: the one rule both portals apply. Client-safe. */
 const passwordSchema = z.string().min(PASSWORD_MIN_LENGTH, PASSWORD_TOO_SHORT)

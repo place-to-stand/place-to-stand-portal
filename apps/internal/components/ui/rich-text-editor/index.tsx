@@ -35,7 +35,7 @@ import { BanIcon } from '@/components/tiptap-icons/ban-icon'
 import { HighlighterIcon } from '@/components/tiptap-icons/highlighter-icon'
 import { LinkIcon } from '@/components/tiptap-icons/link-icon'
 
-import { useIsMobile } from '@pts/ui/hooks/use-mobile'
+import { useIsMobile } from '@placetostand/ui/hooks/use-mobile'
 import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
 import { Button } from '@/components/tiptap-ui-primitive/button'

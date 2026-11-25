@@ -1,6 +1,6 @@
 import type { StripeFeesState } from '@/lib/stripe/fees'
 
-import { formatCurrency, formatPercent } from '@pts/ui/numbers'
+import { formatCurrency, formatPercent } from '@placetostand/ui/numbers'
 import { PagePanel } from '@/components/layout/page-panel'
 
 type StripeFeesCardProps = {

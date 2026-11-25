@@ -8,7 +8,7 @@ import {
   startOfWeek,
 } from 'date-fns'
 
-import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 
 import { toCalendarDate } from '@/lib/dates/calendar-date'
 

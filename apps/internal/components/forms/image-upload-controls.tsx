@@ -8,8 +8,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@pts/ui/dropdown-menu'
-import { RowActionButton } from '@pts/ui/row-action-button'
+} from '@placetostand/ui/dropdown-menu'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { cn } from '@/lib/utils'

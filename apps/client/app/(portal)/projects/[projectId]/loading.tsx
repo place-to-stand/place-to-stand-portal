@@ -1,4 +1,4 @@
-import { Skeleton } from '@pts/ui/skeleton'
+import { Skeleton } from '@placetostand/ui/skeleton'
 
 export default function ProjectDetailLoading() {
   return (

@@ -50,7 +50,7 @@ export function emailBrandFor(business: {
 }
 
 /**
- * Brand hex values, restated from `@pts/ui/brand` because this package carries
+ * Brand hex values, restated from `@pts/portal-ui/brand` because this package carries
  * no React dependency. `accentInk` is lime-700: the accent where it has to hold
  * contrast on paper, since the brand lime all but vanishes on white.
  */

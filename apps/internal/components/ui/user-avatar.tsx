@@ -1,7 +1,11 @@
 import type { ComponentProps } from 'react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { Avatar, AvatarFallback, AvatarImage } from '@placetostand/ui/avatar'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 import { getInitials } from '@/lib/users/initials'
 import {
   ENTITY_ACCENTS,
@@ -125,7 +129,7 @@ export function UserAvatar({
   )
 }
 
-/** Avatar diameters in px, matching `AVATAR_SIZES` in @pts/ui/avatar. */
+/** Avatar diameters in px, matching `AVATAR_SIZES` in @placetostand/ui/avatar. */
 const AVATAR_PX = { xs: 20, sm: 24, md: 32, lg: 40, xl: 64 } as const
 
 /**

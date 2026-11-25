@@ -13,8 +13,12 @@ import {
 import type { FieldValues, UseFormReturn } from 'react-hook-form'
 import { Check } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { Button } from '@placetostand/ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { FormFooterBar } from '@/components/sheets/sheet-form-footer'

@@ -5,15 +5,15 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Landmark, Lock, RefreshCw, TriangleAlert } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { Button } from '@placetostand/ui/button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { toast } from '@/components/ui/use-toast'
 import type { ProfitShareData } from '@/lib/billing/profit-share'
 import type { ProfitShareState } from '@/lib/data/reports/types'
 import { cn } from '@/lib/utils'
 
 import { addProfitShareAction } from '../actions/add-profit-share'
-import { formatCurrency, formatPercent } from '@pts/ui/numbers'
+import { formatCurrency, formatPercent } from '@placetostand/ui/numbers'
 
 import { formatDay, formatDeduction, formatShortDay } from './format'
 import { PayeeAvatar } from './payee-avatar'

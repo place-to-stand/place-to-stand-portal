@@ -2,7 +2,7 @@
 
 import { createContext, useContext, type ReactNode } from 'react'
 
-import { DEFAULT_BRAND_NAME } from '@pts/ui/brand'
+import { DEFAULT_BRAND_NAME } from '@pts/portal-ui/brand'
 
 const BusinessNameContext = createContext<string>(DEFAULT_BRAND_NAME)
 

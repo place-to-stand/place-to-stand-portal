@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 
 import {
   useEffect,
@@ -11,7 +11,11 @@ import {
 } from 'react'
 import { Plus } from 'lucide-react'
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 import { OpenRecordButton } from '@/components/ui/open-record-button'
 import {
   SearchableCombobox,

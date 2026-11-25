@@ -1,10 +1,10 @@
 'use client'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
-import { formatCalendarDate } from '@pts/ui/dates'
-import { formatHours } from '@pts/ui/numbers'
+import { Avatar, AvatarFallback, AvatarImage } from '@placetostand/ui/avatar'
+import { formatCalendarDate } from '@placetostand/ui/dates'
+import { formatHours } from '@placetostand/ui/numbers'
 import { EntityList } from '@/components/sheets/entity-list'
-import { Skeleton } from '@pts/ui/skeleton'
+import { Skeleton } from '@placetostand/ui/skeleton'
 import { getInitials } from '@/lib/users/initials'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 

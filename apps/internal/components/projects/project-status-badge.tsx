@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { Badge } from '@pts/ui/badge'
+import { Badge } from '@placetostand/ui/badge'
 import {
   getProjectStatusLabel,
   getProjectStatusToken,

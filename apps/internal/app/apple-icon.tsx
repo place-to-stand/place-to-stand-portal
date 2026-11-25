@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 
-import { BRAND_APPLE_ICON_PNG_BASE64 } from '@pts/ui/brand-icon-assets'
-import { BrandOgMark } from '@pts/ui/brand-og-mark'
+import { BRAND_APPLE_ICON_PNG_BASE64 } from '@pts/portal-ui/brand-icon-assets'
+import { BrandOgMark } from '@pts/portal-ui/brand-og-mark'
 
 export const contentType = 'image/png'
 export const size = { width: 180, height: 180 }

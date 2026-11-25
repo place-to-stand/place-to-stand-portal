@@ -3,15 +3,15 @@
 import { useState, useTransition } from 'react'
 import { Lock, LockOpen } from 'lucide-react'
 
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
-import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@placetostand/ui/confirm-dialog'
+import { Button } from '@placetostand/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { toast } from '@/components/ui/use-toast'
 import type { ProfitShareState } from '@/lib/data/reports/types'
 
 import { closeMonthAction } from '../actions/close-month'
 import { reopenMonthAction } from '../actions/reopen-month'
-import { formatCurrency } from '@pts/ui/numbers'
+import { formatCurrency } from '@placetostand/ui/numbers'
 
 import { formatShortDay } from './format'
 

@@ -11,9 +11,9 @@ import { CSS } from '@dnd-kit/utilities'
 import { useSortable } from '@dnd-kit/sortable'
 import { Bot, CalendarDays, User, Users } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
-import { BADGE_TINTS } from '@pts/ui/badge-tints'
-import { formatHours } from '@pts/ui/numbers'
+import { Badge } from '@placetostand/ui/badge'
+import { BADGE_TINTS } from '@placetostand/ui/badge-tints'
+import { formatHours } from '@placetostand/ui/numbers'
 
 import {
   CardAssigneeAvatars,

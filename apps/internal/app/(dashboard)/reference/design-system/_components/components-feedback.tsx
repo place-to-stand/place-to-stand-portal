@@ -19,7 +19,7 @@ import {
   AlertContent,
   AlertDescription,
   AlertTitle,
-} from '@pts/ui/alert'
+} from '@placetostand/ui/alert'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,20 +30,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@pts/ui/alert-dialog'
-import { Button } from '@pts/ui/button'
+} from '@placetostand/ui/alert-dialog'
+import { Button } from '@placetostand/ui/button'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@pts/ui/accordion'
+} from '@placetostand/ui/accordion'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@pts/ui/collapsible'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+} from '@placetostand/ui/collapsible'
+import { ConfirmDialog } from '@placetostand/ui/confirm-dialog'
 import {
   Dialog,
   DialogClose,
@@ -53,7 +53,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@pts/ui/dialog'
+} from '@placetostand/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -65,19 +65,23 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from '@pts/ui/dropdown-menu'
-import { EmptyState } from '@pts/ui/empty-state'
-import { Input } from '@pts/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
-import { Progress } from '@pts/ui/progress'
-import { Skeleton } from '@pts/ui/skeleton'
+} from '@placetostand/ui/dropdown-menu'
+import { EmptyState } from '@placetostand/ui/empty-state'
+import { Input } from '@placetostand/ui/input'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@placetostand/ui/popover'
+import { Progress } from '@placetostand/ui/progress'
+import { Skeleton } from '@placetostand/ui/skeleton'
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import {
   HoverCard,
   HoverCardContent,
@@ -103,7 +107,7 @@ export function ComponentsEmptyLoading() {
     >
       <Specimen
         label='EmptyState'
-        note='@pts/ui/empty-state'
+        note='@placetostand/ui/empty-state'
         className='grid grid-cols-1 gap-6 md:grid-cols-3'
       >
         <Example caption='message only' className='[&>div]:w-full'>
@@ -210,7 +214,11 @@ export function ComponentsFeedback() {
       title='Alerts, toasts and errors'
       when='A toast confirms what just happened: short and past tense on success; "Unable to <verb> <noun>" on failure, with the reason in the description. An Alert stays on the page while its cause does: warning for something worth a look that never blocks saving (with the fix as its action), destructive for something broken. A sheet or dialog’s save result, success or failure, is always a toast, the same on every sheet; only a field’s own error (required, format) stays under the field.'
     >
-      <Specimen label='Alert' note='@pts/ui/alert' className='block space-y-3'>
+      <Specimen
+        label='Alert'
+        note='@placetostand/ui/alert'
+        className='block space-y-3'
+      >
         <Alert variant='warning'>
           <TriangleAlert />
           <AlertContent>
@@ -447,7 +455,7 @@ export function ComponentsOverlays() {
       </Specimen>
       <Specimen
         label='Kbd, ShortcutKeys'
-        note='@pts/ui/kbd · components/keyboard'
+        note='@placetostand/ui/kbd · components/keyboard'
         className='block space-y-3'
       >
         <p className='text-muted-foreground text-sm'>
@@ -494,7 +502,10 @@ export function ComponentsDialogs() {
       title='Dialogs'
       when='Rare. ConfirmDialog confirms a destructive or irreversible action; Dialog holds a small one-step form (link a repo, email an invoice, log time), even over a sheet. Records are edited in sheets, never in dialogs.'
     >
-      <Specimen label='ConfirmDialog, AlertDialog, Dialog' note='@pts/ui'>
+      <Specimen
+        label='ConfirmDialog, AlertDialog, Dialog'
+        note='@placetostand/ui'
+      >
         <Button variant='destructive' onClick={() => setConfirmOpen(true)}>
           <Archive />
           Archive company

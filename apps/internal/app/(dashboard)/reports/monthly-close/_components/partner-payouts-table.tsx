@@ -1,11 +1,11 @@
 'use client'
 
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 import { Fragment, useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { Badge } from '@placetostand/ui/badge'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import {
   Table,
   TableBody,
@@ -14,10 +14,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@pts/ui/table'
+} from '@placetostand/ui/table'
 import { cn } from '@/lib/utils'
 
-import { formatCurrency } from '@pts/ui/numbers'
+import { formatCurrency } from '@placetostand/ui/numbers'
 import { PayeeAvatar } from './payee-avatar'
 import type { PayoutColumn, PayoutTable } from './payout-rows'
 import { PagePanel } from '@/components/layout/page-panel'

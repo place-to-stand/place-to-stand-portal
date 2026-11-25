@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import type { ReactNode, RefObject, UIEventHandler } from 'react'
-import { Tabs } from '@pts/ui/tabs'
+import { Tabs } from '@placetostand/ui/tabs'
 import type { DbUser, TaskWithRelations } from '@/lib/types'
 import type { DndContextProps } from '@dnd-kit/core'
 import type { RenderAssigneeFn } from '../../../../../lib/projects/board/board-selectors'

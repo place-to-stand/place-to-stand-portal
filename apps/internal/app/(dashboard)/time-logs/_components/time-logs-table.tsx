@@ -3,10 +3,10 @@
 import { useEffect } from 'react'
 
 import { useRouter } from 'next/navigation'
-import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
-import { EmptyState } from '@pts/ui/empty-state'
-import { formatHours } from '@pts/ui/numbers'
+import { EmptyState } from '@placetostand/ui/empty-state'
+import { formatHours } from '@placetostand/ui/numbers'
 import { EmptyValue } from '@/components/table/empty-value'
 import {
   Table,
@@ -15,7 +15,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@pts/ui/table'
+} from '@placetostand/ui/table'
 import { TimeLogDialog } from '@/app/(dashboard)/projects/_components/project-time-log/project-time-log-dialog'
 import {
   RecordRowAction,

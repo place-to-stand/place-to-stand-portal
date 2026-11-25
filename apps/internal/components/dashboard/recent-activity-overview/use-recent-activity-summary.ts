@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 
 import { startClientInteraction } from '@/lib/posthog/client'
 import { INTERACTION_EVENTS } from '@/lib/posthog/types'

@@ -5,8 +5,8 @@ import { createPortal } from 'react-dom'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Archive, CheckCheck, Loader2, RefreshCw, X } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { Button } from '@placetostand/ui/button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { useToast } from '@/components/ui/use-toast'
 import {

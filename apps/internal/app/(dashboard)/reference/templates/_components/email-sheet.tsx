@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { Badge } from '@pts/ui/badge'
+import { Badge } from '@placetostand/ui/badge'
 import type { EmailTemplateEntry } from '@/lib/email/catalog'
 
 import { AUDIENCE_STYLES } from './template-labels'

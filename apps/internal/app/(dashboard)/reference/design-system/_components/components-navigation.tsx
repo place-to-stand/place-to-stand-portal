@@ -9,9 +9,9 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@pts/ui/breadcrumb'
-import { Button } from '@pts/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pts/ui/tabs'
+} from '@placetostand/ui/breadcrumb'
+import { Button } from '@placetostand/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@placetostand/ui/tabs'
 import { PageShell } from '@/components/layout/page-shell'
 import { TabsNav, type TabsNavTab } from '@/components/layout/tabs-nav'
 import { ToolbarActionLabel } from '@/components/layout/toolbar-action'

@@ -2,7 +2,7 @@
 
 import { History, Loader2 } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import {
   DONE_WINDOW_WEEKS,
   formatDoneWindowLabel,

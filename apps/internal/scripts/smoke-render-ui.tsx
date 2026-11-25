@@ -1,5 +1,5 @@
 /**
- * SSR smoke-render for the Base UI wrappers in @pts/ui and the tiptap
+ * SSR smoke-render for the Base UI wrappers in @placetostand/ui and the tiptap
  * primitives. Renders each wrapper in its real consumer compositions, with
  * open/keepMounted states included, via renderToString. Catches runtime
  * context-invariant throws (a part rendered outside the context it needs)
@@ -8,9 +8,9 @@
 import * as React from 'react'
 import { renderToString } from 'react-dom/server'
 
-import { Button } from '@pts/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pts/ui/tabs'
-import { Skeleton } from '@pts/ui/skeleton'
+import { Button } from '@placetostand/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@placetostand/ui/tabs'
+import { Skeleton } from '@placetostand/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -18,8 +18,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@pts/ui/table'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+} from '@placetostand/ui/table'
+import { ConfirmDialog } from '@placetostand/ui/confirm-dialog'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -28,8 +28,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@pts/ui/alert-dialog'
-import { Avatar, AvatarFallback } from '@pts/ui/avatar'
+} from '@placetostand/ui/alert-dialog'
+import { Avatar, AvatarFallback } from '@placetostand/ui/avatar'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -37,13 +37,13 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@pts/ui/breadcrumb'
-import { Checkbox } from '@pts/ui/checkbox'
+} from '@placetostand/ui/breadcrumb'
+import { Checkbox } from '@placetostand/ui/checkbox'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@pts/ui/collapsible'
+} from '@placetostand/ui/collapsible'
 import {
   Dialog,
   DialogContent,
@@ -52,7 +52,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@pts/ui/dialog'
+} from '@placetostand/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,10 +61,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@pts/ui/dropdown-menu'
-import { Label } from '@pts/ui/label'
-import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
-import { Progress } from '@pts/ui/progress'
+} from '@placetostand/ui/dropdown-menu'
+import { Label } from '@placetostand/ui/label'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@placetostand/ui/popover'
+import { Progress } from '@placetostand/ui/progress'
 import {
   Select,
   SelectContent,
@@ -73,15 +77,15 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from '@pts/ui/select'
-import { Separator } from '@pts/ui/separator'
-import { Switch } from '@pts/ui/switch'
+} from '@placetostand/ui/select'
+import { Separator } from '@placetostand/ui/separator'
+import { Switch } from '@placetostand/ui/switch'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@pts/ui/tooltip'
+} from '@placetostand/ui/tooltip'
 import {
   Sheet,
   SheetClose,
@@ -91,8 +95,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '../components/ui/sheet'
-import { Slot } from '@pts/ui/slot'
-import { Badge } from '@pts/ui/badge'
+import { Slot } from '@placetostand/ui/slot'
+import { Badge } from '@placetostand/ui/badge'
 import {
   HoverCard,
   HoverCardContent,

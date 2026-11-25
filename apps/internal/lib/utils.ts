@@ -1,2 +1,2 @@
-// `cn` lives in @pts/ui; re-exported so `@/lib/utils` imports resolve.
-export { cn } from '@pts/ui/cn'
+// `cn` lives in @placetostand/ui; re-exported so `@/lib/utils` imports resolve.
+export { cn } from '@placetostand/ui/cn'

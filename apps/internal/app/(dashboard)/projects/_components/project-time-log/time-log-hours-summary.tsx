@@ -4,9 +4,9 @@ import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 
-import { cn } from '@pts/ui/cn'
-import { formatHours } from '@pts/ui/numbers'
-import { Skeleton } from '@pts/ui/skeleton'
+import { cn } from '@placetostand/ui/cn'
+import { formatHours } from '@placetostand/ui/numbers'
+import { Skeleton } from '@placetostand/ui/skeleton'
 import { ENTITY_ICONS, entityIconAccent } from '@/lib/entity-accents'
 import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import {

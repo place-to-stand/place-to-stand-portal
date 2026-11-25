@@ -27,7 +27,7 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['@pts/ui'],
+  transpilePackages: ['@placetostand/ui', '@pts/portal-ui'],
   cacheComponents: false,
   reactCompiler: true,
   typescript: {

@@ -1,6 +1,6 @@
 # ContextMenu
 
-The right-click menu, shadcn/ui's Context Menu (base-nova, on Base UI). From `@pts/ui/context-menu`. It opens at the pointer on a right click, or on a long press on touch.
+The right-click menu, shadcn/ui's Context Menu (base-nova, on Base UI). From `@placetostand/ui/context-menu`. It opens at the pointer on a right click, or on a long press on touch.
 
 **Look:** the same surface and items as `DropdownMenu`: `bg-popover border rounded-md p-1 shadow-popover`, 16px muted icons, `variant="destructive"` items in `destructive`.
 

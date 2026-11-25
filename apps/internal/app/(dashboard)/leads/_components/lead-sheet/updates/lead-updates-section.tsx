@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { MessageSquareText } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
-import { EmptyState } from '@pts/ui/empty-state'
-import { Skeleton } from '@pts/ui/skeleton'
-import { Badge } from '@pts/ui/badge'
+import { Button } from '@placetostand/ui/button'
+import { EmptyState } from '@placetostand/ui/empty-state'
+import { Skeleton } from '@placetostand/ui/skeleton'
+import { Badge } from '@placetostand/ui/badge'
 import { EntityList } from '@/components/sheets/entity-list'
 import type { LeadRecord, LeadUpdateRecord } from '@/lib/leads/types'
 

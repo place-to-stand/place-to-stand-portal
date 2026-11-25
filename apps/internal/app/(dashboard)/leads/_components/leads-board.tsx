@@ -19,7 +19,7 @@ import { useScrollPersistence } from '@/hooks/use-scroll-persistence'
 import { useColumnScrollPersistence } from '@/hooks/use-column-scroll-persistence'
 import type { LeadBoardColumnData, LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import {
   cloneColumns,

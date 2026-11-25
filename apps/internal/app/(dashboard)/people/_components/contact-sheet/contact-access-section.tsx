@@ -3,19 +3,19 @@
 import { useId, useTransition } from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
-import { Button } from '@pts/ui/button'
-import { formatRelativeTime } from '@pts/ui/dates'
+import { Button } from '@placetostand/ui/button'
+import { formatRelativeTime } from '@placetostand/ui/dates'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@pts/ui/select'
-import { Input } from '@pts/ui/input'
-import { Label } from '@pts/ui/label'
-import { Skeleton } from '@pts/ui/skeleton'
-import { Switch } from '@pts/ui/switch'
+} from '@placetostand/ui/select'
+import { Input } from '@placetostand/ui/input'
+import { Label } from '@placetostand/ui/label'
+import { Skeleton } from '@placetostand/ui/skeleton'
+import { Switch } from '@placetostand/ui/switch'
 import { EffectiveMonthPicker } from '@/components/billing/effective-month-select'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {

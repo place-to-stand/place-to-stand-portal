@@ -7,7 +7,7 @@ import {
   FormControl,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@pts/ui/input'
+import { Input } from '@placetostand/ui/input'
 import {
   SearchableCombobox,
   type SearchableComboboxGroup,
@@ -19,8 +19,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@pts/ui/select'
-import { Badge } from '@pts/ui/badge'
+} from '@placetostand/ui/select'
+import { Badge } from '@placetostand/ui/badge'
 import { LazyRichTextEditor as RichTextEditor } from '@/components/ui/rich-text-editor/lazy'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { DatePicker } from '@/components/ui/date-picker'

@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react'
 import { CheckCircle } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
-import { Skeleton } from '@pts/ui/skeleton'
+import { Badge } from '@placetostand/ui/badge'
+import { Button } from '@placetostand/ui/button'
+import { Skeleton } from '@placetostand/ui/skeleton'
 import { CompanyBillingMark } from '@/components/billing/company-billing-mark'
 import {
   CompanyRecordRow,
@@ -13,7 +13,7 @@ import {
   ProjectRecordRow,
 } from '@/components/sheets/entity-record-rows'
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
-import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 import type { LeadConversionSummary, LeadRecord } from '@/lib/leads/types'
 import { projectBoardHref } from '@/lib/sheets/hrefs'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'

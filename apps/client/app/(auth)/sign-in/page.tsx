@@ -11,7 +11,7 @@ import {
   authNoticeClass,
   authPrimaryButtonClass,
   authSecondaryButtonClass,
-} from '@pts/ui/auth-shell'
+} from '@pts/portal-ui/auth-shell'
 
 import { requestMagicLink } from '@/app/(auth)/_actions/auth-emails'
 import { recordSignInAttempt } from '@/app/(auth)/_actions/sign-in'

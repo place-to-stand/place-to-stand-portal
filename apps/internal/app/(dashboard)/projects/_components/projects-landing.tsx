@@ -14,12 +14,16 @@ import {
 import { RecordContextMenu } from '@/components/table/record-context-menu'
 import { IntegrationProviderIcon } from '@/components/integrations/provider-icon'
 import { formatIntegrationLinkLabel } from '@/lib/types/integrations'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
-import { EmptyState } from '@pts/ui/empty-state'
-import { Progress } from '@pts/ui/progress'
-import { formatHours } from '@pts/ui/numbers'
+import { EmptyState } from '@placetostand/ui/empty-state'
+import { Progress } from '@placetostand/ui/progress'
+import { formatHours } from '@placetostand/ui/numbers'
 import {
   Table,
   TableBody,
@@ -27,7 +31,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@pts/ui/table'
+} from '@placetostand/ui/table'
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'

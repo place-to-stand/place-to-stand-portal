@@ -1,6 +1,6 @@
 'use client'
 
-import { Input } from '@pts/ui/input'
+import { Input } from '@placetostand/ui/input'
 
 import { RECORD_ROW_INPUT_CLASS } from './sheet-record-row'
 

@@ -12,7 +12,7 @@ import {
 import { EmptyValue } from '@/components/table/empty-value'
 import { SheetLink } from '@/components/ui/sheet-link'
 import type { SheetTarget } from '@/lib/sheets/use-sheet-link'
-import type { PopupAlign } from '@pts/ui/popup-align'
+import type { PopupAlign } from '@placetostand/ui/popup-align'
 import { cn } from '@/lib/utils'
 import { entityIconAccent } from '@/lib/entity-accents'
 

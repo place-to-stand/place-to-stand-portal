@@ -12,7 +12,7 @@ import {
 } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
-import { Skeleton } from '@pts/ui/skeleton'
+import { Skeleton } from '@placetostand/ui/skeleton'
 import { Form } from '@/components/ui/form'
 import type { SheetHistorySources } from '@/lib/hooks/use-sheet-form-controls'
 import { useBillingUndo } from './billing/use-billing-undo'

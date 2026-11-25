@@ -1,4 +1,4 @@
-import { Badge } from '@pts/ui/badge'
+import { Badge } from '@placetostand/ui/badge'
 import {
   RecordRowAction,
   RecordRowActions,
@@ -11,7 +11,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@pts/ui/table'
+} from '@placetostand/ui/table'
 import type { TaskWithRelations } from '@/lib/types'
 import {
   getTaskStatusLabel,

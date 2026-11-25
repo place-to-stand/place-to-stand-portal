@@ -26,7 +26,11 @@ import type { CardEdgeMoves } from '@/components/table/record-context-menu'
 
 import { LeadContextMenu } from './lead-context-menu'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 import {
   getLeadSourceLabel,
   type LeadSourceTypeValue,

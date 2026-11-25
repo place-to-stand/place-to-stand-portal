@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import posthog from 'posthog-js'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 
 // global-error replaces the root layout, so it brings its own stylesheet.
 import './globals.css'

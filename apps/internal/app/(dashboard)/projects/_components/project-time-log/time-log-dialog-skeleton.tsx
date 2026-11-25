@@ -1,4 +1,4 @@
-import { Skeleton } from '@pts/ui/skeleton'
+import { Skeleton } from '@placetostand/ui/skeleton'
 import { FIELD_STACK_CLASS } from '@/components/ui/form'
 import { InfoPanelDivider } from '@/components/ui/info-panel'
 

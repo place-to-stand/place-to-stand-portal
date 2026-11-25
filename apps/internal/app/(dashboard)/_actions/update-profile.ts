@@ -13,7 +13,10 @@ import {
 import { sendPasswordChangedEmail } from '@/lib/email/auth-emails'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
-import { PASSWORD_MIN_LENGTH, PASSWORD_TOO_SHORT } from '@pts/ui/auth-shell'
+import {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_TOO_SHORT,
+} from '@pts/portal-ui/auth-shell'
 import { db } from '@/lib/db'
 import { contacts } from '@/lib/db/schema'
 import { and, eq, isNull } from 'drizzle-orm'

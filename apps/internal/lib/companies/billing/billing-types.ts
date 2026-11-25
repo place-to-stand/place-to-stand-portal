@@ -1,4 +1,4 @@
-import { BADGE_TINTS } from '@pts/ui/badge-tints'
+import { BADGE_TINTS } from '@placetostand/ui/badge-tints'
 
 export const CLIENT_BILLING_TYPE_VALUES = ['prepaid', 'net_30'] as const
 

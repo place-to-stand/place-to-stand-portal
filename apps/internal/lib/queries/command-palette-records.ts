@@ -1,8 +1,8 @@
 import 'server-only'
 
 import { isClientCompany } from '@pts/db/client-state'
-import { formatCalendarDate } from '@pts/ui/dates'
-import { formatHours } from '@pts/ui/numbers'
+import { formatCalendarDate } from '@placetostand/ui/dates'
+import { formatHours } from '@placetostand/ui/numbers'
 
 import { and, desc, eq, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
 

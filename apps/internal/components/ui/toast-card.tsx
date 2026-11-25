@@ -2,8 +2,8 @@ import type { ReactNode } from 'react'
 import { cva } from 'class-variance-authority'
 import { CircleCheck, Info, TriangleAlert, X } from 'lucide-react'
 
-import { firstLineIcon } from '@pts/ui/alert'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { firstLineIcon } from '@placetostand/ui/alert'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { cn } from '@/lib/utils'
 
 import type { ToastVariant } from './toast'

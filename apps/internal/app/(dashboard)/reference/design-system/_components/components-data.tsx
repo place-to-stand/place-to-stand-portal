@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { SiteMark } from '@/components/ui/site-mark'
 import {
   Table,
@@ -11,7 +11,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@pts/ui/table'
+} from '@placetostand/ui/table'
 import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import {
   CompanyRecordRow,

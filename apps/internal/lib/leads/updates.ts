@@ -1,4 +1,4 @@
-import { BADGE_TINTS } from '@pts/ui/badge-tints'
+import { BADGE_TINTS } from '@placetostand/ui/badge-tints'
 import {
   CalendarDays,
   Mail,

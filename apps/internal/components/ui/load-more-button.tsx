@@ -2,7 +2,7 @@
 
 import { Loader2 } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 
 type LoadMoreButtonProps = {
   onClick: () => void

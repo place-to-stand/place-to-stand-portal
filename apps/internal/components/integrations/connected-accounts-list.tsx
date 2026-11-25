@@ -3,12 +3,12 @@
 import { useState } from 'react'
 import { Loader2, Trash2, Plus, RefreshCw } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
-import { Button } from '@pts/ui/button'
-import { formatCalendarDate } from '@pts/ui/dates'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
-import { EmptyState } from '@pts/ui/empty-state'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { Avatar, AvatarFallback, AvatarImage } from '@placetostand/ui/avatar'
+import { Button } from '@placetostand/ui/button'
+import { formatCalendarDate } from '@placetostand/ui/dates'
+import { ConfirmDialog } from '@placetostand/ui/confirm-dialog'
+import { EmptyState } from '@placetostand/ui/empty-state'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 
 import { INTEGRATION_ROW_CLASS } from './integration-card'
 

@@ -20,9 +20,13 @@
     "test:e2e": "playwright test -c e2e/playwright.config.ts",
     "test:e2e:seed": "node e2e/seed/seed.mjs",
     "prepare": "husky",
-    "knip": "DATABASE_URL=${DATABASE_URL:-postgres://localhost/knip} knip"
+    "knip": "DATABASE_URL=${DATABASE_URL:-postgres://localhost/knip} knip",
+    "changeset": "changeset",
+    "version-packages": "changeset version && npm install --package-lock-only --no-audit --no-fund",
+    "release": "node scripts/publish-packages.mjs"
   },
   "devDependencies": {
+    "@changesets/cli": "^3.0.3",
     "@playwright/test": "^1.65.0",
     "@pts/lint-config": "^0.1.0",
     "husky": "^9.1.7",

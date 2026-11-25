@@ -6,7 +6,7 @@
  *   - shares its icon with another entity,
  *   - is a state of another entity (client, sign-in) but doesn't wear that
  *     entity's icon (its own is that icon plus a dot),
- *   - has no `--entity-<token>` value in theme.css for light or dark,
+ *   - has no `--entity-<token>` value in portal.css for light or dark,
  *   - or its colour is under 3:1 on a card in either theme (WCAG 1.4.11).
  * And fails when a status colour (success, warning, destructive) sits within
  * ΔE_OK 0.06 of any entity colour in either theme, so a green check never
@@ -22,7 +22,14 @@ const registry = readFileSync(
   `${root}apps/internal/lib/entity-accents.ts`,
   'utf8'
 )
-const theme = readFileSync(`${root}packages/ui/src/styles/theme.css`, 'utf8')
+// Status tokens live in the published theme; entity colours in our portals'
+// layer on top of it.
+const theme = [
+  'packages/ui/src/styles/theme.css',
+  'packages/portal-ui/src/styles/portal.css',
+]
+  .map(path => readFileSync(`${root}${path}`, 'utf8'))
+  .join('\n')
 
 const MIN_CONTRAST = 3
 const CARD = { light: [1, 0, 0], dark: [0.205, 0, 0] }
@@ -38,11 +45,23 @@ const entities = [
   token: block.match(/^ {4}token: '([\w-]+)',$/m)?.[1],
 }))
 
+/** Every top-level `selector {` block, joined: portal.css adds to theme.css. */
+function blocksOf(selector) {
+  const blocks = []
+  let start = theme.indexOf(`\n${selector} {`)
+  while (start !== -1) {
+    const end = theme.indexOf('}', start)
+    blocks.push(theme.slice(start, end))
+    start = theme.indexOf(`\n${selector} {`, end)
+  }
+  return blocks.join('\n')
+}
+
 function tokensIn(selector) {
-  const start = theme.indexOf(`${selector} {`)
-  const block = theme.slice(start, theme.indexOf('}', start))
   return new Map(
-    [...block.matchAll(/--entity-([\w-]+):\s*([^;]+);/g)].map(m => [m[1], m[2]])
+    [...blocksOf(selector).matchAll(/--entity-([\w-]+):\s*([^;]+);/g)].map(
+      m => [m[1], m[2]]
+    )
   )
 }
 const values = { light: tokensIn(':root'), dark: tokensIn('.dark') }
@@ -50,8 +69,7 @@ const values = { light: tokensIn(':root'), dark: tokensIn('.dark') }
 /** Status tokens, by theme: --success, --warning, --destructive. */
 const STATUS = ['success', 'warning', 'destructive']
 function statusIn(selector) {
-  const start = theme.indexOf(`${selector} {`)
-  const block = theme.slice(start, theme.indexOf('}', start))
+  const block = blocksOf(selector)
   return new Map(
     STATUS.map(name => [
       name,
@@ -140,7 +158,7 @@ for (const entity of entities) {
     const value = values[mode].get(entity.token)
     if (!value) {
       errors.push(
-        `${entity.key}: --entity-${entity.token} missing in ${mode} (theme.css)`
+        `${entity.key}: --entity-${entity.token} missing in ${mode} (portal.css)`
       )
       continue
     }

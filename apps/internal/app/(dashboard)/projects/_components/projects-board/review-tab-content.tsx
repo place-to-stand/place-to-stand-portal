@@ -1,6 +1,6 @@
 'use client'
 
-import { TabsContent } from '@pts/ui/tabs'
+import { TabsContent } from '@placetostand/ui/tabs'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
 import {
   FEEDBACK_CLASSES,

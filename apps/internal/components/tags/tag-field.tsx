@@ -3,7 +3,11 @@
 import * as React from 'react'
 import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react'
 
-import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@placetostand/ui/popover'
 import {
   Command,
   CommandGroup,

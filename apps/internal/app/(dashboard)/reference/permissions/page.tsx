@@ -1,8 +1,12 @@
 import type { Metadata } from 'next'
 import { Check, ChevronRight, Info, Minus } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { Badge } from '@placetostand/ui/badge'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 import { PageShell } from '@/components/layout/page-shell'
 import {
   CAPABILITIES,

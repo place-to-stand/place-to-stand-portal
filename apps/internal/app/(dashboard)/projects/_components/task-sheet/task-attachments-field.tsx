@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useRef, type ChangeEvent } from 'react'
 import { FileText, X } from 'lucide-react'
 
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'

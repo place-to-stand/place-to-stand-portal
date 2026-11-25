@@ -5,19 +5,19 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import { Checkbox } from '@pts/ui/checkbox'
-import { Input } from '@pts/ui/input'
-import { Label } from '@pts/ui/label'
+import { Checkbox } from '@placetostand/ui/checkbox'
+import { Input } from '@placetostand/ui/input'
+import { Label } from '@placetostand/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@pts/ui/select'
-import { SegmentedControl } from '@pts/ui/segmented-control'
-import { Switch } from '@pts/ui/switch'
-import { Textarea } from '@pts/ui/textarea'
+} from '@placetostand/ui/select'
+import { SegmentedControl } from '@placetostand/ui/segmented-control'
+import { Switch } from '@placetostand/ui/switch'
+import { Textarea } from '@placetostand/ui/textarea'
 import {
   CompanyLinkPicker,
   type CompanyLink,
@@ -393,7 +393,7 @@ export function ComponentsToggles() {
     >
       <Specimen
         label='Segmented control'
-        note='@pts/ui/segmented-control: a radio group drawn as the Tabs pill. For a form value; to change what a view shows, use Tabs.'
+        note='@placetostand/ui/segmented-control: a radio group drawn as the Tabs pill. For a form value; to change what a view shows, use Tabs.'
         className='flex flex-col items-start gap-4'
       >
         <SegmentedControl

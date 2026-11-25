@@ -2,7 +2,11 @@
 
 import { useRef, useState, type ReactElement, type ReactNode } from 'react'
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 
 /**
  * Shows `content` in a tooltip only when the child's text is cut off

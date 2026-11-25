@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef } from 'react'
 import { CircleUserRound, Plug, SlidersHorizontal } from 'lucide-react'
 
-import { Separator } from '@pts/ui/separator'
+import { Separator } from '@placetostand/ui/separator'
 
 import { Form } from '@/components/ui/form'
 import { Sheet, SheetContent } from '@/components/ui/sheet'

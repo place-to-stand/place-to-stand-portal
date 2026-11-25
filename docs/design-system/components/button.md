@@ -1,6 +1,6 @@
 # Button
 
-The action control: six variants, seven sizes, a 2px (`gap-2`) icon gap built in. From `@pts/ui/button` (`packages/ui/src/button.tsx`).
+The action control: six variants, seven sizes, a 2px (`gap-2`) icon gap built in. From `@placetostand/ui/button` (`packages/ui/src/button.tsx`).
 
 **Consumer provides:** a label (sentence case, verb first) and optionally a lucide icon as the first child; `variant`, `size`, `asChild` to render a link.
 

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { BrandLogo } from '@pts/ui/brand'
+import { BrandLogo } from '@pts/portal-ui/brand'
 
 import { brandPropsFor, getBusinessIdentity } from '@/lib/business/identity'
 

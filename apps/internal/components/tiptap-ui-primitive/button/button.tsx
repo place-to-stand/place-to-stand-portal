@@ -4,7 +4,11 @@ import { forwardRef } from 'react'
 
 // Toolbar tooltips use the portal-wide tooltip so their offset, arrow and
 // colours match every other tooltip.
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 
 import { KeyCaps } from '@/components/keyboard/shortcut-keys'
 import { cn } from '@/lib/tiptap-utils'

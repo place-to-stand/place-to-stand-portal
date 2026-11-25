@@ -13,8 +13,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@pts/ui/input'
-import { Textarea } from '@pts/ui/textarea'
+import { Input } from '@placetostand/ui/input'
+import { Textarea } from '@placetostand/ui/textarea'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'

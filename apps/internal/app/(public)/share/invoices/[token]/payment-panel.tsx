@@ -10,12 +10,15 @@ import {
 } from '@stripe/react-stripe-js'
 import { Loader2, Lock } from 'lucide-react'
 
-import { authErrorClass, authPrimaryButtonClass } from '@pts/ui/auth-shell'
-import { BRAND } from '@pts/ui/brand'
+import {
+  authErrorClass,
+  authPrimaryButtonClass,
+} from '@pts/portal-ui/auth-shell'
+import { BRAND } from '@pts/portal-ui/brand'
 
 import { cn } from '@/lib/utils'
 
-import { formatCurrency } from '@pts/ui/numbers'
+import { formatCurrency } from '@placetostand/ui/numbers'
 import { DARK_LABEL, HEADLINE_FONT, PANEL_TITLE } from './styles'
 
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY

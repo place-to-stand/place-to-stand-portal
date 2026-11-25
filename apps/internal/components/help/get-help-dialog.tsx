@@ -9,15 +9,15 @@ import {
 } from 'react'
 import { Mail } from 'lucide-react'
 
-import { BrandLogo } from '@pts/ui/brand'
-import { Button } from '@pts/ui/button'
+import { BrandLogo } from '@pts/portal-ui/brand'
+import { Button } from '@placetostand/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@pts/ui/dialog'
+} from '@placetostand/ui/dialog'
 
 import { SiteMark } from '@/components/ui/site-mark'
 import { PTS_CONTACT } from '@/lib/help/pts-contact'

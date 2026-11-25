@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react'
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
 
-import { TableHead } from '@pts/ui/table'
+import { TableHead } from '@placetostand/ui/table'
 import { cn } from '@/lib/utils'
 
 export type SortValue = `${string}:${'asc' | 'desc'}`

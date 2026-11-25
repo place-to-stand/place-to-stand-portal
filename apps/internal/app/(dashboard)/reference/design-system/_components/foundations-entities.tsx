@@ -2,7 +2,7 @@
 
 import { Check, X } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
+import { Badge } from '@placetostand/ui/badge'
 import {
   ENTITIES,
   ENTITY_GROUP_LABELS,

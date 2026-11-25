@@ -1,6 +1,6 @@
 # RowActionButton
 
-An icon-only action in a table row or toolbar. From `@pts/ui/row-action-button`.
+An icon-only action in a table row or toolbar. From `@placetostand/ui/row-action-button`.
 
 **Look:** `Button` at `size='icon-sm'` (28px, 14px glyph), `ghost` by default (pass `variant='destructive'` for archive and delete), wrapped in a real `Tooltip`. An action with a keyboard shortcut passes `shortcut` (in the internal portal, `{...rowActionShortcut(SHORTCUTS.<id>)}`), which adds the keys after the label in the tooltip and sets `aria-keyshortcuts`.
 

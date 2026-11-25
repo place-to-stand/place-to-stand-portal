@@ -1,4 +1,4 @@
-import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 
 /**
  * Normalizes a date string and formats it for display. Returns null when the

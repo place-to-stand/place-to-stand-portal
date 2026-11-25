@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ConfirmDialog } from '@placetostand/ui/confirm-dialog'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Form,
@@ -28,7 +28,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { formatCurrency, formatPercent } from '@pts/ui/numbers'
+import { formatCurrency, formatPercent } from '@placetostand/ui/numbers'
 import {
   SHEET_SIDE_COLUMN_CLASS,
   Sheet,
@@ -43,8 +43,8 @@ import { SheetPresence } from '@/components/sheets/sheet-presence'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SHEET_BLOCK_CLASS } from '@/components/sheets/sheet-section'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
-import { Textarea } from '@pts/ui/textarea'
-import { Separator } from '@pts/ui/separator'
+import { Textarea } from '@placetostand/ui/textarea'
+import { Separator } from '@placetostand/ui/separator'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type {
   InvoiceClient,

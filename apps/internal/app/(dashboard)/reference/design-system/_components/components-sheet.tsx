@@ -3,26 +3,26 @@
 import { useState } from 'react'
 import { type LucideIcon } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
-import { Input } from '@pts/ui/input'
-import { Label } from '@pts/ui/label'
+import { Badge } from '@placetostand/ui/badge'
+import { Button } from '@placetostand/ui/button'
+import { ConfirmDialog } from '@placetostand/ui/confirm-dialog'
+import { Input } from '@placetostand/ui/input'
+import { Label } from '@placetostand/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@pts/ui/select'
-import { Separator } from '@pts/ui/separator'
-import { Switch } from '@pts/ui/switch'
-import { Textarea } from '@pts/ui/textarea'
+} from '@placetostand/ui/select'
+import { Separator } from '@placetostand/ui/separator'
+import { Switch } from '@placetostand/ui/switch'
+import { Textarea } from '@placetostand/ui/textarea'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SheetActivityDisclosure } from '@/components/sheets/sheet-activity-section'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'

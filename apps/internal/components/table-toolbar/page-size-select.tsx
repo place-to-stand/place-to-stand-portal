@@ -9,7 +9,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@pts/ui/select'
+} from '@placetostand/ui/select'
 import {
   PAGE_SIZE_COOKIE,
   PAGE_SIZE_COOKIE_MAX_AGE,

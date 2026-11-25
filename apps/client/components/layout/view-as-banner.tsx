@@ -3,8 +3,8 @@
 import { useTransition } from 'react'
 import { CheckIcon, ChevronDownIcon, EyeIcon } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
+import { Badge } from '@placetostand/ui/badge'
+import { Button } from '@placetostand/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +12,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@pts/ui/dropdown-menu'
+} from '@placetostand/ui/dropdown-menu'
 import type { PortalContactOption } from '@/lib/auth/view-as'
 import { setViewAsContact } from '@/app/(portal)/_actions/set-view-as-contact'
 

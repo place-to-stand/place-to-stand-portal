@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { describeTimeZone } from '@pts/ui/dates'
+import { describeTimeZone } from '@placetostand/ui/dates'
 
 const NOVEMBER = new Date('2026-11-18T12:00:00Z')
 const JULY = new Date('2026-07-15T12:00:00Z')

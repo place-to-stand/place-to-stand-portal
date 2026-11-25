@@ -11,16 +11,16 @@ import {
   UserRoundX,
 } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
-import { Calendar } from '@pts/ui/calendar'
-import { companyCalendarDate, formatCalendarDate } from '@pts/ui/dates'
+import { Button } from '@placetostand/ui/button'
+import { Calendar } from '@placetostand/ui/calendar'
+import { companyCalendarDate, formatCalendarDate } from '@placetostand/ui/dates'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@pts/ui/dropdown-menu'
+} from '@placetostand/ui/dropdown-menu'
 
 import {
   bulkSetLeadAssignee,

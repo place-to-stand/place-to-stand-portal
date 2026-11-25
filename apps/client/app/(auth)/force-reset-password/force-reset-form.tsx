@@ -11,7 +11,7 @@ import {
   PASSWORD_MIN_LENGTH,
   PASSWORD_TOO_SHORT,
   PASSWORDS_DIFFER,
-} from '@pts/ui/auth-shell'
+} from '@pts/portal-ui/auth-shell'
 
 import { notifyPasswordChanged } from '@/app/(auth)/_actions/auth-emails'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'

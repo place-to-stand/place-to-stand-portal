@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import posthog from 'posthog-js'
 
-import { Button } from '@pts/ui/button'
-import { EmptyState } from '@pts/ui/empty-state'
+import { Button } from '@placetostand/ui/button'
+import { EmptyState } from '@placetostand/ui/empty-state'
 
 import { PageShell } from '@/components/layout/page-shell'
 

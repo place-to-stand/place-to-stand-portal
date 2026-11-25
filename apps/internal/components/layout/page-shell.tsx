@@ -12,8 +12,8 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@pts/ui/breadcrumb'
-import { Separator } from '@pts/ui/separator'
+} from '@placetostand/ui/breadcrumb'
+import { Separator } from '@placetostand/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 
 import { TabsNav, type TabsNavTab } from './tabs-nav'

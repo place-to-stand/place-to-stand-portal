@@ -8,7 +8,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@pts/ui/dropdown-menu'
+} from '@placetostand/ui/dropdown-menu'
 import { ProjectStatusBadge } from '@/components/projects/project-status-badge'
 import {
   PROJECT_STATUS_OPTIONS,

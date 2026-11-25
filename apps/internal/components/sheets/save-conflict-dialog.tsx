@@ -7,9 +7,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@pts/ui/alert-dialog'
-import { Button } from '@pts/ui/button'
-import { formatRelativeTime } from '@pts/ui/dates'
+} from '@placetostand/ui/alert-dialog'
+import { Button } from '@placetostand/ui/button'
+import { formatRelativeTime } from '@placetostand/ui/dates'
 
 import { emptyLabel } from '@/components/activity/activity-change-list'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'

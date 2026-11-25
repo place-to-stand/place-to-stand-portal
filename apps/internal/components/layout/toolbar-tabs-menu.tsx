@@ -8,8 +8,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@pts/ui/dropdown-menu'
-import { TABS_TRIGGER_CLASS } from '@pts/ui/tabs'
+} from '@placetostand/ui/dropdown-menu'
+import { TABS_TRIGGER_CLASS } from '@placetostand/ui/tabs'
 import { cn } from '@/lib/utils'
 
 import { TOOLBAR_TAB_CLASS, TOOLBAR_TABS_LIST_CLASS } from './tabs-nav-classes'

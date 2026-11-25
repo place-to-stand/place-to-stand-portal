@@ -1,6 +1,6 @@
 'use client'
 
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 import { useCallback, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -16,9 +16,9 @@ import {
   Undo2,
 } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
-import { Separator } from '@pts/ui/separator'
+import { Badge } from '@placetostand/ui/badge'
+import { Button } from '@placetostand/ui/button'
+import { Separator } from '@placetostand/ui/separator'
 import {
   SHEET_SIDE_COLUMN_CLASSES,
   Sheet,
@@ -30,7 +30,7 @@ import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { toastLink, useToast } from '@/components/ui/use-toast'
-import { formatCalendarDate, formatRelativeTime } from '@pts/ui/dates'
+import { formatCalendarDate, formatRelativeTime } from '@placetostand/ui/dates'
 import { RETRY_MAX_AGE_HOURS } from '@/lib/form-submissions/delivery/constants'
 import { cn } from '@/lib/utils'
 import {

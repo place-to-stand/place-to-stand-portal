@@ -4,15 +4,15 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ExternalLink } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@pts/ui/dialog'
-import { Input } from '@pts/ui/input'
+} from '@placetostand/ui/dialog'
+import { Input } from '@placetostand/ui/input'
 import { toast } from '@/components/ui/use-toast'
 import {
   ConnectedAccountsList,

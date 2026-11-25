@@ -2,13 +2,13 @@
 
 import { Calendar, Eye } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
-import { Separator } from '@pts/ui/separator'
+import { Button } from '@placetostand/ui/button'
+import { Separator } from '@placetostand/ui/separator'
 
 import { EntityList } from '@/components/sheets/entity-list'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
-import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 
 import { HourBlockRecordRow } from '@/components/sheets/entity-record-rows'
 import { SHEET_SIDE_COLUMN_CLASS } from '@/components/ui/sheet'

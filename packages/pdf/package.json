@@ -16,7 +16,7 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
-    "@pts/ui": "^0.1.0",
+    "@placetostand/ui": "*",
     "jspdf": "^4.2.1"
   }
 }

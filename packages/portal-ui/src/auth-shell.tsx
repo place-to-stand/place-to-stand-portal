@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 
 import { BRAND, BRAND_DOT_GRID } from './brand'
 import { BusinessBrandLockup } from './business-brand'
-import { cn } from './cn'
+import { cn } from '@placetostand/ui/cn'
 
 /**
  * The signed-out chrome for both portals: the marketing site's dark blueprint

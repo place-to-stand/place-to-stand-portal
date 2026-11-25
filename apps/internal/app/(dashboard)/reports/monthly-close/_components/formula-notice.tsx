@@ -7,8 +7,8 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@pts/ui/collapsible'
-import { formatCalendarDate } from '@pts/ui/dates'
+} from '@placetostand/ui/collapsible'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 import {
   Table,
   TableBody,
@@ -16,12 +16,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@pts/ui/table'
+} from '@placetostand/ui/table'
 import type { PartnerRateSchedule } from '@/lib/billing/partner-rates'
 import { cn } from '@/lib/utils'
 
 import { formatShare } from './format'
-import { formatCurrency } from '@pts/ui/numbers'
+import { formatCurrency } from '@placetostand/ui/numbers'
 import { pagePanelClass } from '@/components/layout/page-panel'
 
 type FormulaNoticeProps = {

@@ -2,7 +2,7 @@
 
 import { useId, useState } from 'react'
 
-import { Label } from '@pts/ui/label'
+import { Label } from '@placetostand/ui/label'
 
 import { ImageUploadControls } from '@/components/forms/image-upload-controls'
 import { OptionalMarker } from '@/components/ui/form'

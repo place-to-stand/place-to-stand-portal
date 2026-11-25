@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Star } from 'lucide-react'
 
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 import {
   Table,
   TableBody,
@@ -13,7 +13,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@pts/ui/table'
+} from '@placetostand/ui/table'
 import {
   RecordRowAction,
   RecordRowActions,
@@ -35,7 +35,7 @@ import {
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 import { cn } from '@/lib/utils'
-import { formatHours } from '@pts/ui/numbers'
+import { formatHours } from '@placetostand/ui/numbers'
 import { BALANCE_TONE_CLASS, balanceTone } from '@/lib/billing/balance-tone'
 import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import { ClientBadge } from '@/components/companies/client-badge'

@@ -1,7 +1,7 @@
 import { Download } from 'lucide-react'
 
-import { authSecondaryButtonClass } from '@pts/ui/auth-shell'
-import { BlueprintCorners } from '@pts/ui/brand'
+import { authSecondaryButtonClass } from '@pts/portal-ui/auth-shell'
+import { BlueprintCorners } from '@pts/portal-ui/brand'
 
 import {
   getBusinessIdentity,

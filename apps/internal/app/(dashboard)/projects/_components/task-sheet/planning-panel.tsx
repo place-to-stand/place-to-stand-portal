@@ -18,24 +18,24 @@ import {
   Send,
 } from 'lucide-react'
 
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
-import { Button } from '@pts/ui/button'
-import { cn } from '@pts/ui/cn'
+import { ConfirmDialog } from '@placetostand/ui/confirm-dialog'
+import { Button } from '@placetostand/ui/button'
+import { cn } from '@placetostand/ui/cn'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from '@pts/ui/dropdown-menu'
+} from '@placetostand/ui/dropdown-menu'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@pts/ui/select'
-import { Textarea } from '@pts/ui/textarea'
+} from '@placetostand/ui/select'
+import { Textarea } from '@placetostand/ui/textarea'
 import { toastLink, useToast } from '@/components/ui/use-toast'
 
 import type { GitHubRepoLinkSummary, TaskWithRelations } from '@/lib/types'

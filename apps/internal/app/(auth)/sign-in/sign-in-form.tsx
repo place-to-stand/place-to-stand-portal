@@ -17,7 +17,7 @@ import {
   authLinkClass,
   authPrimaryButtonClass,
   authSecondaryButtonClass,
-} from '@pts/ui/auth-shell'
+} from '@pts/portal-ui/auth-shell'
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
 
 import { signInWithPassword, sendMagicLink, type SignInState } from './actions'

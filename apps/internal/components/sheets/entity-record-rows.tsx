@@ -7,10 +7,10 @@ import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { ProjectStatusBadge } from '@/components/projects/project-status-badge'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import type { LeadStatusValue } from '@/lib/leads/constants'
-import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
-import { formatCurrency, formatHours } from '@pts/ui/numbers'
+import { formatCurrency, formatHours } from '@placetostand/ui/numbers'
 import { cn } from '@/lib/utils'
 
 /**

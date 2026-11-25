@@ -1,9 +1,9 @@
 import Link from 'next/link'
 import { Pencil } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { TabsList, TabsTrigger } from '@pts/ui/tabs'
+import { TabsList, TabsTrigger } from '@placetostand/ui/tabs'
 import {
   TOOLBAR_TAB_CLASS,
   TOOLBAR_TABS_LIST_CLASS,

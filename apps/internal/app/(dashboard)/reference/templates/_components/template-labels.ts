@@ -1,5 +1,5 @@
 import type { EmailTemplateGroup } from '@/lib/email/catalog'
-import { BADGE_TINTS } from '@pts/ui/badge-tints'
+import { BADGE_TINTS } from '@placetostand/ui/badge-tints'
 import type { TemplateAudience } from '@/lib/templates/audience'
 
 /** Section order and headings for the emails gallery; key order is display order. */

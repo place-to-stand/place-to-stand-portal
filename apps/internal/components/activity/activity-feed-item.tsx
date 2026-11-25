@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 
-import { Badge } from '@pts/ui/badge'
-import { BADGE_TINTS } from '@pts/ui/badge-tints'
+import { Badge } from '@placetostand/ui/badge'
+import { BADGE_TINTS } from '@placetostand/ui/badge-tints'
 import { ActivityChangeList } from '@/components/activity/activity-change-list'
 import { AgentBadge } from '@/components/activity/agent-badge'
 import { getActivityChanges } from '@/lib/activity/changes'
@@ -11,7 +11,7 @@ import {
   getToneClasses,
   getVerbPresentation,
 } from '@/lib/activity/verb-presentation'
-import { formatCalendarDate, formatRelativeTime } from '@pts/ui/dates'
+import { formatCalendarDate, formatRelativeTime } from '@placetostand/ui/dates'
 import type { ActivitySourceValue } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { UserAvatar } from '@/components/ui/user-avatar'

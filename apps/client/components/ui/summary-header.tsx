@@ -1,4 +1,4 @@
-import { Progress } from '@pts/ui/progress'
+import { Progress } from '@placetostand/ui/progress'
 
 import { cn } from '@/lib/utils'
 

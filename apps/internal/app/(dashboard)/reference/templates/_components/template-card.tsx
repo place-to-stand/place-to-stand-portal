@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-import { Badge } from '@pts/ui/badge'
+import { Badge } from '@placetostand/ui/badge'
 import type { TemplateAudience } from '@/lib/templates/audience'
 import { cn } from '@/lib/utils'
 

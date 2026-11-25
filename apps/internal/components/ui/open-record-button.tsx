@@ -2,8 +2,12 @@
 
 import { ExternalLink } from 'lucide-react'
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 
 /**
  * The button on the right of a link field that opens the linked record

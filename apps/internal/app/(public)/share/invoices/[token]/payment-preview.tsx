@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 
-import { formatCurrency } from '@pts/ui/numbers'
+import { formatCurrency } from '@placetostand/ui/numbers'
 import { DARK_LABEL, HEADLINE_FONT, PANEL_TITLE } from './styles'
 
 /**

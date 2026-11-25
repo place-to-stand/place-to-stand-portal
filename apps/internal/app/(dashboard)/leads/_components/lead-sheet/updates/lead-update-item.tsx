@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from 'react'
 import { Archive, MoreHorizontal, Pencil } from 'lucide-react'
 
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { AgentBadge } from '@/components/activity/agent-badge'
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import {
@@ -11,14 +11,14 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@pts/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
+} from '@placetostand/ui/dropdown-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@placetostand/ui/avatar'
 import { RICH_TEXT_HTML_CLASSES } from '@/components/ui/rich-text-editor/rich-text-html'
 import { sanitizeEditorHtml } from '@/components/ui/rich-text-editor/utils'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
-import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 import {
   LEAD_UPDATE_NOT_AUTHOR_MESSAGE,
   canChangeLeadUpdate,

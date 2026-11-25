@@ -1,4 +1,4 @@
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ConfirmDialog } from '@placetostand/ui/confirm-dialog'
 
 type InvoiceVoidDialogProps = {
   open: boolean

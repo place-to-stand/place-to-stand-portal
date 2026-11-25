@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 
 type Props = {
   icon: ReactNode

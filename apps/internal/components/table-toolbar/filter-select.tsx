@@ -2,10 +2,14 @@
 
 import { startTransition, useOptimistic, type ReactNode } from 'react'
 
-import { Button } from '@pts/ui/button'
-import { Badge } from '@pts/ui/badge'
-import { Checkbox } from '@pts/ui/checkbox'
-import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
+import { Button } from '@placetostand/ui/button'
+import { Badge } from '@placetostand/ui/badge'
+import { Checkbox } from '@placetostand/ui/checkbox'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@placetostand/ui/popover'
 import {
   Command,
   CommandEmpty,

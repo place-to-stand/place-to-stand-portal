@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import { ToolbarActionLabel } from '@/components/layout/toolbar-action'
 import { TimeLogDialog } from '@/app/(dashboard)/projects/_components/project-time-log/project-time-log-dialog'
 import {

@@ -8,7 +8,7 @@
  * shares must total exactly 100; with none, the closer share stays in House.
  */
 
-import { formatPercent } from '@pts/ui/numbers'
+import { formatPercent } from '@placetostand/ui/numbers'
 
 export type CloserKind = 'user' | 'contact'
 

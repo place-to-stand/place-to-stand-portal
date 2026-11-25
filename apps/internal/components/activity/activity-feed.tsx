@@ -3,14 +3,14 @@
 import { useMemo, type ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import { ActivityFeedItem } from '@/components/activity/activity-feed-item'
 import type { ActivityLogWithActor } from '@/lib/activity/types'
 import {
   useActivityFeed,
   type UseActivityFeedOptions,
 } from '@/lib/activity/use-activity-feed'
-import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 import { cn } from '@/lib/utils'
 
 export type ActivityFeedProps = UseActivityFeedOptions & {

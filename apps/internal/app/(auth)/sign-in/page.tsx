@@ -2,7 +2,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 
-import { AuthShell } from '@pts/ui/auth-shell'
+import { AuthShell } from '@pts/portal-ui/auth-shell'
 
 import { getCurrentUser } from '@/lib/auth/session'
 import { serverEnv } from '@/lib/env.server'

@@ -9,7 +9,7 @@ import {
   authInputClass,
   authNoticeClass,
   authPrimaryButtonClass,
-} from '@pts/ui/auth-shell'
+} from '@pts/portal-ui/auth-shell'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 
 import { requestPasswordReset, type ForgotPasswordState } from './actions'

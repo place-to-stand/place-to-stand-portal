@@ -7,8 +7,8 @@ import { NewVersionReload } from '@/components/providers/new-version-reload'
 import { SupabaseListener } from '@/components/providers/supabase-listener'
 import { ViewportScrollReset } from '@/components/layout/viewport-scroll-reset'
 import { DEFAULT_BUSINESS_NAME } from '@pts/db/business'
-import { BusinessBrandProvider } from '@pts/ui/business-brand'
-import { CompanyTimeZone } from '@pts/ui/company-time-zone'
+import { BusinessBrandProvider } from '@pts/portal-ui/business-brand'
+import { CompanyTimeZone } from '@placetostand/ui/company-time-zone'
 import {
   brandPropsFor,
   getBusinessIdentityOrDefaults,

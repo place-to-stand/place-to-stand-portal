@@ -7,7 +7,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 import { ErrorBoundary } from '@/components/ui/error-boundary'
 import { cn } from '@/lib/utils'
 import type { DashboardWidgetId } from '@/lib/dashboard/layout'

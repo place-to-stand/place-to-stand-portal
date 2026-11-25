@@ -2,7 +2,7 @@
 
 import Markdown from 'react-markdown'
 
-import { EmptyState } from '@pts/ui/empty-state'
+import { EmptyState } from '@placetostand/ui/empty-state'
 
 import { MetricCard, MetricCardSkeleton } from './metric-card'
 import type { SummaryState } from './use-recent-activity-summary'

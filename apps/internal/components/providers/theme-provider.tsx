@@ -1,1 +1,1 @@
-export { ThemeProvider, useTheme } from '@pts/ui/theme-provider'
+export { ThemeProvider, useTheme } from '@placetostand/ui/theme-provider'

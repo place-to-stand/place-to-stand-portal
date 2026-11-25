@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from 'react'
 import { ChevronDown, UserRoundPlus } from 'lucide-react'
 
-import { Avatar, AvatarFallback } from '@pts/ui/avatar'
+import { Avatar, AvatarFallback } from '@placetostand/ui/avatar'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import {
   buildOwnerOptions,

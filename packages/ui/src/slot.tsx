@@ -23,7 +23,7 @@ import { useRender } from '@base-ui/react/use-render'
  *   build names the problem instead.
  */
 
-// @pts/ui carries no node types; NODE_ENV is inlined by the bundler. The file
+// @placetostand/ui carries no node types; NODE_ENV is inlined by the bundler. The file
 // is a module, so this declaration stays module-scoped.
 declare const process: { env?: { NODE_ENV?: string } } | undefined
 

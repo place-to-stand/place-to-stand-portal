@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { getMonth, getYear } from 'date-fns'
 
-import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'

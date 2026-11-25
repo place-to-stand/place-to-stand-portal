@@ -1,4 +1,4 @@
-import { BOARD_LANE_TINTS, type BadgeTint } from '@pts/ui/badge-tints'
+import { BOARD_LANE_TINTS, type BadgeTint } from '@placetostand/ui/badge-tints'
 
 import { cn } from '@/lib/utils'
 

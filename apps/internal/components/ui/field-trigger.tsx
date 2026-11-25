@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { ChevronsUpDownIcon } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import { FIELD_CLEAR_LABEL_SPACE } from '@/components/ui/field-clear-button'
 import { cn } from '@/lib/utils'
 

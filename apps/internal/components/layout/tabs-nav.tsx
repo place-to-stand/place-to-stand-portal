@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { Tabs, TabsList, TabsTrigger } from '@pts/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@placetostand/ui/tabs'
 import {
   confirmDiscardAll,
   PAGE_FORM_GUARD_ID,

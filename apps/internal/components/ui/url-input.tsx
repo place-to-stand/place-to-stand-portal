@@ -1,10 +1,10 @@
 'use client'
 
 import * as React from 'react'
-import { Input } from '@pts/ui/input'
+import { Input } from '@placetostand/ui/input'
 import { SiteMark } from '@/components/ui/site-mark'
 import { cn } from '@/lib/utils'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 
 /** A safe http(s) link from what was typed (https when no scheme), or null. */
 export function toSafeHref(value: string | null | undefined): string | null {

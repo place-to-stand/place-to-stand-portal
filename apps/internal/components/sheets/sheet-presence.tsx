@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 
-import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
+import { Alert, AlertContent, AlertDescription } from '@placetostand/ui/alert'
 import { InlineReveal } from '@/components/ui/inline-reveal'
 import { PersonAvatar } from '@/components/ui/user-avatar'
 import type { SheetEntityKey } from '@/lib/sheets/entities'

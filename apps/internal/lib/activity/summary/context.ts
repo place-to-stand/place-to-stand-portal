@@ -2,7 +2,7 @@ import 'server-only'
 
 /** Turns activity rows into the compact lines the summary prompt reads. */
 import { isClientCompany } from '@pts/db/client-state'
-import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 import { and, inArray, isNull } from 'drizzle-orm'
 import type { ActivityLogWithActor } from '@/lib/activity/types'
 import type { Json } from '@/lib/types/json'

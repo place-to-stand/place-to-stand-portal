@@ -4,7 +4,7 @@ import { useCallback, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { Ban, CheckCheck, Mail, Undo2 } from 'lucide-react'
 
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ConfirmDialog } from '@placetostand/ui/confirm-dialog'
 
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import { invoiceShareHref } from '@/lib/invoices/links'

@@ -1,6 +1,6 @@
 # Table
 
-The data table: plain semantic markup with shadcn styling and three options, `density`, `layout` and `stack`, plus a floor width set through `className`. From `@pts/ui/table`.
+The data table: plain semantic markup with shadcn styling and three options, `density`, `layout` and `stack`, plus a floor width set through `className`. From `@placetostand/ui/table`.
 
 **Look:** `text-sm`, rows `border-b hover:bg-muted/50`, selected `bg-muted`. `TableHead` is `h-10 px-2 font-medium text-foreground`; `TableCell` is `p-2` around a 28px content box. `density="compact"`: heads `h-8 text-xs`, cells `px-2 py-1.5`. `TableFooter` is `bg-muted/50 border-t font-medium`. Cells are `whitespace-nowrap`.
 

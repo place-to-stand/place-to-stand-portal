@@ -1,4 +1,4 @@
-import { formatPercent } from '@pts/ui/numbers'
+import { formatPercent } from '@placetostand/ui/numbers'
 
 import type { FormSubmissionRecord } from './types'
 

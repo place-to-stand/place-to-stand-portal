@@ -17,7 +17,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from '@pts/ui/context-menu'
+} from '@placetostand/ui/context-menu'
 
 import {
   isDuplicableSheetEntity,

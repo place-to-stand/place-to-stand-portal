@@ -3,9 +3,13 @@
 import { useEffect, useState, type ReactElement, type ReactNode } from 'react'
 import { Check, Redo2, Undo2 } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { Button } from '@placetostand/ui/button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import type { Shortcut } from '@/lib/keyboard/shortcuts'
 import { rowActionShortcut } from '@/components/keyboard/shortcut-tooltip'

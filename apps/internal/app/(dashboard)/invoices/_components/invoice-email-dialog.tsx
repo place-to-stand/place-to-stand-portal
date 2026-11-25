@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Send } from 'lucide-react'
 
 import { invoiceEmail } from '@pts/email/templates'
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -12,8 +12,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@pts/ui/dialog'
-import { Skeleton } from '@pts/ui/skeleton'
+} from '@placetostand/ui/dialog'
+import { Skeleton } from '@placetostand/ui/skeleton'
 import {
   RecipientField,
   type RecipientOption,

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { buttonVariants } from '@pts/ui/button'
+import { buttonVariants } from '@placetostand/ui/button'
 import { cn } from '@/lib/utils'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 

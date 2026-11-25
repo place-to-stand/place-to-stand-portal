@@ -23,7 +23,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@pts/ui/tooltip'
+} from '@placetostand/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'

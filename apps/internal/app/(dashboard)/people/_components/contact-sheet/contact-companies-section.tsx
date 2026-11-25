@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import { Star, X } from 'lucide-react'
 
-import { EmptyState } from '@pts/ui/empty-state'
-import { Skeleton } from '@pts/ui/skeleton'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { EmptyState } from '@placetostand/ui/empty-state'
+import { Skeleton } from '@placetostand/ui/skeleton'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { CompanyRecordRow } from '@/components/sheets/entity-record-rows'

@@ -9,7 +9,7 @@ import {
   authInputClass,
   authLinkClass,
   authPrimaryButtonClass,
-} from '@pts/ui/auth-shell'
+} from '@pts/portal-ui/auth-shell'
 
 import { requestPasswordReset } from '@/app/(auth)/_actions/auth-emails'
 

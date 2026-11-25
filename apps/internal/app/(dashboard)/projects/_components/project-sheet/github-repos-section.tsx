@@ -3,22 +3,22 @@
 import { ConnectInAccountButton } from '@/components/account/connect-in-account-button'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Trash2, ExternalLink, Loader2 } from 'lucide-react'
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@pts/ui/dialog'
+} from '@placetostand/ui/dialog'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
-import { EmptyState } from '@pts/ui/empty-state'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { EmptyState } from '@placetostand/ui/empty-state'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import { toast, toastLink } from '@/components/ui/use-toast'
 import type { GitHubRepoLink } from '@/lib/types/github'
 import { siGithub } from 'simple-icons/icons'
-import { Badge } from '@pts/ui/badge'
+import { Badge } from '@placetostand/ui/badge'
 
 export type RepoSource = 'oauth' | 'app'
 

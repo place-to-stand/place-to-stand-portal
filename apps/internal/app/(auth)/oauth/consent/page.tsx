@@ -10,7 +10,7 @@ import {
   authNoticeClass,
   authPrimaryButtonClass,
   authSecondaryButtonClass,
-} from '@pts/ui/auth-shell'
+} from '@pts/portal-ui/auth-shell'
 
 import { canUseInternalPortal } from '@/lib/auth/roles'
 import { getCurrentUser } from '@/lib/auth/session'

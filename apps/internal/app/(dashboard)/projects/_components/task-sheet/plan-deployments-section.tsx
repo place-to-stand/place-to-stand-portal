@@ -12,12 +12,16 @@ import {
   Terminal,
 } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
-import { BADGE_TINTS } from '@pts/ui/badge-tints'
-import { Button } from '@pts/ui/button'
-import { cn } from '@pts/ui/cn'
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { Badge } from '@placetostand/ui/badge'
+import { BADGE_TINTS } from '@placetostand/ui/badge-tints'
+import { Button } from '@placetostand/ui/button'
+import { cn } from '@placetostand/ui/cn'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@placetostand/ui/tooltip'
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import type { DbTaskDeployment } from '@/lib/types'
 import type { WorkerCommentStatus } from '@/lib/tasks/worker-status'

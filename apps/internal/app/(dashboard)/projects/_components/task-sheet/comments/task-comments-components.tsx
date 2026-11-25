@@ -4,15 +4,15 @@ import { useCallback, useEffect, useId, useMemo } from 'react'
 import type { FormEvent } from 'react'
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
-import { Button } from '@pts/ui/button'
-import { formatRelativeTime } from '@pts/ui/dates'
+import { Avatar, AvatarFallback, AvatarImage } from '@placetostand/ui/avatar'
+import { Button } from '@placetostand/ui/button'
+import { formatRelativeTime } from '@placetostand/ui/dates'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@pts/ui/dropdown-menu'
+} from '@placetostand/ui/dropdown-menu'
 import { InlineReveal } from '@/components/ui/inline-reveal'
 import { InlineFormActions } from '@/components/sheets/inline-form-actions'
 import { LazyRichTextEditor as RichTextEditor } from '@/components/ui/rich-text-editor/lazy'
@@ -25,7 +25,7 @@ import { AgentBadge } from '@/components/activity/agent-badge'
 import type { TaskCommentWithAuthor } from '@/lib/types'
 import { getInitials } from '@/lib/users/initials'
 import { cn } from '@/lib/utils'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 
 type TaskCommentComposerProps = {
   value: string

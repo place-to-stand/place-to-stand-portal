@@ -2,7 +2,7 @@
 
 import { Check, Pencil, RotateCcw } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import { ToolbarActionLabel } from '@/components/layout/toolbar-action'
 
 type LayoutEditControlsProps = {

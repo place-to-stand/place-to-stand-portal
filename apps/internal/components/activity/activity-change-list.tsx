@@ -1,7 +1,7 @@
 import { ArrowRight, Minus, Plus } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
-import { formatCurrency, formatHours } from '@pts/ui/numbers'
+import { Badge } from '@placetostand/ui/badge'
+import { formatCurrency, formatHours } from '@placetostand/ui/numbers'
 import { ActivityRichTextDiff } from '@/components/activity/activity-rich-text-diff'
 import {
   humanizeEnum,
@@ -11,7 +11,7 @@ import {
 } from '@/lib/activity/changes'
 import { formatFact } from '@/lib/activity/format-fact'
 import type { ActivityReferences } from '@/lib/activity/types'
-import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCalendarDate } from '@placetostand/ui/dates'
 import {
   getTaskStatusLabel,
   getTaskStatusToken,

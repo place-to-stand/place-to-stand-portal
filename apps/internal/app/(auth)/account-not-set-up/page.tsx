@@ -2,7 +2,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-import { AuthShell, authLinkClass } from '@pts/ui/auth-shell'
+import { AuthShell, authLinkClass } from '@pts/portal-ui/auth-shell'
 
 export const metadata: Metadata = {
   title: 'Not set up yet',

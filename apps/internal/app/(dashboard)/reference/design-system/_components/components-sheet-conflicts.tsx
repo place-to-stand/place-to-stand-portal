@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
 import { SheetViewers } from '@/components/sheets/sheet-presence'
 import type { ActivityLogWithActor } from '@/lib/activity/types'

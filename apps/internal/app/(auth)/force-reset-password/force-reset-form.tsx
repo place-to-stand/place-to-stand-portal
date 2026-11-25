@@ -14,7 +14,7 @@ import {
   authFieldLabelClass,
   authInputClass,
   authPrimaryButtonClass,
-} from '@pts/ui/auth-shell'
+} from '@pts/portal-ui/auth-shell'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   Form,
@@ -24,7 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@pts/ui/input'
+import { Input } from '@placetostand/ui/input'
 import { useToast } from '@/components/ui/use-toast'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 import { newPasswordPairSchema } from '@/lib/auth/password'

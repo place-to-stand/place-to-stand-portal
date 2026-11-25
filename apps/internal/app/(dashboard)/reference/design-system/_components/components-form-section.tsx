@@ -3,9 +3,9 @@
 import { useForm } from 'react-hook-form'
 import { Plus } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
-import { Input } from '@pts/ui/input'
-import { Label } from '@pts/ui/label'
+import { Button } from '@placetostand/ui/button'
+import { Input } from '@placetostand/ui/input'
+import { Label } from '@placetostand/ui/label'
 
 import {
   FORM_FIELD_WIDE_CLASS,

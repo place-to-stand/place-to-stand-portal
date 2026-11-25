@@ -3,15 +3,15 @@
 import { useState } from 'react'
 import { CheckIcon, CopyIcon, ExternalLinkIcon, InfoIcon } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { Button } from '@placetostand/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@pts/ui/dialog'
-import { RowActionButton } from '@pts/ui/row-action-button'
+} from '@placetostand/ui/dialog'
+import { RowActionButton } from '@placetostand/ui/row-action-button'
 import { GitHubMark } from '@/components/icons/github-mark'
 import type { PtsStaffGitHubAccount } from '@/lib/data/staff-github-access'
 
