@@ -90,6 +90,8 @@ export function distManifest(source) {
       distExport(target),
     ])
   )
+  // Lets tools and bundlers read the package's own version.
+  manifest.exports['./package.json'] = './package.json'
   // Only CSS has effects on import; everything else can be tree-shaken.
   manifest.sideEffects = ['*.css']
   manifest.publishConfig = { access: 'public', provenance: true }
@@ -140,6 +142,7 @@ function build(dir) {
 
   const manifest = distManifest(source)
   for (const [key, target] of Object.entries(manifest.exports)) {
+    if (key === './package.json') continue // written below
     const file = typeof target === 'string' ? target : target.default
     if (!existsSync(join(dist, file))) {
       throw new Error(

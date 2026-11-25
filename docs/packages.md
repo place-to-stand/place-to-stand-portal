@@ -75,14 +75,19 @@ lockfile; an admin merges it past the checks.
 - **Let Actions open pull requests:** repo Settings → Actions → General →
   "Allow GitHub Actions to create and approve pull requests".
 - **First publish of a new package:** npm can only trust our workflow for a
-  package that already exists. Create a granular access token on npmjs.com
-  (publish rights on `@placetostand`), save it as the `NPM_TOKEN` repo secret,
-  and merge the release pull request.
+  package that already exists. Create a short-lived granular access token on
+  npmjs.com (publish rights on `@placetostand`), save it as the `NPM_TOKEN`
+  repo secret, add `NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}` to the
+  Changesets step's `env` in `release.yml`, and merge the release pull
+  request.
 - **Then switch to trusted publishing:** on the package's page on npmjs.com,
   Settings → Trusted publishing → GitHub Actions, repository
-  `place-to-stand/place-to-stand-portal`, workflow `release.yml`. After that,
-  delete the `NPM_TOKEN` secret and the token: each release proves itself
-  with GitHub's sign-in, and npm shows where it was built.
+  `place-to-stand/place-to-stand-portal`, workflow `release.yml`, with
+  "Allow npm publish" ticked. Remove the `NODE_AUTH_TOKEN` line again and
+  delete the secret and the token. npm marks the publisher "Pending
+  validation" until the next release publishes through it (within 48 hours),
+  so ship a patch soon after. Each release then proves itself with GitHub's
+  sign-in, and npm shows where it was built.
 
 ## Adding a package to publish
 
